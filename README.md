@@ -33,13 +33,15 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 `./gradlew build`.
 
 ## Credits
-* [Dynamic Surroundings](https://github.com/OreCruncher/DynamicSurroundingsFabric).
+* [Dynamic Surroundings](https://github.com/OreCruncher/DynamicSurroundingsFabric). Armor sound assets and footprint texture come from this mod.
 * [LegendarySurvivalOverhaul](https://github.com/Alex-Hashtag/LegendarySurvivalOverhaul).
 * [GT:NH buildscript](https://github.com/GTNewHorizons/ExampleMod1.7.10).
 
 ## License
 
 `LgplV3 + SNEED`.
+
+Dynamic Surroundings assets are licensed under MIT.
 
 ## Buy me some creatine
 
