@@ -61,6 +61,9 @@ public class GuiFactory implements IModGuiFactory {
                             .getCategory(Config.Categories.wetness)),
                     new ConfigElement(
                         Config.getRawConfig()
+                            .getCategory(Config.Categories.trampling)),
+                    new ConfigElement(
+                        Config.getRawConfig()
                             .getCategory(Config.Categories.debug))),
                 AnExtraTouch.MODID,
                 AnExtraTouch.MODID,

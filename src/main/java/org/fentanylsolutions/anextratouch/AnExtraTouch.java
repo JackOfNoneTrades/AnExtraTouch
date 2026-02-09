@@ -65,8 +65,11 @@ public class AnExtraTouch {
         }
     }
 
+    public static boolean isDebug() {
+        return DEBUG_MODE || Config.debugMode;
+    }
+
     // MAYBEDO
-    // Configurably make grass break when walked over it enough times
     // Make blazes melt shit below
     // Make blizzes freeze shit below
 }

@@ -20,8 +20,11 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 * Armor walk and equip sounds. Backported from modern Dynamic Surroundings.
 * Cold breath particles. Backported from modern Dynamic Surroundings.
 * Wet entities shed water particles. Backported from Legendary Survival Overhaul.
+* Grass trampling. Entities can trample grass when repeatedly walking over it. Entirely serve-side, off by default, players only by default.
 
 The entire mod is heavily configurable.
+
+This mod can be installed on client, server, or both.
 
 ## Dependencies
 * [UniMixins](https://modrinth.com/mod/unimixins) [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/unimixins)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/unimixins/versions) [![git](images/icons/git.png)](https://github.com/LegacyModdingMC/UniMixins/releases)

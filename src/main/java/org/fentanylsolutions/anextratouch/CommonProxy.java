@@ -1,5 +1,6 @@
 package org.fentanylsolutions.anextratouch;
 
+import org.fentanylsolutions.anextratouch.serverhandlers.GrassTramplingHandler;
 import org.fentanylsolutions.anextratouch.util.MobUtil;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -13,7 +14,9 @@ public class CommonProxy {
         Config.loadConfig(AnExtraTouch.confFile);
     }
 
-    public void init(FMLInitializationEvent event) {}
+    public void init(FMLInitializationEvent event) {
+        GrassTramplingHandler.INSTANCE.initHook();
+    }
 
     public void postInit(FMLPostInitializationEvent event) {
         if (Config.printMobNames) {

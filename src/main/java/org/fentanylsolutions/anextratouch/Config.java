@@ -16,6 +16,7 @@ public class Config {
         public static final String armor = "armor";
         public static final String wetness = "wetness";
         public static final String debug = "debug";
+        public static final String trampling = "trampling";
     }
 
     // general
@@ -76,6 +77,15 @@ public class Config {
     public static boolean wetnessRainEnabled = true;
     public static float wetnessDuration = 1.0f;
     public static float wetnessParticleDensity = 1.0f;
+
+    // trampling
+    public static boolean tramplingEnabled = false;
+    public static int tramplingMinPasses = 3;
+    public static int tramplingMaxPasses = 8;
+    public static int tramplingForgetTime = 5;
+    public static String[] tramplingBlocks = { "minecraft:tallgrass", "minecraft:double_plant", "minecraft:deadbush" };
+    public static String[] tramplingEntityClassList = { "Player" };
+    public static boolean tramplingEntityClassListIsBlacklist = false;
 
     // debug
     public static boolean debugMode = false;
@@ -373,6 +383,49 @@ public class Config {
                 0.1f,
                 5.0f,
                 "Multiplier for particle spawn frequency. Higher values = more water drops.");
+
+            // trampling
+            tramplingEnabled = config.getBoolean(
+                "tramplingEnabled",
+                Categories.trampling,
+                tramplingEnabled,
+                "Enable grass/plant trampling. Blocks walked through repeatedly will break after a random number of passes.");
+            tramplingMinPasses = config.getInt(
+                "tramplingMinPasses",
+                Categories.trampling,
+                tramplingMinPasses,
+                1,
+                100,
+                "Minimum number of passes before a block breaks.");
+            tramplingMaxPasses = config.getInt(
+                "tramplingMaxPasses",
+                Categories.trampling,
+                tramplingMaxPasses,
+                1,
+                100,
+                "Maximum number of passes before a block breaks. A random threshold between min and max is chosen per block.");
+            tramplingForgetTime = config.getInt(
+                "tramplingForgetTime",
+                Categories.trampling,
+                tramplingForgetTime,
+                1,
+                60,
+                "Minutes before the tracker forgets about a block that hasn't been walked through.");
+            tramplingBlocks = config.getStringList(
+                "tramplingBlocks",
+                Categories.trampling,
+                tramplingBlocks,
+                "Blocks that can be trampled. Use registry names, e.g. \"minecraft:tallgrass\".");
+            tramplingEntityClassList = config.getStringList(
+                "tramplingEntityClassList",
+                Categories.trampling,
+                tramplingEntityClassList,
+                "Entity classes that trample blocks (or are excluded, depending on tramplingEntityClassListIsBlacklist). Use entity class names, e.g. \"Player\", \"Zombie\", \"Cow\".");
+            tramplingEntityClassListIsBlacklist = config.getBoolean(
+                "tramplingEntityClassListIsBlacklist",
+                Categories.trampling,
+                tramplingEntityClassListIsBlacklist,
+                "Whether tramplingEntityClassList is a blacklist (true) or whitelist (false).");
 
             // Debug
             debugMode = config.getBoolean("debugMode", Categories.debug, debugMode, "Enable debug logging");
