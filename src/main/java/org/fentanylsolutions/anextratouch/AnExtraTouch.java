@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.fentanylsolutions.anextratouch.network.NetworkHandler;
 import org.fentanylsolutions.anextratouch.varinstances.VarInstanceClient;
 
 import cpw.mods.fml.common.Mod;
@@ -41,6 +42,9 @@ public class AnExtraTouch {
         DEBUG_MODE = debugVar != null;
         AnExtraTouch.LOG.info("Debugmode: {}", DEBUG_MODE);
         confFile = event.getSuggestedConfigurationFile();
+
+        NetworkHandler.init();
+
         proxy.preInit(event);
     }
 

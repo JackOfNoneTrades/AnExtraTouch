@@ -1,4 +1,4 @@
-package org.fentanylsolutions.anextratouch.effects;
+package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.client.particle.EntityFX;

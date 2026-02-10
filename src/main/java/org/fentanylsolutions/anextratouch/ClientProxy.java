@@ -2,10 +2,11 @@ package org.fentanylsolutions.anextratouch;
 
 import net.minecraftforge.common.MinecraftForge;
 
-import org.fentanylsolutions.anextratouch.effects.BreathHandler;
-import org.fentanylsolutions.anextratouch.effects.PlayerEffectHandler;
-import org.fentanylsolutions.anextratouch.effects.WetParticleHandler;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
+import org.fentanylsolutions.anextratouch.handlers.client.ClientHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WetParticleHandler;
 import org.fentanylsolutions.anextratouch.varinstances.VarInstanceClient;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -34,6 +35,11 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new BreathHandler());
         MinecraftForge.EVENT_BUS.register(new WetParticleHandler());
         MinecraftForge.EVENT_BUS.register(FootprintManager.INSTANCE);
+        ClientHandler clientHandler = new ClientHandler();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(clientHandler);
+        MinecraftForge.EVENT_BUS.register(clientHandler);
     }
 
     @Override
@@ -41,4 +47,5 @@ public class ClientProxy extends CommonProxy {
         super.postInit(event);
         AnExtraTouch.vic.postInitHook();
     }
+
 }

@@ -1,4 +1,4 @@
-package org.fentanylsolutions.anextratouch.serverhandlers;
+package org.fentanylsolutions.anextratouch.handlers.server;
 
 import java.util.HashMap;
 import java.util.HashSet;

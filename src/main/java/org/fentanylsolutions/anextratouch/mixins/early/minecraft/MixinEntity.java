@@ -4,8 +4,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
-import org.fentanylsolutions.anextratouch.effects.PlayerEffectHandler;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintUtil;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;

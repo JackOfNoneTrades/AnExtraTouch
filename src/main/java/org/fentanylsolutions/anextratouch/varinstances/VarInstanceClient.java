@@ -57,6 +57,8 @@ public class VarInstanceClient {
     public HashSet<Class<? extends Entity>> armorSoundEntities;
     private HashMap<String, String> armorCategoryOverrideMap;
 
+    public boolean serverHasAET = false;
+
     public VarInstanceClient() {}
 
     public void populateListsFromConfig() {

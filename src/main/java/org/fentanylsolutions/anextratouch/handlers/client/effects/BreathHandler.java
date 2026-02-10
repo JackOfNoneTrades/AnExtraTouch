@@ -1,4 +1,4 @@
-package org.fentanylsolutions.anextratouch.effects;
+package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
 import java.util.Random;
 
