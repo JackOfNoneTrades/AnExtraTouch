@@ -5,7 +5,7 @@ import net.minecraft.entity.EntityLivingBase;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintUtil;
-import org.fentanylsolutions.anextratouch.handlers.client.ArmorSoundHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.server.ServerArmorHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -39,7 +39,7 @@ public class MixinEntity {
     private void onPlayStepSound(double dx, double dy, double dz, CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (self.worldObj.isRemote) {
-            ArmorSoundHandler.onEntityStep(self);
+            StepSoundHandler.onEntityStep(self);
         } else {
             ServerArmorHandler.onEntityStep(self);
         }
@@ -50,7 +50,7 @@ public class MixinEntity {
     private void onFall(double distanceFallenThisTick, boolean isOnGround, CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (self.worldObj.isRemote) {
-            ArmorSoundHandler.onEntityLand(self, self.fallDistance);
+            StepSoundHandler.onEntityLand(self, self.fallDistance);
         } else {
             ServerArmorHandler.onEntityLand(self, self.fallDistance);
         }

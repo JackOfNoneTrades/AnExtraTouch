@@ -53,6 +53,9 @@ public class VarInstanceClient {
     // Wetness
     public HashSet<Class<? extends Entity>> wetnessEntities;
 
+    // Rain splash
+    public HashSet<Class<? extends Entity>> rainSplashEntities;
+
     // Armor
     public HashSet<Class<? extends Entity>> armorSoundEntities;
     private HashMap<String, String> armorCategoryOverrideMap;
@@ -170,7 +173,9 @@ public class VarInstanceClient {
 
         // Build the final maps for all allowed entities
         for (Class<? extends Entity> c : EntityList.stringToClassMapping.values()) {
-            if (!EntityLivingBase.class.isAssignableFrom(c)) continue;
+            if (!EntityLivingBase.class.isAssignableFrom(c)) {
+                continue;
+            }
 
             String name = EntityList.classToStringMapping.get(c);
             boolean inList = false;
@@ -182,7 +187,9 @@ public class VarInstanceClient {
             }
 
             // Blacklist: skip if in list. Whitelist: skip if NOT in list.
-            if (Config.entityClassListIsBlacklist == inList) continue;
+            if (Config.entityClassListIsBlacklist == inList) {
+                continue;
+            }
 
             float stride = strideOverrides.getOrDefault(name, Config.defaultStride);
             float footSize = footSizeOverrides.getOrDefault(name, Config.defaultFootSize);
@@ -221,7 +228,7 @@ public class VarInstanceClient {
             entityStanceWidths.put(EntityOtherPlayerMP.class, stanceWidth);
         }
 
-        // --- Breath effect ---
+        // Breath effect
         breathUpOffsets = new Object2FloatOpenHashMap<>();
         breathForwardDists = new Object2FloatOpenHashMap<>();
         babyBreathUpOffsets = new Object2FloatOpenHashMap<>();
@@ -334,7 +341,7 @@ public class VarInstanceClient {
         breathColdBiomes = new HashSet<>();
         Collections.addAll(breathColdBiomes, Config.breathColdBiomes);
 
-        // --- Wetness ---
+        // Wetness
         wetnessEntities = new HashSet<>();
         for (Class<? extends Entity> c : EntityList.stringToClassMapping.values()) {
             if (!EntityLivingBase.class.isAssignableFrom(c)) continue;
@@ -364,7 +371,40 @@ public class VarInstanceClient {
             wetnessEntities.add(EntityOtherPlayerMP.class);
         }
 
-        // --- Armor sounds ---
+        // Rain splash
+        rainSplashEntities = new HashSet<>();
+        for (Class<? extends Entity> c : EntityList.stringToClassMapping.values()) {
+            if (!EntityLivingBase.class.isAssignableFrom(c)) {
+                continue;
+            }
+
+            String name = EntityList.classToStringMapping.get(c);
+            boolean inRainSplashList = false;
+            for (String s : Config.rainSplashEntityClassList) {
+                if (name.equals(s)) {
+                    inRainSplashList = true;
+                    break;
+                }
+            }
+            if (Config.rainSplashEntityClassListIsBlacklist == inRainSplashList) {
+                continue;
+            }
+
+            rainSplashEntities.add(c);
+        }
+        boolean playerInRainSplashList = false;
+        for (String s : Config.rainSplashEntityClassList) {
+            if (playerName.equals(s)) {
+                playerInRainSplashList = true;
+                break;
+            }
+        }
+        if (Config.rainSplashEntityClassListIsBlacklist != playerInRainSplashList) {
+            rainSplashEntities.add(EntityClientPlayerMP.class);
+            rainSplashEntities.add(EntityOtherPlayerMP.class);
+        }
+
+        // Armor sounds
         armorSoundEntities = new HashSet<>();
         HashSet<String> armorEntityNames = new HashSet<>();
         Collections.addAll(armorEntityNames, Config.armorSoundEntityWhitelist);

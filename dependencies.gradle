@@ -36,6 +36,6 @@
 dependencies {
     //runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
     implementation("com.github.GTNewHorizons:GTNHLib:0.9.6:dev")
-    compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
-    //implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
+    //compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
+    implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
 }

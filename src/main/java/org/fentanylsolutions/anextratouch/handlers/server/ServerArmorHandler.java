@@ -17,32 +17,51 @@ public class ServerArmorHandler {
 
     private static final float LAND_DISTANCE_MIN = 0.9f;
 
-    private static HashSet<String> whitelistNames;
+    private static HashSet<String> armorWhitelistNames;
+    private static HashSet<String> rainSplashEntityNames;
+    private static boolean rainSplashIsBlacklist;
 
     public static void init() {
-        whitelistNames = new HashSet<>();
-        Collections.addAll(whitelistNames, Config.armorSoundEntityWhitelist);
+        armorWhitelistNames = new HashSet<>();
+        Collections.addAll(armorWhitelistNames, Config.armorSoundEntityWhitelist);
+
+        rainSplashEntityNames = new HashSet<>();
+        Collections.addAll(rainSplashEntityNames, Config.rainSplashEntityClassList);
+        rainSplashIsBlacklist = Config.rainSplashEntityClassListIsBlacklist;
     }
 
-    private static boolean isWhitelisted(Entity entity) {
+    private static boolean needsPacket(Entity entity) {
+        String name;
         if (entity instanceof EntityPlayerMP) {
-            return whitelistNames.contains("Player");
+            name = "Player";
+        } else {
+            name = EntityList.getEntityString(entity);
+            if (name == null) {
+                return false;
+            }
         }
-        String name = EntityList.getEntityString(entity);
-        return name != null && whitelistNames.contains(name);
+
+        if (Config.armorSoundsEnabled && armorWhitelistNames.contains(name)) {
+            return true;
+        }
+        if (Config.rainSplashEnabled) {
+            boolean inList = rainSplashEntityNames.contains(name);
+            // blacklist: allow if NOT in list; whitelist: allow if IN list
+            if (rainSplashIsBlacklist != inList) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void onEntityStep(Entity entity) {
-        if (!Config.armorSoundsEnabled) {
-            return;
-        }
         if (entity.worldObj.isRemote) {
             return;
         }
         if (!(entity instanceof EntityLivingBase)) {
             return;
         }
-        if (!isWhitelisted(entity)) {
+        if (!needsPacket(entity)) {
             return;
         }
 
@@ -50,9 +69,6 @@ public class ServerArmorHandler {
     }
 
     public static void onEntityLand(Entity entity, float distance) {
-        if (!Config.armorSoundsEnabled) {
-            return;
-        }
         if (entity.worldObj.isRemote) {
             return;
         }
@@ -62,7 +78,7 @@ public class ServerArmorHandler {
         if (!(entity instanceof EntityLivingBase)) {
             return;
         }
-        if (!isWhitelisted(entity)) {
+        if (!needsPacket(entity)) {
             return;
         }
 

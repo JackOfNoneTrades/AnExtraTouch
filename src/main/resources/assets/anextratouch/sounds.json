@@ -79,5 +79,21 @@
       "anextratouch:armor/crystal_foot3",
       "anextratouch:armor/crystal_foot4"
     ]
+  },
+  "rain.splash": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:rain_splash/water_through1",
+      "anextratouch:rain_splash/water_through2",
+      "anextratouch:rain_splash/water_through3",
+      "anextratouch:rain_splash/water_through4",
+      "anextratouch:rain_splash/water_through5",
+      "anextratouch:rain_splash/water_through6",
+      "anextratouch:rain_splash/water_through7",
+      "anextratouch:rain_splash/water_through8",
+      "anextratouch:rain_splash/water_through9",
+      "anextratouch:rain_splash/water_through10",
+      "anextratouch:rain_splash/water_through11"
+    ]
   }
 }

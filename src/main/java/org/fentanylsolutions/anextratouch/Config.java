@@ -17,6 +17,7 @@ public class Config {
         public static final String wetness = "wetness";
         public static final String debug = "debug";
         public static final String trampling = "trampling";
+        public static final String rainSplash = "rain_splash";
     }
 
     // general
@@ -86,6 +87,12 @@ public class Config {
     public static String[] tramplingBlocks = { "minecraft:tallgrass", "minecraft:double_plant", "minecraft:deadbush" };
     public static String[] tramplingEntityClassList = { "Player" };
     public static boolean tramplingEntityClassListIsBlacklist = false;
+
+    // rain splash
+    public static boolean rainSplashEnabled = true;
+    public static float rainSplashVolume = 0.15f;
+    public static String[] rainSplashEntityClassList = {};
+    public static boolean rainSplashEntityClassListIsBlacklist = true;
 
     // debug
     public static boolean debugMode = false;
@@ -426,6 +433,30 @@ public class Config {
                 Categories.trampling,
                 tramplingEntityClassListIsBlacklist,
                 "Whether tramplingEntityClassList is a blacklist (true) or whitelist (false).");
+
+            // rain splash
+            rainSplashEnabled = config.getBoolean(
+                "rainSplashEnabled",
+                Categories.rainSplash,
+                rainSplashEnabled,
+                "Enable rain splash accent sounds on footsteps when walking in rain.");
+            rainSplashVolume = config.getFloat(
+                "rainSplashVolume",
+                Categories.rainSplash,
+                rainSplashVolume,
+                0.0f,
+                1.0f,
+                "Base volume for rain splash sounds. Actual volume is scaled by rain intensity.");
+            rainSplashEntityClassList = config.getStringList(
+                "rainSplashEntityClassList",
+                Categories.rainSplash,
+                rainSplashEntityClassList,
+                "List of mobs which either play rain splash sounds, or don't, depending on rainSplashEntityClassListIsBlacklist.");
+            rainSplashEntityClassListIsBlacklist = config.getBoolean(
+                "rainSplashEntityClassListIsBlacklist",
+                Categories.rainSplash,
+                rainSplashEntityClassListIsBlacklist,
+                "Whether rainSplashEntityClassList is a blacklist (or a whitelist).");
 
             // Debug
             debugMode = config.getBoolean("debugMode", Categories.debug, debugMode, "Enable debug logging");

@@ -3,8 +3,8 @@ package org.fentanylsolutions.anextratouch;
 import net.minecraftforge.common.MinecraftForge;
 
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
-import org.fentanylsolutions.anextratouch.handlers.client.ArmorSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.ClientHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WetParticleHandler;
@@ -32,7 +32,7 @@ public class ClientProxy extends CommonProxy {
             .register(new PlayerEffectHandler());
         FMLCommonHandler.instance()
             .bus()
-            .register(new ArmorSoundHandler());
+            .register(new StepSoundHandler());
         FMLCommonHandler.instance()
             .bus()
             .register(FootprintManager.INSTANCE);

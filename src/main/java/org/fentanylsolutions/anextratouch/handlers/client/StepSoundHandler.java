@@ -17,7 +17,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 // When we play multiplayer and there is no An Extra Touch on it, we calculate armor step sounds on the client
 // This has the disadvantage of being slightly delayed
 // But if the server also has the mod, it sends packets when steps happen
-public class ArmorSoundHandler {
+public class StepSoundHandler {
 
     private static final float LAND_DISTANCE_MIN = 0.9f;
 
@@ -38,9 +38,6 @@ public class ArmorSoundHandler {
     // Called from MixinEntity hooked into func_145780_a (inside moveEntity) on the client side
     // Only plays for the local player. Remote entities are handled by tick tracking or server packets
     public static void onEntityStep(Entity entity) {
-        if (!Config.armorSoundsEnabled) {
-            return;
-        }
         if (!entity.worldObj.isRemote) {
             return;
         }
@@ -50,19 +47,13 @@ public class ArmorSoundHandler {
         if (entity != Minecraft.getMinecraft().thePlayer) {
             return;
         }
-        if (!AnExtraTouch.vic.armorSoundEntities.contains(entity.getClass())) {
-            return;
-        }
 
-        playArmorStepSounds((EntityLivingBase) entity);
+        playStepAccents((EntityLivingBase) entity);
     }
 
     // Called from MixinEntity at fall() hook on the client side.
     // Only plays for the local player. Remote entity landing is handled by tick tracking or server packets
     public static void onEntityLand(Entity entity, float distance) {
-        if (!Config.armorSoundsEnabled) {
-            return;
-        }
         if (!entity.worldObj.isRemote) {
             return;
         }
@@ -75,19 +66,13 @@ public class ArmorSoundHandler {
         if (entity != Minecraft.getMinecraft().thePlayer) {
             return;
         }
-        if (!AnExtraTouch.vic.armorSoundEntities.contains(entity.getClass())) {
-            return;
-        }
 
-        playArmorStepSounds((EntityLivingBase) entity);
+        playStepAccents((EntityLivingBase) entity);
     }
 
     // packet callbacks
 
     public static void onServerArmorStep(int entityId) {
-        if (!Config.armorSoundsEnabled) {
-            return;
-        }
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null) {
             return;
@@ -101,7 +86,7 @@ public class ArmorSoundHandler {
             return;
         }
 
-        playArmorStepSounds((EntityLivingBase) entity);
+        playStepAccents((EntityLivingBase) entity);
     }
 
     // tick handler for equip sounds, and in case we operate client-side only
@@ -131,7 +116,10 @@ public class ArmorSoundHandler {
 
             // remote entity step/land tracking: only when server doesn't have the mod
             if (!AnExtraTouch.vic.serverHasAET && living != mc.thePlayer) {
-                if (Config.armorSoundsEnabled && AnExtraTouch.vic.armorSoundEntities.contains(living.getClass())) {
+                boolean needsTracking = (Config.armorSoundsEnabled
+                    && AnExtraTouch.vic.armorSoundEntities.contains(living.getClass()))
+                    || (Config.rainSplashEnabled && AnExtraTouch.vic.rainSplashEntities.contains(living.getClass()));
+                if (needsTracking) {
                     ArmorTracker tracker = getOrCreateTracker(living);
                     if (tracker.initialized) {
                         trackRemoteEntity(living, tracker);
@@ -174,7 +162,7 @@ public class ArmorSoundHandler {
         } else if (!tracker.wasOnGround && !Double.isNaN(tracker.peakY)) {
             float fallDist = (float) (tracker.peakY - living.posY);
             if (fallDist > LAND_DISTANCE_MIN) {
-                playArmorStepSounds(living);
+                playStepAccents(living);
             }
             tracker.peakY = Double.NaN;
         }
@@ -199,7 +187,7 @@ public class ArmorSoundHandler {
         tracker.stepDistance += dist * 0.6f;
         if (tracker.stepDistance >= 1.0f) {
             tracker.stepDistance %= 1.0f;
-            playArmorStepSounds(living);
+            playStepAccents(living);
         }
     }
 
@@ -239,6 +227,40 @@ public class ArmorSoundHandler {
     }
 
     // sound playback methods
+
+    private static void playStepAccents(EntityLivingBase living) {
+        if (Config.armorSoundsEnabled && AnExtraTouch.vic.armorSoundEntities.contains(living.getClass())) {
+            playArmorStepSounds(living);
+        }
+        if (Config.rainSplashEnabled) {
+            playRainSplash(living);
+        }
+    }
+
+    // plays a water sound at high pitch when walking in rain, from dynamic surroundings
+    private static void playRainSplash(EntityLivingBase entity) {
+        if (!AnExtraTouch.vic.rainSplashEntities.contains(entity.getClass())) {
+            return;
+        }
+        if (!entity.isWet() || entity.isInWater()) {
+            return;
+        }
+
+        float rainStrength = entity.worldObj.getRainStrength(0f);
+        float volume = Config.rainSplashVolume * rainStrength;
+        if (volume <= 0.001f) {
+            return;
+        }
+
+        Minecraft.getMinecraft().theWorld.playSound(
+            entity.posX,
+            entity.posY - entity.yOffset,
+            entity.posZ,
+            AnExtraTouch.MODID + ":rain.splash",
+            volume,
+            1.75f,
+            false);
+    }
 
     private static void playArmorStepSounds(EntityLivingBase living) {
         ItemStack chest = living.getEquipmentInSlot(3);
