@@ -22,6 +22,7 @@ public class LateMixinLoader implements ILateMixinLoader {
     public List<String> getMixins(Set<String> loadedCoreMods) {
         return new EarlyMixinLoader.MixinBuilder()
             .addMixin("MixinDSFootsteps", EarlyMixinLoader.Side.CLIENT, "dsurround")
+            .addMixin("MixinBlizzSnowTrail", EarlyMixinLoader.Side.BOTH, "ThermalFoundation")
             .build();
     }
 }

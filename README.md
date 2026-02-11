@@ -22,6 +22,7 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 * Water splash sound effects when walking in rain. Backported from modern Dynamic Surroundings.
 * Wet entities shed water particles. Backported from Legendary Survival Overhaul.
 * Grass trampling. Entities can trample grass when repeatedly walking over it. Entirely serve-side, off by default, players only by default.
+* Thermal Foundation Blizz snow trail, similar to the Snow Golem.
 
 The entire mod is heavily configurable.
 

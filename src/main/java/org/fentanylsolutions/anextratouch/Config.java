@@ -18,6 +18,7 @@ public class Config {
         public static final String debug = "debug";
         public static final String trampling = "trampling";
         public static final String rainSplash = "rain_splash";
+        public static final String misc = "misc";
     }
 
     // general
@@ -93,6 +94,9 @@ public class Config {
     public static float rainSplashVolume = 0.15f;
     public static String[] rainSplashEntityClassList = {};
     public static boolean rainSplashEntityClassListIsBlacklist = true;
+
+    // misc
+    public static boolean blizzSnowTrailEnabled = true;
 
     // debug
     public static boolean debugMode = false;
@@ -457,6 +461,13 @@ public class Config {
                 Categories.rainSplash,
                 rainSplashEntityClassListIsBlacklist,
                 "Whether rainSplashEntityClassList is a blacklist (or a whitelist).");
+
+            // misc
+            blizzSnowTrailEnabled = config.getBoolean(
+                "blizzSnowTrailEnabled",
+                Categories.misc,
+                blizzSnowTrailEnabled,
+                "Allow Thermal Foundation Blizz mobs to leave a snow trail like vanilla snow golems.");
 
             // Debug
             debugMode = config.getBoolean("debugMode", Categories.debug, debugMode, "Enable debug logging");
