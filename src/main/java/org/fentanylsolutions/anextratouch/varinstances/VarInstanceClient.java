@@ -60,6 +60,9 @@ public class VarInstanceClient {
     public HashSet<Class<? extends Entity>> armorSoundEntities;
     private HashMap<String, String> armorCategoryOverrideMap;
 
+    // Smooth GUI
+    public HashSet<String> smoothGuiExcludedScreens;
+
     public boolean serverHasAET = false;
 
     public VarInstanceClient() {}
@@ -420,6 +423,10 @@ public class VarInstanceClient {
             armorSoundEntities.add(EntityOtherPlayerMP.class);
             armorSoundEntities.add(EntityPlayerMP.class);
         }
+
+        // Smooth GUI excluded screens
+        smoothGuiExcludedScreens = new HashSet<>();
+        Collections.addAll(smoothGuiExcludedScreens, Config.smoothGuiExcludedScreens);
 
         armorCategoryOverrideMap = new HashMap<>();
         for (String entry : Config.armorCategoryOverrides) {

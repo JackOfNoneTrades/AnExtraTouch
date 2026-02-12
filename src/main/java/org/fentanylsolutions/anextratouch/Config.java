@@ -19,6 +19,7 @@ public class Config {
         public static final String trampling = "trampling";
         public static final String rainSplash = "rain_splash";
         public static final String misc = "misc";
+        public static final String smoothGui = "smooth_gui";
     }
 
     // general
@@ -94,6 +95,16 @@ public class Config {
     public static float rainSplashVolume = 0.15f;
     public static String[] rainSplashEntityClassList = {};
     public static boolean rainSplashEntityClassListIsBlacklist = true;
+
+    // smooth gui
+    public static boolean smoothGuiEnabled = true;
+    public static int smoothGuiAnimationTime = 220;
+    public static float smoothGuiAnimationScale = 1.0f;
+    public static boolean smoothGuiFadeBackground = true;
+    public static String smoothGuiAnimationStyle = "BACK";
+    public static String smoothGuiAnimationDirection = "DOWN";
+    public static String[] smoothGuiExcludedScreens = { "GuiChat", "GuiDownloadTerrain", "GuiMemoryErrorScreen",
+        "GuiGameOver", "GuiMainMenu" };
 
     // misc
     public static boolean blizzSnowTrailEnabled = true;
@@ -461,6 +472,49 @@ public class Config {
                 Categories.rainSplash,
                 rainSplashEntityClassListIsBlacklist,
                 "Whether rainSplashEntityClassList is a blacklist (or a whitelist).");
+
+            // smooth gui
+            smoothGuiEnabled = config.getBoolean(
+                "smoothGuiEnabled",
+                Categories.smoothGui,
+                smoothGuiEnabled,
+                "Enable smooth GUI opening animations (slide-in and background fade).");
+            smoothGuiAnimationTime = config.getInt(
+                "smoothGuiAnimationTime",
+                Categories.smoothGui,
+                smoothGuiAnimationTime,
+                10,
+                10000,
+                "Animation duration in milliseconds.");
+            smoothGuiAnimationScale = config.getFloat(
+                "smoothGuiAnimationScale",
+                Categories.smoothGui,
+                smoothGuiAnimationScale,
+                0.5f,
+                3.0f,
+                "Animation intensity multiplier. Higher values = larger displacement.");
+            smoothGuiFadeBackground = config.getBoolean(
+                "smoothGuiFadeBackground",
+                Categories.smoothGui,
+                smoothGuiFadeBackground,
+                "Fade in the dark background overlay when opening GUIs in-world.");
+            smoothGuiAnimationStyle = config.getString(
+                "smoothGuiAnimationStyle",
+                Categories.smoothGui,
+                smoothGuiAnimationStyle,
+                "Easing curve for the animation. \"BACK\" has a slight overshoot bounce, \"CUBIC\" is a simple smooth curve.",
+                new String[] { "BACK", "CUBIC" });
+            smoothGuiAnimationDirection = config.getString(
+                "smoothGuiAnimationDirection",
+                Categories.smoothGui,
+                smoothGuiAnimationDirection,
+                "Direction the GUI slides in from. \"DOWN\" slides up from below, \"UP\" slides down from above.",
+                new String[] { "DOWN", "UP" });
+            smoothGuiExcludedScreens = config.getStringList(
+                "smoothGuiExcludedScreens",
+                Categories.smoothGui,
+                smoothGuiExcludedScreens,
+                "GUI screen classes that should not be animated. Can be simple names (e.g. \"GuiChat\") or fully qualified (e.g. \"net.minecraft.client.gui.GuiChat\").");
 
             // misc
             blizzSnowTrailEnabled = config.getBoolean(
