@@ -1,5 +1,6 @@
 package org.fentanylsolutions.anextratouch.handlers.client.camera;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 
 import org.fentanylsolutions.anextratouch.Config;
@@ -61,6 +62,15 @@ public final class CameraHandler {
     private CameraHandler() {}
 
     public static void update(EntityLivingBase entity, float partialTicks) {
+        if (Config.cameraDisableWhilePaused && Minecraft.getMinecraft()
+            .isGamePaused()) {
+            lastNanoTime = 0L;
+            pitchOffset = 0.0f;
+            yawOffset = 0.0f;
+            rollOffset = 0.0f;
+            return;
+        }
+
         // Delta time
         long now = System.nanoTime();
         if (lastNanoTime == 0) lastNanoTime = now;

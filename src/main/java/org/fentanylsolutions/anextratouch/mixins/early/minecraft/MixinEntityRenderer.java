@@ -9,6 +9,7 @@ import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,6 +19,8 @@ public abstract class MixinEntityRenderer {
 
     @Shadow
     private Minecraft mc;
+    @Unique
+    private boolean anextratouch$renderingHand;
 
     @Inject(method = "orientCamera", at = @At("RETURN"))
     private void anextratouch$onOrientCamera(float partialTicks, CallbackInfo ci) {
@@ -33,6 +36,9 @@ public abstract class MixinEntityRenderer {
             return;
         }
         if (mc.gameSettings.debugCamEnable) {
+            return;
+        }
+        if (Config.cameraKeepFirstPersonHandStable && anextratouch$renderingHand) {
             return;
         }
 
@@ -59,5 +65,15 @@ public abstract class MixinEntityRenderer {
         GL11.glRotatef(pitch + pitchOff, 1f, 0f, 0f);
         GL11.glRotatef(yaw + yawOff, 0f, 1f, 0f);
         GL11.glTranslatef(0f, eyeH, 0f);
+    }
+
+    @Inject(method = "renderHand", at = @At("HEAD"))
+    private void anextratouch$onRenderHandStart(float partialTicks, int pass, CallbackInfo ci) {
+        anextratouch$renderingHand = true;
+    }
+
+    @Inject(method = "renderHand", at = @At("RETURN"))
+    private void anextratouch$onRenderHandEnd(float partialTicks, int pass, CallbackInfo ci) {
+        anextratouch$renderingHand = false;
     }
 }

@@ -110,6 +110,8 @@ public class Config {
     // camera
     public static boolean cameraOverhaulEnabled = true;
     public static boolean cameraOverhaulThirdPerson = true;
+    public static boolean cameraDisableWhilePaused = true;
+    public static boolean cameraKeepFirstPersonHandStable = true;
     // turning roll
     public static float cameraTurningRollAccumulation = 0.7f;
     public static float cameraTurningRollIntensity = 0.9f;
@@ -560,6 +562,16 @@ public class Config {
                 Categories.camera,
                 cameraOverhaulThirdPerson,
                 "Apply camera effects in third person view.");
+            cameraDisableWhilePaused = config.getBoolean(
+                "cameraDisableWhilePaused",
+                Categories.camera,
+                cameraDisableWhilePaused,
+                "Disable camera offsets and shakes while the pause menu is open.");
+            cameraKeepFirstPersonHandStable = config.getBoolean(
+                "cameraKeepFirstPersonHandStable",
+                Categories.camera,
+                cameraKeepFirstPersonHandStable,
+                "Keep first-person hand/item stable instead of inheriting camera tilt effects.");
             cameraTurningRollAccumulation = config.getFloat(
                 "cameraTurningRollAccumulation",
                 Categories.camera,

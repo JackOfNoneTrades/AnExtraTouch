@@ -21,6 +21,10 @@ public class SmoothGuiHandler {
     private static long lastScreenChangedTime = 0;
     private static float appliedDisplacement = 0f;
 
+    public static float getAppliedDisplacement() {
+        return appliedDisplacement;
+    }
+
     public static float getAlphaSince(long time) {
         float fadeTime = Config.smoothGuiAnimationTime;
         float elapsed = Math.min((float) (System.currentTimeMillis() - time), fadeTime);

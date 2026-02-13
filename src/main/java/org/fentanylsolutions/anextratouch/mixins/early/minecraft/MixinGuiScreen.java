@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiScreen;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.handlers.client.SmoothGuiHandler;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -44,7 +45,16 @@ public abstract class MixinGuiScreen extends Gui {
         float fade = Math.min(SmoothGuiHandler.getAlphaSince(SmoothGuiHandler.getLastScreenOpenedTime()) * 2.6f, 1f);
         int top = anextratouch$applyFade(anextratouch$COLOR_TOP, fade);
         int bottom = anextratouch$applyFade(anextratouch$COLOR_BOTTOM, fade);
+
+        // undo the slide displacement so the background stays fixed (matching og mod)
+        float displacement = SmoothGuiHandler.getAppliedDisplacement();
+        if (displacement != 0f) {
+            GL11.glTranslatef(0f, displacement, 0f);
+        }
         this.drawGradientRect(0, 0, this.width, this.height, top, bottom);
+        if (displacement != 0f) {
+            GL11.glTranslatef(0f, -displacement, 0f);
+        }
     }
 
     @Unique
