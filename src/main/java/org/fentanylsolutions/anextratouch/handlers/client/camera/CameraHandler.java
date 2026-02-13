@@ -2,6 +2,7 @@ package org.fentanylsolutions.anextratouch.handlers.client.camera;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.joml.SimplexNoise;
@@ -233,6 +234,26 @@ public final class CameraHandler {
             // original target is (intensity, intensity, 0), sway affects pitch and yaw only, not roll
             pitchX += SimplexNoise.noise(noiseX, 420) * scaledIntensity;
             yawY += SimplexNoise.noise(noiseX, 1337) * scaledIntensity;
+        }
+
+        // in-air falling shake, noise-based
+        boolean isFlyingPlayer = entity instanceof EntityPlayer && ((EntityPlayer) entity).capabilities.allowFlying
+            && ((EntityPlayer) entity).capabilities.isFlying;
+        if (Config.cameraFallingShakeEnabled && !isFlyingPlayer
+            && !entity.onGround
+            && motionY < -0.02D
+            && entity.fallDistance >= Config.cameraFallingShakeMinDistance) {
+            double denom = Math
+                .max(0.0001D, Config.cameraFallingShakeMaxDistance - Config.cameraFallingShakeMinDistance);
+            double t = (entity.fallDistance - Config.cameraFallingShakeMinDistance) / denom;
+            t = clamp01(t);
+
+            double intensity = Config.cameraFallingShakeIntensity * (t * t);
+            float noiseX = (float) (accumulatedTime * Config.cameraFallingShakeFrequency);
+
+            // same style as idle sway, just stronger and tied to fall buildup
+            pitchX += SimplexNoise.noise(noiseX, 9001) * intensity;
+            yawY += SimplexNoise.noise(noiseX, 13337) * intensity;
         }
 
         // screen shakes

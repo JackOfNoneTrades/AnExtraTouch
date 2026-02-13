@@ -122,6 +122,11 @@ public class Config {
     public static float cameraSwayFadeInDelay = 0.15f;
     public static float cameraSwayFadeInLength = 5.0f;
     public static float cameraSwayFadeOutLength = 0.75f;
+    public static boolean cameraFallingShakeEnabled = true;
+    public static float cameraFallingShakeMinDistance = 3.0f;
+    public static float cameraFallingShakeMaxDistance = 16.0f;
+    public static float cameraFallingShakeIntensity = 1.2f;
+    public static float cameraFallingShakeFrequency = 1.4f;
     // screen shakes
     public static float cameraShakeMaxIntensity = 2.5f;
     public static float cameraShakeMaxFrequency = 6.0f;
@@ -634,6 +639,39 @@ public class Config {
                 0.0f,
                 5.0f,
                 "Duration in seconds for camera sway to fade out when the player moves.");
+            cameraFallingShakeEnabled = config.getBoolean(
+                "cameraFallingShakeEnabled",
+                Categories.camera,
+                cameraFallingShakeEnabled,
+                "Add continuous shake while descending after falling past a threshold.");
+            cameraFallingShakeMinDistance = config.getFloat(
+                "cameraFallingShakeMinDistance",
+                Categories.camera,
+                cameraFallingShakeMinDistance,
+                0.0f,
+                64.0f,
+                "Minimum fall distance before in-air fall shake starts.");
+            cameraFallingShakeMaxDistance = config.getFloat(
+                "cameraFallingShakeMaxDistance",
+                Categories.camera,
+                cameraFallingShakeMaxDistance,
+                0.1f,
+                128.0f,
+                "Fall distance at which in-air fall shake reaches maximum intensity.");
+            cameraFallingShakeIntensity = config.getFloat(
+                "cameraFallingShakeIntensity",
+                Categories.camera,
+                cameraFallingShakeIntensity,
+                0.0f,
+                8.0f,
+                "Maximum intensity of in-air fall shake.");
+            cameraFallingShakeFrequency = config.getFloat(
+                "cameraFallingShakeFrequency",
+                Categories.camera,
+                cameraFallingShakeFrequency,
+                0.1f,
+                8.0f,
+                "Noise frequency of in-air fall shake.");
             cameraShakeMaxIntensity = config.getFloat(
                 "cameraShakeMaxIntensity",
                 Categories.camera,
