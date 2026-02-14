@@ -2,6 +2,7 @@ package org.fentanylsolutions.anextratouch;
 
 import net.minecraftforge.common.MinecraftForge;
 
+import org.fentanylsolutions.anextratouch.commands.CommandReload;
 import org.fentanylsolutions.anextratouch.handlers.server.GrassTramplingHandler;
 import org.fentanylsolutions.anextratouch.handlers.server.ServerArmorHandler;
 import org.fentanylsolutions.anextratouch.handlers.server.ServerHandler;
@@ -35,5 +36,7 @@ public class CommonProxy {
         }
     }
 
-    public void serverStarting(FMLServerStartingEvent event) {}
+    public void serverStarting(FMLServerStartingEvent event) {
+        event.registerServerCommand(new CommandReload());
+    }
 }

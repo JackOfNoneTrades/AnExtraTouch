@@ -136,7 +136,7 @@ public class Config {
     public static boolean cameraFallShakeEnabled = true;
     public static float cameraFallShakeMinDistance = 4.0f;
     public static float cameraFallShakeMaxDistance = 20.0f;
-    public static float cameraFallShakeMaxTrauma = 0.45f;
+    public static float cameraFallShakeMaxTrauma = 1.5f;
     public static float cameraFallShakeFrequency = 0.8f;
     public static float cameraFallShakeLength = 0.55f;
     // walking context
@@ -160,11 +160,13 @@ public class Config {
     public static boolean printMobNames = false;
 
     public static void loadConfig(File configFile) {
+        loadConfig(configFile, true);
+    }
+
+    public static void loadConfig(File configFile, boolean save) {
         config = new Configuration(configFile);
 
         try {
-            config.load();
-
             // general
 
             // footprints
@@ -193,42 +195,42 @@ public class Config {
                 Categories.footprints,
                 defaultStride,
                 0.1f,
-                10.0f,
+                100.0f,
                 "Default distance between footprints in blocks.");
             defaultFootSize = config.getFloat(
                 "defaultFootSize",
                 Categories.footprints,
                 defaultFootSize,
                 0.1f,
-                5.0f,
+                100.0f,
                 "Default foot size scale multiplier for the footprint particle.");
             defaultStanceWidth = config.getFloat(
                 "defaultStanceWidth",
                 Categories.footprints,
                 defaultStanceWidth,
                 0.0f,
-                2.0f,
+                100.0f,
                 "Default perpendicular offset between left and right foot in blocks.");
             babyStrideMultiplier = config.getFloat(
                 "babyStrideMultiplier",
                 Categories.footprints,
                 babyStrideMultiplier,
                 0.1f,
-                5.0f,
+                100.0f,
                 "Multiplier applied to stride for baby mobs.");
             babyFootSizeMultiplier = config.getFloat(
                 "babyFootSizeMultiplier",
                 Categories.footprints,
                 babyFootSizeMultiplier,
                 0.1f,
-                5.0f,
+                100.0f,
                 "Multiplier applied to foot size for baby mobs.");
             babyStanceWidthMultiplier = config.getFloat(
                 "babyStanceWidthMultiplier",
                 Categories.footprints,
                 babyStanceWidthMultiplier,
                 0.1f,
-                5.0f,
+                100.0f,
                 "Multiplier applied to stance width for baby mobs.");
             babyEntityOverrides = config.getStringList(
                 "babyEntityOverrides",
@@ -262,14 +264,14 @@ public class Config {
                 Categories.footprints,
                 rainLifespanMultiplier,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Multiplier applied to footprint lifespan when raining at the footprint's position.");
             snowLifespanMultiplier = config.getFloat(
                 "snowLifespanMultiplier",
                 Categories.footprints,
                 snowLifespanMultiplier,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Multiplier applied to footprint lifespan when snowing at the footprint's position.");
             soundTypeLifespans = config.getStringList(
                 "soundTypeLifespans",
@@ -281,7 +283,7 @@ public class Config {
                 Categories.footprints,
                 defaultFootprintOpacity,
                 0.0f,
-                1.0f,
+                100.0f,
                 "Default footprint opacity (0.0 = invisible, 1.0 = fully opaque).");
             soundTypeOpacities = config.getStringList(
                 "soundTypeOpacities",
@@ -316,29 +318,29 @@ public class Config {
                 "breathDefaultUpOffset",
                 Categories.breath,
                 breathDefaultUpOffset,
-                -2.0f,
-                2.0f,
+                -100.0f,
+                100.0f,
                 "Default vertical offset from top of bounding box for breath spawn point.");
             breathDefaultForwardDist = config.getFloat(
                 "breathDefaultForwardDist",
                 Categories.breath,
                 breathDefaultForwardDist,
-                0.0f,
-                3.0f,
+                -100.0f,
+                100.0f,
                 "Default forward distance along look direction for breath spawn point.");
             breathDefaultBabyUpOffset = config.getFloat(
                 "breathDefaultBabyUpOffset",
                 Categories.breath,
                 breathDefaultBabyUpOffset,
-                -2.0f,
-                2.0f,
+                -100.0f,
+                100.0f,
                 "Default vertical offset for baby entities.");
             breathDefaultBabyForwardDist = config.getFloat(
                 "breathDefaultBabyForwardDist",
                 Categories.breath,
                 breathDefaultBabyForwardDist,
-                0.0f,
-                3.0f,
+                -100.0f,
+                100.0f,
                 "Default forward distance for baby entities.");
             breathEntityOverrides = config.getStringList(
                 "breathEntityOverrides",
@@ -354,15 +356,15 @@ public class Config {
                 "breathTemperatureThreshold",
                 Categories.breath,
                 breathTemperatureThreshold,
-                -2.0f,
-                3.0f,
+                -100.0f,
+                100.0f,
                 "Biome temperature below which breath is visible. Vanilla temps: Ice Plains 0.0, Taiga 0.25, Extreme Hills 0.2, Plains 0.8, Desert 2.0. Temperature also drops with altitude above Y=64.");
             breathAltitudeThreshold = config.getInt(
                 "breathAltitudeThreshold",
                 Categories.breath,
                 breathAltitudeThreshold,
                 0,
-                256,
+                1000,
                 "Above this Y level, breath is always visible regardless of biome temperature.");
             breathDimensionRules = config.getStringList(
                 "breathDimensionRules",
@@ -379,7 +381,7 @@ public class Config {
                 Categories.breath,
                 breathRenderDistance,
                 1,
-                256,
+                1000,
                 "Maximum distance in blocks at which breath particles are rendered.");
 
             // armor
@@ -442,14 +444,14 @@ public class Config {
                 Categories.wetness,
                 wetnessDuration,
                 0.1f,
-                5.0f,
+                100.0f,
                 "Multiplier for how long entities stay wet after leaving water. Higher values = longer dripping. 1.0 = default (~65 seconds from fully soaked).");
             wetnessParticleDensity = config.getFloat(
                 "wetnessParticleDensity",
                 Categories.wetness,
                 wetnessParticleDensity,
                 0.1f,
-                5.0f,
+                100.0f,
                 "Multiplier for particle spawn frequency. Higher values = more water drops.");
 
             // trampling
@@ -536,8 +538,8 @@ public class Config {
                 "smoothGuiAnimationScale",
                 Categories.smoothGui,
                 smoothGuiAnimationScale,
-                0.5f,
-                3.0f,
+                0.0f,
+                100.0f,
                 "Animation intensity multiplier. Higher values = larger displacement.");
             smoothGuiFadeBackground = config.getBoolean(
                 "smoothGuiFadeBackground",
@@ -588,56 +590,56 @@ public class Config {
                 Categories.camera,
                 cameraTurningRollAccumulation,
                 0.0f,
-                5.0f,
+                100.0f,
                 "How quickly turning roll accumulates when rotating the camera.");
             cameraTurningRollIntensity = config.getFloat(
                 "cameraTurningRollIntensity",
                 Categories.camera,
                 cameraTurningRollIntensity,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Maximum intensity of the turning roll effect.");
             cameraTurningRollSmoothing = config.getFloat(
                 "cameraTurningRollSmoothing",
                 Categories.camera,
                 cameraTurningRollSmoothing,
                 0.0f,
-                5.0f,
+                100.0f,
                 "Smoothing factor for turning roll decay. Higher = slower decay.");
             cameraSwayIntensity = config.getFloat(
                 "cameraSwayIntensity",
                 Categories.camera,
                 cameraSwayIntensity,
                 0.0f,
-                5.0f,
+                100.0f,
                 "Intensity of idle camera sway.");
             cameraSwayFrequency = config.getFloat(
                 "cameraSwayFrequency",
                 Categories.camera,
                 cameraSwayFrequency,
                 0.01f,
-                2.0f,
+                100.0f,
                 "Frequency of idle camera sway oscillation.");
             cameraSwayFadeInDelay = config.getFloat(
                 "cameraSwayFadeInDelay",
                 Categories.camera,
                 cameraSwayFadeInDelay,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Seconds of inactivity before camera sway begins fading in.");
             cameraSwayFadeInLength = config.getFloat(
                 "cameraSwayFadeInLength",
                 Categories.camera,
                 cameraSwayFadeInLength,
                 0.0f,
-                30.0f,
+                100.0f,
                 "Duration in seconds for camera sway to fully fade in.");
             cameraSwayFadeOutLength = config.getFloat(
                 "cameraSwayFadeOutLength",
                 Categories.camera,
                 cameraSwayFadeOutLength,
                 0.0f,
-                5.0f,
+                100.0f,
                 "Duration in seconds for camera sway to fade out when the player moves.");
             cameraFallingShakeEnabled = config.getBoolean(
                 "cameraFallingShakeEnabled",
@@ -649,63 +651,63 @@ public class Config {
                 Categories.camera,
                 cameraFallingShakeMinDistance,
                 0.0f,
-                64.0f,
+                1000.0f,
                 "Minimum fall distance before in-air fall shake starts.");
             cameraFallingShakeMaxDistance = config.getFloat(
                 "cameraFallingShakeMaxDistance",
                 Categories.camera,
                 cameraFallingShakeMaxDistance,
                 0.1f,
-                128.0f,
+                1000.0f,
                 "Fall distance at which in-air fall shake reaches maximum intensity.");
             cameraFallingShakeIntensity = config.getFloat(
                 "cameraFallingShakeIntensity",
                 Categories.camera,
                 cameraFallingShakeIntensity,
                 0.0f,
-                8.0f,
+                100.0f,
                 "Maximum intensity of in-air fall shake.");
             cameraFallingShakeFrequency = config.getFloat(
                 "cameraFallingShakeFrequency",
                 Categories.camera,
                 cameraFallingShakeFrequency,
                 0.1f,
-                8.0f,
+                100.0f,
                 "Noise frequency of in-air fall shake.");
             cameraShakeMaxIntensity = config.getFloat(
                 "cameraShakeMaxIntensity",
                 Categories.camera,
                 cameraShakeMaxIntensity,
                 0.0f,
-                20.0f,
+                100.0f,
                 "Maximum combined intensity of all active screen shakes.");
             cameraShakeMaxFrequency = config.getFloat(
                 "cameraShakeMaxFrequency",
                 Categories.camera,
                 cameraShakeMaxFrequency,
                 0.1f,
-                20.0f,
+                100.0f,
                 "Maximum frequency of screen shake noise sampling.");
             cameraExplosionTrauma = config.getFloat(
                 "cameraExplosionTrauma",
                 Categories.camera,
                 cameraExplosionTrauma,
                 0.0f,
-                5.0f,
+                100.0f,
                 "Trauma intensity for explosion screen shakes.");
             cameraThunderTrauma = config.getFloat(
                 "cameraThunderTrauma",
                 Categories.camera,
                 cameraThunderTrauma,
                 0.0f,
-                5.0f,
+                100.0f,
                 "Trauma intensity for lightning/thunder screen shakes.");
             cameraHandSwingTrauma = config.getFloat(
                 "cameraHandSwingTrauma",
                 Categories.camera,
                 cameraHandSwingTrauma,
                 0.0f,
-                1.0f,
+                100.0f,
                 "Trauma intensity for hand swing screen shakes.");
             cameraFallShakeEnabled = config.getBoolean(
                 "cameraFallShakeEnabled",
@@ -717,105 +719,105 @@ public class Config {
                 Categories.camera,
                 cameraFallShakeMinDistance,
                 0.0f,
-                64.0f,
+                1000.0f,
                 "Minimum fall distance before landing shake starts.");
             cameraFallShakeMaxDistance = config.getFloat(
                 "cameraFallShakeMaxDistance",
                 Categories.camera,
                 cameraFallShakeMaxDistance,
                 0.1f,
-                128.0f,
+                1000.0f,
                 "Fall distance at which landing shake reaches maximum trauma.");
             cameraFallShakeMaxTrauma = config.getFloat(
                 "cameraFallShakeMaxTrauma",
                 Categories.camera,
                 cameraFallShakeMaxTrauma,
                 0.0f,
-                2.0f,
+                100.0f,
                 "Maximum trauma applied by landing shake.");
             cameraFallShakeFrequency = config.getFloat(
                 "cameraFallShakeFrequency",
                 Categories.camera,
                 cameraFallShakeFrequency,
                 0.1f,
-                4.0f,
+                100.0f,
                 "Noise frequency multiplier for landing shake.");
             cameraFallShakeLength = config.getFloat(
                 "cameraFallShakeLength",
                 Categories.camera,
                 cameraFallShakeLength,
                 0.05f,
-                3.0f,
+                100.0f,
                 "Duration in seconds of landing shake.");
             cameraWalkStrafingRoll = config.getFloat(
                 "cameraWalkStrafingRoll",
                 Categories.camera,
                 cameraWalkStrafingRoll,
                 0.0f,
-                50.0f,
+                100.0f,
                 "Strafing roll factor when walking.");
             cameraWalkForwardPitch = config.getFloat(
                 "cameraWalkForwardPitch",
                 Categories.camera,
                 cameraWalkForwardPitch,
                 0.0f,
-                50.0f,
+                100.0f,
                 "Forward velocity pitch factor when walking.");
             cameraWalkVerticalPitch = config.getFloat(
                 "cameraWalkVerticalPitch",
                 Categories.camera,
                 cameraWalkVerticalPitch,
                 0.0f,
-                50.0f,
+                100.0f,
                 "Vertical velocity pitch factor when walking.");
             cameraWalkHorizSmoothing = config.getFloat(
                 "cameraWalkHorizSmoothing",
                 Categories.camera,
                 cameraWalkHorizSmoothing,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Horizontal velocity smoothing factor when walking.");
             cameraWalkVertSmoothing = config.getFloat(
                 "cameraWalkVertSmoothing",
                 Categories.camera,
                 cameraWalkVertSmoothing,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Vertical velocity smoothing factor when walking.");
             cameraRideStrafingRoll = config.getFloat(
                 "cameraRideStrafingRoll",
                 Categories.camera,
                 cameraRideStrafingRoll,
                 0.0f,
-                50.0f,
+                100.0f,
                 "Strafing roll factor when riding.");
             cameraRideForwardPitch = config.getFloat(
                 "cameraRideForwardPitch",
                 Categories.camera,
                 cameraRideForwardPitch,
                 0.0f,
-                50.0f,
+                100.0f,
                 "Forward velocity pitch factor when riding.");
             cameraRideVerticalPitch = config.getFloat(
                 "cameraRideVerticalPitch",
                 Categories.camera,
                 cameraRideVerticalPitch,
                 0.0f,
-                50.0f,
+                100.0f,
                 "Vertical velocity pitch factor when riding.");
             cameraRideHorizSmoothing = config.getFloat(
                 "cameraRideHorizSmoothing",
                 Categories.camera,
                 cameraRideHorizSmoothing,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Horizontal velocity smoothing factor when riding.");
             cameraRideVertSmoothing = config.getFloat(
                 "cameraRideVertSmoothing",
                 Categories.camera,
                 cameraRideVertSmoothing,
                 0.0f,
-                10.0f,
+                100.0f,
                 "Vertical velocity smoothing factor when riding.");
 
             // misc
@@ -836,7 +838,9 @@ public class Config {
         } catch (Exception e) {
             System.err.println("Error loading config: " + e.getMessage());
         } finally {
-            config.save();
+            if (save) {
+                config.save();
+            }
         }
     }
 
