@@ -37,7 +37,7 @@ public class BreathHandler {
             return;
         }
 
-        if (!AnExtraTouch.vic.breathUpOffsets.containsKey(event.entity.getClass())) {
+        if (!AnExtraTouch.vic.breath.breathUpOffsets.containsKey(event.entity.getClass())) {
             return;
         }
 
@@ -55,7 +55,7 @@ public class BreathHandler {
         }
 
         int dimId = event.entity.worldObj.provider.dimensionId;
-        String dimMode = AnExtraTouch.vic.getBreathDimensionMode(dimId);
+        String dimMode = AnExtraTouch.vic.breath.getBreathDimensionMode(dimId);
         if ("never".equals(dimMode)) {
             return;
         }
@@ -74,7 +74,7 @@ public class BreathHandler {
             int by = MathHelper.floor_double(event.entity.boundingBox.minY);
             int bz = MathHelper.floor_double(event.entity.posZ);
             BiomeGenBase biome = event.entity.worldObj.getBiomeGenForCoords(bx, bz);
-            if (!AnExtraTouch.vic.isColdBiome(biome.biomeName)) {
+            if (!AnExtraTouch.vic.breath.isColdBiome(biome.biomeName)) {
                 float temp = biome.getFloatTemperature(bx, by, bz);
                 if (temp >= Config.breathTemperatureThreshold && by < Config.breathAltitudeThreshold) {
                     return;
@@ -93,10 +93,10 @@ public class BreathHandler {
         boolean baby = ((EntityLivingBase) event.entity).isChild();
         Class<?> clazz = event.entity.getClass();
 
-        double upOffset = baby ? AnExtraTouch.vic.babyBreathUpOffsets.getFloat(clazz)
-            : AnExtraTouch.vic.breathUpOffsets.getFloat(clazz);
-        double forwardDist = baby ? AnExtraTouch.vic.babyBreathForwardDists.getFloat(clazz)
-            : AnExtraTouch.vic.breathForwardDists.getFloat(clazz);
+        double upOffset = baby ? AnExtraTouch.vic.breath.babyBreathUpOffsets.getFloat(clazz)
+            : AnExtraTouch.vic.breath.breathUpOffsets.getFloat(clazz);
+        double forwardDist = baby ? AnExtraTouch.vic.breath.babyBreathForwardDists.getFloat(clazz)
+            : AnExtraTouch.vic.breath.breathForwardDists.getFloat(clazz);
 
         double eyeX = event.entity.posX;
         double eyeY = event.entity.boundingBox.minY + event.entity.height;

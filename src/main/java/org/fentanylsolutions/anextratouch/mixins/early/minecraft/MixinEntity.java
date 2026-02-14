@@ -67,7 +67,7 @@ public class MixinEntity {
         if (!(self instanceof EntityLivingBase)) {
             return;
         }
-        if (!AnExtraTouch.vic.entityStrides.containsKey(self.getClass())) {
+        if (!AnExtraTouch.vic.footprints.entityStrides.containsKey(self.getClass())) {
             return;
         }
         if (self.ridingEntity != null) {
@@ -103,8 +103,8 @@ public class MixinEntity {
 
         // Check if we've walked far enough for a footprint
         boolean isBaby = ((EntityLivingBase) self).isChild();
-        float stride = isBaby ? AnExtraTouch.vic.babyEntityStrides.getFloat(self.getClass())
-            : AnExtraTouch.vic.entityStrides.getFloat(self.getClass());
+        float stride = isBaby ? AnExtraTouch.vic.footprints.babyEntityStrides.getFloat(self.getClass())
+            : AnExtraTouch.vic.footprints.entityStrides.getFloat(self.getClass());
 
         if (anextratouch$footprintDistance >= stride) {
             anextratouch$footprintDistance %= stride;

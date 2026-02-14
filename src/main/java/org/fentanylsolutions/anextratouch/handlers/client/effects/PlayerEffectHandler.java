@@ -57,7 +57,8 @@ public class PlayerEffectHandler {
         if (player == Minecraft.getMinecraft().thePlayer) {
             boolean onGround = player.onGround;
             if (!tracker.wasOnGround && onGround) {
-                if (AnExtraTouch.vic.entityStrides.containsKey(player.getClass()) && player.ridingEntity == null) {
+                if (AnExtraTouch.vic.footprints.entityStrides.containsKey(player.getClass())
+                    && player.ridingEntity == null) {
                     FootprintUtil.spawnFootprint(player, player.isChild(), true);
                     FootprintUtil.spawnFootprint(player, player.isChild(), false);
                 }
@@ -84,7 +85,8 @@ public class PlayerEffectHandler {
 
         // landing detection for footprints
         if (!tracker.wasOnGround && onSolidGround) {
-            if (AnExtraTouch.vic.entityStrides.containsKey(player.getClass()) && player.ridingEntity == null) {
+            if (AnExtraTouch.vic.footprints.entityStrides.containsKey(player.getClass())
+                && player.ridingEntity == null) {
                 FootprintUtil.spawnFootprint(player, player.isChild(), true);
                 FootprintUtil.spawnFootprint(player, player.isChild(), false);
             }
@@ -109,11 +111,11 @@ public class PlayerEffectHandler {
         }
 
         // footprints, trigger when entity moved by stride distance
-        if (AnExtraTouch.vic.entityStrides.containsKey(player.getClass()) && player.ridingEntity == null) {
+        if (AnExtraTouch.vic.footprints.entityStrides.containsKey(player.getClass()) && player.ridingEntity == null) {
             tracker.footprintDistance += dist;
             boolean isBaby = player.isChild();
-            float stride = isBaby ? AnExtraTouch.vic.babyEntityStrides.getFloat(player.getClass())
-                : AnExtraTouch.vic.entityStrides.getFloat(player.getClass());
+            float stride = isBaby ? AnExtraTouch.vic.footprints.babyEntityStrides.getFloat(player.getClass())
+                : AnExtraTouch.vic.footprints.entityStrides.getFloat(player.getClass());
             if (tracker.footprintDistance >= stride) {
                 tracker.footprintDistance %= stride;
                 tracker.isRightFoot = !tracker.isRightFoot;

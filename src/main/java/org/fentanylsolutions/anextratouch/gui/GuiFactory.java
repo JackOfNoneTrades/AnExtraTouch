@@ -108,7 +108,7 @@ public class GuiFactory implements IModGuiFactory {
                 Config.getRawConfig()
                     .save();
                 Config.loadConfig(AnExtraTouch.confFile);
-                AnExtraTouch.vic.populateListsFromConfig();
+                AnExtraTouch.proxy.onConfigReload();
             }
         }
     }

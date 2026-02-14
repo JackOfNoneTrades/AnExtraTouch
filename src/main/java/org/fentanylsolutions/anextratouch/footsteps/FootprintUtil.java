@@ -26,8 +26,8 @@ public class FootprintUtil {
         float rightX = -MathHelper.cos(yawRad);
         float rightZ = -MathHelper.sin(yawRad);
 
-        float offsetDist = isBaby ? AnExtraTouch.vic.babyEntityStanceWidths.getFloat(clazz)
-            : AnExtraTouch.vic.entityStanceWidths.getFloat(clazz);
+        float offsetDist = isBaby ? AnExtraTouch.vic.footprints.babyEntityStanceWidths.getFloat(clazz)
+            : AnExtraTouch.vic.footprints.entityStanceWidths.getFloat(clazz);
 
         double footX, footZ;
         if (isRightFoot) {
@@ -61,7 +61,7 @@ public class FootprintUtil {
                 return;
             }
         }
-        if (!AnExtraTouch.vic.hasFootprint(block)) {
+        if (!AnExtraTouch.vic.footprints.hasFootprint(block)) {
             return;
         }
 
@@ -76,10 +76,10 @@ public class FootprintUtil {
         double footY = by + block.getBlockBoundsMaxY();
         block.setBlockBounds((float) minX, (float) minY, (float) minZ, (float) maxX, (float) maxY, (float) maxZ);
 
-        float footSize = isBaby ? AnExtraTouch.vic.babyEntityFootSizes.getFloat(clazz)
-            : AnExtraTouch.vic.entityFootSizes.getFloat(clazz);
-        int lifespan = AnExtraTouch.vic.getLifespan(block);
-        float opacity = AnExtraTouch.vic.getOpacity(block);
+        float footSize = isBaby ? AnExtraTouch.vic.footprints.babyEntityFootSizes.getFloat(clazz)
+            : AnExtraTouch.vic.footprints.entityFootSizes.getFloat(clazz);
+        int lifespan = AnExtraTouch.vic.footprints.getLifespan(block);
+        float opacity = AnExtraTouch.vic.footprints.getOpacity(block);
 
         FootprintManager.INSTANCE.addFootprint(
             entity.worldObj,

@@ -36,7 +36,7 @@
 dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.60:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.68-GTNH:dev")
-    runtimeOnlyNonPublishable("org.fentanylsolutions.fentlib:FentLib:0.0.38")
+    runtimeOnlyNonPublishable("org.fentanylsolutions.fentlib:FentLib:0.0.39")
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
 
     //compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))

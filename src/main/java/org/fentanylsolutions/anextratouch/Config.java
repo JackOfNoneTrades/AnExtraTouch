@@ -136,7 +136,7 @@ public class Config {
     public static boolean cameraFallShakeEnabled = true;
     public static float cameraFallShakeMinDistance = 4.0f;
     public static float cameraFallShakeMaxDistance = 20.0f;
-    public static float cameraFallShakeMaxTrauma = 1.5f;
+    public static float cameraFallShakeMaxTrauma = 0.45f;
     public static float cameraFallShakeFrequency = 0.8f;
     public static float cameraFallShakeLength = 0.55f;
     // walking context
@@ -151,6 +151,15 @@ public class Config {
     public static float cameraRideVerticalPitch = 7.0f;
     public static float cameraRideHorizSmoothing = 1.0f;
     public static float cameraRideVertSmoothing = 1.0f;
+    // sound shakes
+    public static boolean cameraSoundShakesEnabled = true;
+    public static String[] cameraSoundShakes = {
+        "sound=mob.enderdragon.growl;trauma=0.7;radius=80;frequency=2.0;duration=2.5",
+        "sound=mob.enderdragon.end;trauma=1.0;radius=120;frequency=0.3;duration=11.0",
+        "sound=mob.wither.spawn;trauma=0.5;radius=60;frequency=0.3;duration=2.0",
+        "sound=mob.wither.idle;trauma=0.15;radius=40;frequency=0.5;duration=0.8",
+        "sound=mob.wither.death;trauma=0.7;radius=80;frequency=0.3;duration=2.5",
+        "sound=mob.wither.shoot;trauma=0.1;radius=30;frequency=1.0;duration=0.3", };
 
     // misc
     public static boolean blizzSnowTrailEnabled = true;
@@ -693,21 +702,21 @@ public class Config {
                 Categories.camera,
                 cameraExplosionTrauma,
                 0.0f,
-                100.0f,
+                1.0f,
                 "Trauma intensity for explosion screen shakes.");
             cameraThunderTrauma = config.getFloat(
                 "cameraThunderTrauma",
                 Categories.camera,
                 cameraThunderTrauma,
                 0.0f,
-                100.0f,
+                1.0f,
                 "Trauma intensity for lightning/thunder screen shakes.");
             cameraHandSwingTrauma = config.getFloat(
                 "cameraHandSwingTrauma",
                 Categories.camera,
                 cameraHandSwingTrauma,
                 0.0f,
-                100.0f,
+                1.0f,
                 "Trauma intensity for hand swing screen shakes.");
             cameraFallShakeEnabled = config.getBoolean(
                 "cameraFallShakeEnabled",
@@ -733,7 +742,7 @@ public class Config {
                 Categories.camera,
                 cameraFallShakeMaxTrauma,
                 0.0f,
-                100.0f,
+                1.0f,
                 "Maximum trauma applied by landing shake.");
             cameraFallShakeFrequency = config.getFloat(
                 "cameraFallShakeFrequency",
@@ -819,6 +828,18 @@ public class Config {
                 0.0f,
                 100.0f,
                 "Vertical velocity smoothing factor when riding.");
+
+            // sound shakes
+            cameraSoundShakesEnabled = config.getBoolean(
+                "cameraSoundShakesEnabled",
+                Categories.camera,
+                cameraSoundShakesEnabled,
+                "Enable camera shakes triggered by specific sounds.");
+            cameraSoundShakes = config.getStringList(
+                "cameraSoundShakes",
+                Categories.camera,
+                cameraSoundShakes,
+                "Sounds that trigger camera shake. Format: \"sound=<name>;trauma=<0..1>;radius=<blocks>;frequency=<speed>;duration=<seconds>\". Only sound and trauma are required. trauma is scaled by the sound's effective volume (including category/master sliders). radius (default 16) is the distance falloff range. frequency (default 1.0) controls shake speed. duration (default 0.3) is shake length in seconds. Use the sound resource path (e.g. mob.zombie.step) or full name (e.g. minecraft:mob.zombie.step) to only match a specific domain. Examples: \"sound=mob.zombie.step;trauma=0.05\", \"sound=random.explode;trauma=0.8;radius=32;frequency=1.5;duration=2.0\".");
 
             // misc
             blizzSnowTrailEnabled = config.getBoolean(

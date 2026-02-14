@@ -107,7 +107,7 @@ public class StepSoundHandler {
             EntityLivingBase living = (EntityLivingBase) obj;
 
             // equip sounds: always, all entities (client can read equipment slots)
-            if (Config.armorSoundsEnabled && AnExtraTouch.vic.armorSoundEntities.contains(living.getClass())) {
+            if (Config.armorSoundsEnabled && AnExtraTouch.vic.armor.armorSoundEntities.contains(living.getClass())) {
                 ArmorTracker tracker = getOrCreateTracker(living);
                 if (tracker.initialized) {
                     checkEquipSound(living, tracker);
@@ -117,7 +117,7 @@ public class StepSoundHandler {
             // remote entity step/land tracking: only when server doesn't have the mod
             if (!AnExtraTouch.vic.serverHasAET && living != mc.thePlayer) {
                 boolean needsTracking = (Config.armorSoundsEnabled
-                    && AnExtraTouch.vic.armorSoundEntities.contains(living.getClass()))
+                    && AnExtraTouch.vic.armor.armorSoundEntities.contains(living.getClass()))
                     || (Config.rainSplashEnabled && AnExtraTouch.vic.rainSplashEntities.contains(living.getClass()));
                 if (needsTracking) {
                     ArmorTracker tracker = getOrCreateTracker(living);
@@ -203,8 +203,8 @@ public class StepSoundHandler {
             if (!isSameArmorItem(tracker.prevArmor[i], curr)) {
                 ItemStack relevant = curr != null ? curr : tracker.prevArmor[i];
                 if (relevant != null) {
-                    String category = AnExtraTouch.vic.resolveArmorCategory(relevant);
-                    int priority = AnExtraTouch.vic.getArmorPriority(category);
+                    String category = AnExtraTouch.vic.armor.resolveArmorCategory(relevant);
+                    int priority = AnExtraTouch.vic.armor.getArmorPriority(category);
                     if (priority > bestPriority) {
                         bestPriority = priority;
                         bestCategory = category;
@@ -229,7 +229,7 @@ public class StepSoundHandler {
     // sound playback methods
 
     private static void playStepAccents(EntityLivingBase living) {
-        if (Config.armorSoundsEnabled && AnExtraTouch.vic.armorSoundEntities.contains(living.getClass())) {
+        if (Config.armorSoundsEnabled && AnExtraTouch.vic.armor.armorSoundEntities.contains(living.getClass())) {
             playArmorStepSounds(living);
         }
         if (Config.rainSplashEnabled) {
@@ -267,9 +267,9 @@ public class StepSoundHandler {
         ItemStack legs = living.getEquipmentInSlot(2);
         ItemStack feet = living.getEquipmentInSlot(1);
 
-        String chestCat = AnExtraTouch.vic.resolveArmorCategory(chest);
-        String legsCat = AnExtraTouch.vic.resolveArmorCategory(legs);
-        String feetCat = AnExtraTouch.vic.resolveArmorCategory(feet);
+        String chestCat = AnExtraTouch.vic.armor.resolveArmorCategory(chest);
+        String legsCat = AnExtraTouch.vic.armor.resolveArmorCategory(legs);
+        String feetCat = AnExtraTouch.vic.armor.resolveArmorCategory(feet);
 
         boolean sprinting = living.isSprinting();
         float volume = Config.armorSoundVolume;
@@ -283,8 +283,8 @@ public class StepSoundHandler {
             }
         } else {
             String bodyCat;
-            int chestPri = AnExtraTouch.vic.getArmorPriority(chestCat);
-            int legsPri = AnExtraTouch.vic.getArmorPriority(legsCat);
+            int chestPri = AnExtraTouch.vic.armor.getArmorPriority(chestCat);
+            int legsPri = AnExtraTouch.vic.armor.getArmorPriority(legsCat);
             bodyCat = chestPri >= legsPri ? chestCat : legsCat;
             if (bodyCat != null) {
                 playSound(living, bodyCat, sprinting, false, volume);

@@ -25,6 +25,7 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 * Thermal Foundation Blizz snow trail, similar to the Snow Golem.
 * Smooth Gui backport.
 * Minecraft-CameraOverhaul backport.
+* Config system to add camera shakes to sounds.
 
 The entire mod is heavily configurable.
 

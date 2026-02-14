@@ -27,6 +27,7 @@ public class CommandReload extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         Config.loadConfig(AnExtraTouch.confFile, false);
+        AnExtraTouch.proxy.onConfigReload();
         sender.addChatMessage(new ChatComponentText("[AnExtraTouch] Config reloaded."));
     }
 }
