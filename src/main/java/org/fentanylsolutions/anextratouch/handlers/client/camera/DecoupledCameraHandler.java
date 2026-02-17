@@ -8,6 +8,7 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -52,6 +53,17 @@ public final class DecoupledCameraHandler {
 
     // Turning toward interaction target
     private static int turningLockTicks;
+
+    // Keeps sprint active while decoupled movement is still valid.
+    private static boolean decoupledSprintLatched;
+    private static int forwardTapTimer;
+    private static int backTapTimer;
+    private static int leftTapTimer;
+    private static int rightTapTimer;
+    private static boolean wasForwardDown;
+    private static boolean wasBackDown;
+    private static boolean wasLeftDown;
+    private static boolean wasRightDown;
 
     // Aiming state (bow draw, etc.) - player rotation follows camera
     private static boolean aiming;
@@ -153,6 +165,7 @@ public final class DecoupledCameraHandler {
         active = shouldBeActive;
 
         if (!active) {
+            decoupledSprintLatched = false;
             return;
         }
 
@@ -300,6 +313,7 @@ public final class DecoupledCameraHandler {
         if (!active) {
             return;
         }
+        boolean directionalDoubleTap = detectDirectionalDoubleTap();
 
         // Aiming detection - when using a bow etc., sync player rotation to camera
         // so projectiles fire where the crosshair points.
@@ -317,6 +331,7 @@ public final class DecoupledCameraHandler {
 
         // When in full first-person aim mode, vanilla handles everything
         if (aimFirstPersonActive) {
+            applyDecoupledSprint(player, false, directionalDoubleTap);
             return;
         }
 
@@ -327,6 +342,10 @@ public final class DecoupledCameraHandler {
             player.rotationYaw = aim[0];
             player.rotationPitch = aim[1];
             // No movement input rotation needed - player yaw already matches aim direction
+            applyDecoupledSprint(
+                player,
+                player.moveStrafing * player.moveStrafing + player.moveForward * player.moveForward > 0f,
+                directionalDoubleTap);
             return;
         }
 
@@ -353,10 +372,12 @@ public final class DecoupledCameraHandler {
             float[] rotated = rotateDegrees(strafe, forward, angle);
             player.moveStrafing = rotated[0];
             player.moveForward = rotated[1];
+            applyDecoupledSprint(player, isMoving, directionalDoubleTap);
             return;
         }
 
         if (!isMoving) {
+            applyDecoupledSprint(player, false, directionalDoubleTap);
             return;
         }
 
@@ -390,6 +411,7 @@ public final class DecoupledCameraHandler {
         float[] result = rotateDegrees(strafe, forward, angle);
         player.moveStrafing = result[0];
         player.moveForward = result[1];
+        applyDecoupledSprint(player, true, directionalDoubleTap);
     }
 
     /**
@@ -652,6 +674,9 @@ public final class DecoupledCameraHandler {
         freeLooking = false;
         turningLockTicks = 0;
         aiming = false;
+        decoupledSprintLatched = false;
+        forwardTapTimer = backTapTimer = leftTapTimer = rightTapTimer = 0;
+        wasForwardDown = wasBackDown = wasLeftDown = wasRightDown = false;
         cameraPositionValid = false;
         aimTransition = 0f;
         prevAimTransition = 0f;
@@ -679,5 +704,78 @@ public final class DecoupledCameraHandler {
      */
     private static float degreesDifference(float from, float to) {
         return MathHelper.wrapAngleTo180_float(to - from);
+    }
+
+    private static void applyDecoupledSprint(EntityPlayerSP player, boolean hasMovementInput, boolean doubleTapped) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.gameSettings == null) {
+            decoupledSprintLatched = false;
+            return;
+        }
+
+        boolean sprintKeyDown = mc.gameSettings.keyBindSprint.getIsKeyPressed();
+        boolean canSprint = ((float) player.getFoodStats()
+            .getFoodLevel() > 6.0F || player.capabilities.allowFlying) && !player.isUsingItem()
+            && !player.isPotionActive(Potion.blindness)
+            && !player.movementInput.sneak
+            && !player.isRiding()
+            && !player.isCollidedHorizontally;
+
+        if (!hasMovementInput || !canSprint) {
+            decoupledSprintLatched = false;
+            if (player.isSprinting()) {
+                player.setSprinting(false);
+            }
+            return;
+        }
+
+        // Respect vanilla starts (double-tap forward) and extend them to decoupled A/S/D movement.
+        if (sprintKeyDown || doubleTapped || decoupledSprintLatched || player.isSprinting()) {
+            decoupledSprintLatched = true;
+            if (!player.isSprinting()) {
+                player.setSprinting(true);
+            }
+        }
+    }
+
+    private static boolean detectDirectionalDoubleTap() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.gameSettings == null) {
+            return false;
+        }
+
+        if (forwardTapTimer > 0) forwardTapTimer--;
+        if (backTapTimer > 0) backTapTimer--;
+        if (leftTapTimer > 0) leftTapTimer--;
+        if (rightTapTimer > 0) rightTapTimer--;
+
+        boolean forwardDown = mc.gameSettings.keyBindForward.getIsKeyPressed();
+        boolean backDown = mc.gameSettings.keyBindBack.getIsKeyPressed();
+        boolean leftDown = mc.gameSettings.keyBindLeft.getIsKeyPressed();
+        boolean rightDown = mc.gameSettings.keyBindRight.getIsKeyPressed();
+
+        boolean doubleTap = false;
+        if (forwardDown && !wasForwardDown) {
+            doubleTap |= forwardTapTimer > 0;
+            forwardTapTimer = 7;
+        }
+        if (backDown && !wasBackDown) {
+            doubleTap |= backTapTimer > 0;
+            backTapTimer = 7;
+        }
+        if (leftDown && !wasLeftDown) {
+            doubleTap |= leftTapTimer > 0;
+            leftTapTimer = 7;
+        }
+        if (rightDown && !wasRightDown) {
+            doubleTap |= rightTapTimer > 0;
+            rightTapTimer = 7;
+        }
+
+        wasForwardDown = forwardDown;
+        wasBackDown = backDown;
+        wasLeftDown = leftDown;
+        wasRightDown = rightDown;
+        return doubleTap;
     }
 }
