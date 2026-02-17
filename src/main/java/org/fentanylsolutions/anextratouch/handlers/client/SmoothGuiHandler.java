@@ -20,6 +20,7 @@ public class SmoothGuiHandler {
     private static long lastScreenOpenedTime = 0;
     private static long lastScreenChangedTime = 0;
     private static float appliedDisplacement = 0f;
+    private static boolean matrixPushed = false;
 
     public static float getAppliedDisplacement() {
         return appliedDisplacement;
@@ -91,6 +92,12 @@ public class SmoothGuiHandler {
 
     @SubscribeEvent
     public void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
+        // Recover from missed Post events (e.g., canceled draw path) to avoid matrix stack leaks.
+        if (matrixPushed) {
+            GL11.glPopMatrix();
+            matrixPushed = false;
+            appliedDisplacement = 0f;
+        }
         if (!Config.smoothGuiEnabled) {
             return;
         }
@@ -103,15 +110,17 @@ public class SmoothGuiHandler {
             return;
         }
         GL11.glPushMatrix();
+        matrixPushed = true;
         GL11.glTranslatef(0f, -appliedDisplacement, 0f);
     }
 
     @SubscribeEvent
     public void onDrawScreenPost(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (appliedDisplacement == 0f) {
+        if (!matrixPushed) {
             return;
         }
         GL11.glPopMatrix();
+        matrixPushed = false;
         appliedDisplacement = 0f;
     }
 }

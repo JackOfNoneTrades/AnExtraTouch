@@ -29,6 +29,14 @@ public class ClientHandler {
     // Player fade transparency state
     private boolean playerFadeActive;
 
+    private static void prepareGuiIconsState(Minecraft mc) {
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        GL11.glColor4f(1f, 1f, 1f, 1f);
+        mc.getTextureManager()
+            .bindTexture(Gui.icons);
+    }
+
     @SubscribeEvent
     public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
         AnExtraTouch.vic.serverHasAET = false;
@@ -42,55 +50,84 @@ public class ClientHandler {
     }
 
     /**
-     * Cancel vanilla/SS crosshair when decoupled camera is active with SS, we render our own at center.
+     * Replace vanilla/SS crosshair when decoupled camera is active with SS.
+     * Render is done in ALL-post to avoid per-mod ordering quirks in CROSSHAIRS stage.
      */
-    @SubscribeEvent(priority = EventPriority.NORMAL, receiveCanceled = true)
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public void onRenderCrosshair(RenderGameOverlayEvent.Pre event) {
-        if (event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && DecoupledCameraHandler.isActive()
-            && !DecoupledCameraHandler.isAimFirstPerson()
-            && ShoulderSurfingCompat.isAvailable()) {
-            event.setCanceled(true);
+        if (event.type != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
+            return;
         }
+        if (!DecoupledCameraHandler.isActive() || DecoupledCameraHandler.isAimFirstPerson()
+            || !ShoulderSurfingCompat.isAvailable()) {
+            return;
+        }
+        event.setCanceled(true);
+
+        // Preserve vanilla side effects for following HUD elements.
+        prepareGuiIconsState(Minecraft.getMinecraft());
+        OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        GL11.glDisable(GL11.GL_BLEND);
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public void onRenderBossHealthPre(RenderGameOverlayEvent.Pre event) {
+        if (event.type != RenderGameOverlayEvent.ElementType.BOSSHEALTH) {
+            return;
+        }
+
+        // Forge 1.7.10 boss bar rendering path does not bind icons itself.
+        // Ensure deterministic HUD state regardless of canceled/overridden crosshair handlers.
+        prepareGuiIconsState(Minecraft.getMinecraft());
     }
 
     /**
      * Render crosshair at screen center when decoupled camera is active with SS,
-     * respecting SS's CrosshairVisibility config. No crosshair without SS.
+     * respecting SS CrosshairVisibility; no crosshair without SS.
      */
     @SubscribeEvent
     public void onRenderOverlayPost(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
         if (!DecoupledCameraHandler.isActive()) return;
-        if (DecoupledCameraHandler.isAimFirstPerson()) return; // vanilla crosshair shown in FP
+        if (DecoupledCameraHandler.isAimFirstPerson()) return;
         if (!ShoulderSurfingCompat.shouldRenderCrosshair()) return;
 
         Minecraft mc = Minecraft.getMinecraft();
         int width = event.resolution.getScaledWidth();
         int height = event.resolution.getScaledHeight();
 
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+        OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        int previousTexture = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         mc.getTextureManager()
             .bindTexture(Gui.icons);
-        GL11.glEnable(GL11.GL_BLEND);
-        OpenGlHelper.glBlendFunc(GL11.GL_ONE_MINUS_DST_COLOR, GL11.GL_ONE_MINUS_SRC_COLOR, 1, 0);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT);
+        try {
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glEnable(GL11.GL_BLEND);
+            OpenGlHelper.glBlendFunc(GL11.GL_ONE_MINUS_DST_COLOR, GL11.GL_ONE_MINUS_SRC_COLOR, 1, 0);
 
-        int x = width / 2 - 7;
-        int y = height / 2 - 7;
-        float z = -90.0f;
-        float u1 = 0f;
-        float v1 = 0f;
-        float u2 = 16f / 256f;
-        float v2 = 16f / 256f;
+            int x = width / 2 - 7;
+            int y = height / 2 - 7;
+            float z = -90.0f;
+            float u1 = 0f;
+            float v1 = 0f;
+            float u2 = 16f / 256f;
+            float v2 = 16f / 256f;
 
-        Tessellator tess = Tessellator.instance;
-        tess.startDrawingQuads();
-        tess.addVertexWithUV(x, y + 16, z, u1, v2);
-        tess.addVertexWithUV(x + 16, y + 16, z, u2, v2);
-        tess.addVertexWithUV(x + 16, y, z, u2, v1);
-        tess.addVertexWithUV(x, y, z, u1, v1);
-        tess.draw();
-
-        OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-        GL11.glDisable(GL11.GL_BLEND);
+            Tessellator tess = Tessellator.instance;
+            tess.startDrawingQuads();
+            tess.addVertexWithUV(x, y + 16, z, u1, v2);
+            tess.addVertexWithUV(x + 16, y + 16, z, u2, v2);
+            tess.addVertexWithUV(x + 16, y, z, u2, v1);
+            tess.addVertexWithUV(x, y, z, u1, v1);
+            tess.draw();
+        } finally {
+            GL11.glPopAttrib();
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, previousTexture);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
+        }
     }
 
     /**
@@ -99,6 +136,10 @@ public class ClientHandler {
      */
     @SubscribeEvent
     public void onRenderLivingPre(RenderLivingEvent.Pre event) {
+        if (playerFadeActive) {
+            GL11.glPopAttrib();
+            playerFadeActive = false;
+        }
         playerFadeActive = false;
         if (!Config.cameraPlayerFadeEnabled) return;
         Minecraft mc = Minecraft.getMinecraft();
@@ -113,7 +154,7 @@ public class ClientHandler {
         if (alpha >= 1f) return;
 
         playerFadeActive = true;
-        GL11.glPushAttrib(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glColor4f(1f, 1f, 1f, alpha);
@@ -125,7 +166,6 @@ public class ClientHandler {
     @SubscribeEvent
     public void onRenderLivingPost(RenderLivingEvent.Post event) {
         if (!playerFadeActive) return;
-        if (event.entity != Minecraft.getMinecraft().renderViewEntity) return;
         GL11.glPopAttrib();
         playerFadeActive = false;
     }

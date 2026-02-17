@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
@@ -165,51 +166,62 @@ public class FootprintManager {
         double camY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * (double) event.partialTicks;
         double camZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * (double) event.partialTicks;
 
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+        int previousTexture = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         mc.getTextureManager()
             .bindTexture(FOOTPRINT_TEXLOC);
 
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDepthMask(false);
-        GL11.glPushAttrib(GL11.GL_LIGHTING_BIT);
-        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
+        GL11.glPushAttrib(
+            GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
+                | GL11.GL_DEPTH_BUFFER_BIT
+                | GL11.GL_LIGHTING_BIT
+                | GL11.GL_CURRENT_BIT);
+        try {
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDepthMask(false);
+            GL11.glDisable(GL11.GL_LIGHTING);
 
-        Tessellator tess = Tessellator.instance;
-        tess.startDrawingQuads();
+            Tessellator tess = Tessellator.instance;
+            tess.startDrawingQuads();
 
-        for (Footprint fp : footprints) {
-            if (fp.world != mc.theWorld) {
-                continue;
+            for (Footprint fp : footprints) {
+                if (fp.world != mc.theWorld) {
+                    continue;
+                }
+
+                float ageFraction = (fp.age + event.partialTicks) / (float) fp.maxAge;
+                float alpha = Math.max(0, 1.0f - ageFraction * ageFraction) * fp.opacity;
+                if (alpha <= 0.0f) {
+                    continue;
+                }
+
+                int bx = MathHelper.floor_double(fp.x);
+                int by = MathHelper.floor_double(fp.y);
+                int bz = MathHelper.floor_double(fp.z);
+                int brightness = fp.world.getLightBrightnessForSkyBlocks(bx, by, bz, 0);
+
+                float renderX = (float) (fp.x - camX);
+                float renderY = (float) (fp.y - camY);
+                float renderZ = (float) (fp.z - camZ);
+
+                tess.setColorRGBA_F(1.0f, 1.0f, 1.0f, alpha);
+                tess.setBrightness(brightness);
+
+                tess.addVertexWithUV(renderX + fp.cornerX[0], renderY, renderZ + fp.cornerZ[0], fp.texU1, 1.0);
+                tess.addVertexWithUV(renderX + fp.cornerX[1], renderY, renderZ + fp.cornerZ[1], fp.texU2, 1.0);
+                tess.addVertexWithUV(renderX + fp.cornerX[2], renderY, renderZ + fp.cornerZ[2], fp.texU2, 0.0);
+                tess.addVertexWithUV(renderX + fp.cornerX[3], renderY, renderZ + fp.cornerZ[3], fp.texU1, 0.0);
             }
 
-            float ageFraction = (fp.age + event.partialTicks) / (float) fp.maxAge;
-            float alpha = Math.max(0, 1.0f - ageFraction * ageFraction) * fp.opacity;
-            if (alpha <= 0.0f) {
-                continue;
-            }
-
-            int bx = MathHelper.floor_double(fp.x);
-            int by = MathHelper.floor_double(fp.y);
-            int bz = MathHelper.floor_double(fp.z);
-            int brightness = fp.world.getLightBrightnessForSkyBlocks(bx, by, bz, 0);
-
-            float renderX = (float) (fp.x - camX);
-            float renderY = (float) (fp.y - camY);
-            float renderZ = (float) (fp.z - camZ);
-
-            tess.setColorRGBA_F(1.0f, 1.0f, 1.0f, alpha);
-            tess.setBrightness(brightness);
-
-            tess.addVertexWithUV(renderX + fp.cornerX[0], renderY, renderZ + fp.cornerZ[0], fp.texU1, 1.0);
-            tess.addVertexWithUV(renderX + fp.cornerX[1], renderY, renderZ + fp.cornerZ[1], fp.texU2, 1.0);
-            tess.addVertexWithUV(renderX + fp.cornerX[2], renderY, renderZ + fp.cornerZ[2], fp.texU2, 0.0);
-            tess.addVertexWithUV(renderX + fp.cornerX[3], renderY, renderZ + fp.cornerZ[3], fp.texU1, 0.0);
+            tess.draw();
+        } finally {
+            GL11.glPopAttrib();
+            GL11.glPopClientAttrib();
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, previousTexture);
+            OpenGlHelper.setClientActiveTexture(OpenGlHelper.defaultTexUnit);
         }
-
-        tess.draw();
-
-        GL11.glPopAttrib();
-        GL11.glDepthMask(true);
-        GL11.glDisable(GL11.GL_BLEND);
     }
 }
