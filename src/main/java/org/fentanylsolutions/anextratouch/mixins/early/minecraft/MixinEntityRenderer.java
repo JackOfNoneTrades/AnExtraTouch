@@ -44,6 +44,12 @@ public abstract class MixinEntityRenderer {
     @Unique
     private float anextratouch$smoothedCamDist = -1f;
 
+    // Smooth camera follow (positional lag)
+    @Unique
+    private double anextratouch$followX, anextratouch$followY, anextratouch$followZ;
+    @Unique
+    private boolean anextratouch$followInit;
+
     /**
      * Swaps entity rotation to decoupled camera rotation. Call anextratouch$restoreRotation() after.
      */
@@ -97,6 +103,8 @@ public abstract class MixinEntityRenderer {
     private void anextratouch$onOrientCamera(float partialTicks, CallbackInfo ci) {
         // Smooth camera distance changes from clipping prevention
         anextratouch$smoothCameraClipping();
+        // Smooth camera follow (positional lag behind entity)
+        anextratouch$smoothCameraFollow(mc.renderViewEntity, partialTicks);
         // Extract camera world position from GL matrix before overhaul modifies rotation.
         // This accounts for ShoulderSurfing's shoulder offset so aim raytraces originate
         // from the actual camera position, not the player's eye.
@@ -165,6 +173,75 @@ public abstract class MixinEntityRenderer {
         anextratouch$matBuf.put(12, m12 * scale);
         anextratouch$matBuf.put(13, m13 * scale);
         anextratouch$matBuf.put(14, m14 * scale);
+        anextratouch$matBuf.position(0);
+        GL11.glLoadMatrix(anextratouch$matBuf);
+    }
+
+    /**
+     * Smooth camera follow: the camera tracks a smoothed position that lags behind the entity.
+     * Creates a cinematic trailing effect in third person.
+     */
+    @Unique
+    private void anextratouch$smoothCameraFollow(EntityLivingBase entity, float partialTicks) {
+        float smoothing = Config.cameraFollowSmoothing;
+        if (smoothing <= 0f || entity == null || mc.gameSettings.thirdPersonView == 0) {
+            anextratouch$followInit = false;
+            return;
+        }
+
+        double renderX = entity.prevPosX + (entity.posX - entity.prevPosX) * partialTicks;
+        double renderY = entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks;
+        double renderZ = entity.prevPosZ + (entity.posZ - entity.prevPosZ) * partialTicks;
+
+        if (!anextratouch$followInit) {
+            anextratouch$followX = renderX;
+            anextratouch$followY = renderY;
+            anextratouch$followZ = renderZ;
+            anextratouch$followInit = true;
+            return;
+        }
+
+        // Snap on teleport (large position change)
+        double dx = renderX - anextratouch$followX;
+        double dy = renderY - anextratouch$followY;
+        double dz = renderZ - anextratouch$followZ;
+        if (dx * dx + dy * dy + dz * dz > 64.0) {
+            anextratouch$followX = renderX;
+            anextratouch$followY = renderY;
+            anextratouch$followZ = renderZ;
+            return;
+        }
+
+        float factor = Math.max(1f - smoothing, 0.01f);
+        anextratouch$followX += (renderX - anextratouch$followX) * factor;
+        anextratouch$followY += (renderY - anextratouch$followY) * factor;
+        anextratouch$followZ += (renderZ - anextratouch$followZ) * factor;
+
+        double offX = anextratouch$followX - renderX;
+        double offY = anextratouch$followY - renderY;
+        double offZ = anextratouch$followZ - renderZ;
+
+        if (Math.abs(offX) + Math.abs(offY) + Math.abs(offZ) < 0.0001) return;
+
+        // Convert world-space offset to view-space using modelview rotation
+        anextratouch$matBuf.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, anextratouch$matBuf);
+
+        float m0 = anextratouch$matBuf.get(0), m1 = anextratouch$matBuf.get(1), m2 = anextratouch$matBuf.get(2);
+        float m4 = anextratouch$matBuf.get(4), m5 = anextratouch$matBuf.get(5), m6 = anextratouch$matBuf.get(6);
+        float m8 = anextratouch$matBuf.get(8), m9 = anextratouch$matBuf.get(9), m10 = anextratouch$matBuf.get(10);
+        float m12 = anextratouch$matBuf.get(12), m13 = anextratouch$matBuf.get(13), m14 = anextratouch$matBuf.get(14);
+
+        // viewOffset = R * worldOffset
+        float vx = (float) (m0 * offX + m4 * offY + m8 * offZ);
+        float vy = (float) (m1 * offX + m5 * offY + m9 * offZ);
+        float vz = (float) (m2 * offX + m6 * offY + m10 * offZ);
+
+        // Apply as view-space translation (subtract: moving camera toward follow pos
+        // means shifting the world in the opposite direction)
+        anextratouch$matBuf.put(12, m12 - vx);
+        anextratouch$matBuf.put(13, m13 - vy);
+        anextratouch$matBuf.put(14, m14 - vz);
         anextratouch$matBuf.position(0);
         GL11.glLoadMatrix(anextratouch$matBuf);
     }

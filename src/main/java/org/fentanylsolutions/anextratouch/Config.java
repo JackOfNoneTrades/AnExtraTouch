@@ -152,8 +152,9 @@ public class Config {
     public static float cameraRideVerticalPitch = 7.0f;
     public static float cameraRideHorizSmoothing = 1.0f;
     public static float cameraRideVertSmoothing = 1.0f;
-    // camera clipping
+    // camera clipping and follow
     public static float cameraClippingSmoothing = 0.5f;
+    public static float cameraFollowSmoothing = 0.8f;
     // decoupled camera (shoulder surfing integration)
     public static boolean decoupledCameraEnabled = true;
     public static float decoupledCameraOffsetDecay = 0.5f;
@@ -860,6 +861,13 @@ public class Config {
                 0.0f,
                 1.0f,
                 "Smoothing factor for third-person camera clipping prevention. 0 = instant snap (vanilla), higher = smoother transitions when the camera hits geometry.");
+            cameraFollowSmoothing = config.getFloat(
+                "cameraFollowSmoothing",
+                Categories.camera,
+                cameraFollowSmoothing,
+                0.0f,
+                1.0f,
+                "Smooth camera follow in third person. The camera trails behind the player's position instead of being rigidly attached. 0 = instant follow (vanilla), higher = more lag.");
 
             // decoupled camera
             decoupledCameraEnabled = config.getBoolean(
