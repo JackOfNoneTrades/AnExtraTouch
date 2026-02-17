@@ -854,7 +854,7 @@ public class Config {
                 decoupledCameraOffsetDecay,
                 0.0f,
                 1.0f,
-                "Free look offset decay rate per tick. 0 = instant snap back, 1 = no decay (offsets persist).");
+                "How fast the camera goes back after releasing alt. 0 = instant snap back, 1 = no decay (offsets persist).");
             decoupledCameraPlayerTurnSpeed = config.getFloat(
                 "decoupledCameraPlayerTurnSpeed",
                 Categories.camera,

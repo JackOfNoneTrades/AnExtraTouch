@@ -108,8 +108,8 @@ public final class DecoupledCameraHandler {
         // Matches modern ShoulderSurfingCamera.tick() lines 98-103
         if (!freeLooking) {
             freeLookYaw = cameraYaw;
-            yawOffset *= 0.5f;
-            pitchOffset *= 0.5f;
+            yawOffset *= Config.decoupledCameraOffsetDecay;
+            pitchOffset *= Config.decoupledCameraOffsetDecay;
         }
     }
 
