@@ -59,7 +59,9 @@ public final class DecoupledCameraHandler {
             return;
         }
 
-        boolean shouldBeActive = Config.decoupledCameraEnabled && ShoulderSurfingCompat.isShoulderSurfingActive();
+        boolean shouldBeActive = Config.decoupledCameraEnabled
+            && (ShoulderSurfingCompat.isShoulderSurfingActive()
+                || (!ShoulderSurfingCompat.isAvailable() && mc.gameSettings.thirdPersonView > 0));
 
         EntityLivingBase entity = mc.renderViewEntity;
         if (entity == null) {
@@ -165,7 +167,7 @@ public final class DecoupledCameraHandler {
 
         // Smooth head pitch toward half camera pitch when moving
         // Matches modern: xRot = xRotO + degreesDifference(xRotO, cameraXRot * 0.5F) * 0.25F
-        // Don't update prevRotationPitch — let vanilla's tick-start prev=current cycle handle it,
+        // Don't update prevRotationPitch, let vanilla's tick-start prev=current cycle handle it,
         // so the renderer interpolates smoothly between ticks instead of snapping.
         if (isMoving) {
             float targetPitch = cameraPitch * 0.5f;

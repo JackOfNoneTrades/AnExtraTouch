@@ -36,25 +36,21 @@ public abstract class MixinEntityRenderer {
     private boolean anextratouch$rotationSwapped;
 
     /**
-     * Before orientCamera: swap entity rotation to decoupled camera rotation.
-     * This makes ShoulderSurfing's ASM-injected offsetCamera() and calcCameraDistance()
-     * use the camera direction for collision raycasts and shoulder offset positioning.
+     * Swaps entity rotation to decoupled camera rotation. Call anextratouch$restoreRotation() after.
      */
-    @Inject(method = "orientCamera", at = @At("HEAD"))
-    private void anextratouch$beforeOrientCamera(float partialTicks, CallbackInfo ci) {
+    @Unique
+    private void anextratouch$swapRotation() {
         anextratouch$rotationSwapped = false;
         if (!DecoupledCameraHandler.isActive()) return;
 
         EntityLivingBase entity = mc.renderViewEntity;
         if (entity == null) return;
 
-        // Save real rotation
         anextratouch$savedYaw = entity.rotationYaw;
         anextratouch$savedPitch = entity.rotationPitch;
         anextratouch$savedPrevYaw = entity.prevRotationYaw;
         anextratouch$savedPrevPitch = entity.prevRotationPitch;
 
-        // Swap to camera rotation so all orientCamera internals use camera direction
         entity.rotationYaw = DecoupledCameraHandler.getEffectiveYaw();
         entity.rotationPitch = DecoupledCameraHandler.getEffectivePitch();
         entity.prevRotationYaw = DecoupledCameraHandler.getEffectivePrevYaw();
@@ -63,21 +59,48 @@ public abstract class MixinEntityRenderer {
         anextratouch$rotationSwapped = true;
     }
 
+    @Unique
+    private void anextratouch$restoreRotation() {
+        if (!anextratouch$rotationSwapped) return;
+
+        EntityLivingBase entity = mc.renderViewEntity;
+        if (entity == null) return;
+
+        entity.rotationYaw = anextratouch$savedYaw;
+        entity.rotationPitch = anextratouch$savedPitch;
+        entity.prevRotationYaw = anextratouch$savedPrevYaw;
+        entity.prevRotationPitch = anextratouch$savedPrevPitch;
+        anextratouch$rotationSwapped = false;
+    }
+
+    /**
+     * Before orientCamera: swap entity rotation to decoupled camera rotation.
+     * This makes ShoulderSurfing's ASM-injected offsetCamera() and calcCameraDistance()
+     * use the camera direction for collision raycasts and shoulder offset positioning.
+     */
+    @Inject(method = "orientCamera", at = @At("HEAD"))
+    private void anextratouch$beforeOrientCamera(float partialTicks, CallbackInfo ci) {
+        anextratouch$swapRotation();
+    }
+
     @Inject(method = "orientCamera", at = @At("RETURN"))
     private void anextratouch$onOrientCamera(float partialTicks, CallbackInfo ci) {
-        EntityLivingBase entity = mc.renderViewEntity;
+        anextratouch$applyCameraOverhaul(mc.renderViewEntity, partialTicks);
+        anextratouch$restoreRotation();
+    }
 
-        // Apply camera overhaul offsets (entity rotation is still swapped if decoupled)
-        anextratouch$applyCameraOverhaul(entity, partialTicks);
+    /**
+     * Before getMouseOver: swap entity rotation so raycasting uses camera direction.
+     * This makes mc.objectMouseOver, the crosshair, and interaction target the camera's look direction.
+     */
+    @Inject(method = "getMouseOver", at = @At("HEAD"))
+    private void anextratouch$beforeGetMouseOver(float partialTicks, CallbackInfo ci) {
+        anextratouch$swapRotation();
+    }
 
-        // Always restore entity rotation after GL operations are done
-        if (anextratouch$rotationSwapped && entity != null) {
-            entity.rotationYaw = anextratouch$savedYaw;
-            entity.rotationPitch = anextratouch$savedPitch;
-            entity.prevRotationYaw = anextratouch$savedPrevYaw;
-            entity.prevRotationPitch = anextratouch$savedPrevPitch;
-            anextratouch$rotationSwapped = false;
-        }
+    @Inject(method = "getMouseOver", at = @At("RETURN"))
+    private void anextratouch$afterGetMouseOver(float partialTicks, CallbackInfo ci) {
+        anextratouch$restoreRotation();
     }
 
     @Unique
