@@ -1,9 +1,11 @@
 package org.fentanylsolutions.anextratouch.handlers.client.camera;
 
+import java.nio.FloatBuffer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
@@ -12,18 +14,21 @@ import net.minecraft.util.Vec3;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import net.minecraft.client.settings.KeyBinding;
 
 @SideOnly(Side.CLIENT)
 public final class DecoupledCameraHandler {
 
     public static final KeyBinding FREE_LOOK_KEY = new KeyBinding(
-        "key.anextratouch.free_look", Keyboard.KEY_LMENU, "key.categories.anextratouch");
+        "key.anextratouch.free_look",
+        Keyboard.KEY_LMENU,
+        "key.categories.anextratouch");
 
     // State
     private static boolean active;
@@ -51,6 +56,11 @@ public final class DecoupledCameraHandler {
     // Aiming state (bow draw, etc.) - player rotation follows camera
     private static boolean aiming;
 
+    // Camera world position (extracted from GL modelview matrix after orientCamera)
+    private static final FloatBuffer MODELVIEW_BUFFER = BufferUtils.createFloatBuffer(16);
+    private static double cameraWorldX, cameraWorldY, cameraWorldZ;
+    private static boolean cameraPositionValid;
+
     // Entity tracking for reset
     private static int lastEntityId = Integer.MIN_VALUE;
 
@@ -58,6 +68,37 @@ public final class DecoupledCameraHandler {
 
     public static void registerKeybinding() {
         ClientRegistry.registerKeyBinding(FREE_LOOK_KEY);
+    }
+
+    /**
+     * Called from MixinEntityRenderer orientCamera RETURN to extract the camera's
+     * world position from the GL modelview matrix. The GL matrix is entity-relative,
+     * so we add the entity's interpolated position to get world coordinates.
+     * This accounts for ShoulderSurfing's shoulder offset so aim raytraces
+     * originate from the actual camera position.
+     */
+    public static void updateCameraPosition(float partialTicks) {
+        EntityLivingBase entity = Minecraft.getMinecraft().renderViewEntity;
+        if (entity == null) return;
+
+        MODELVIEW_BUFFER.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MODELVIEW_BUFFER);
+
+        // Camera position relative to entity render origin = -R^T * t (column-major layout)
+        float m0 = MODELVIEW_BUFFER.get(0), m1 = MODELVIEW_BUFFER.get(1), m2 = MODELVIEW_BUFFER.get(2);
+        float m4 = MODELVIEW_BUFFER.get(4), m5 = MODELVIEW_BUFFER.get(5), m6 = MODELVIEW_BUFFER.get(6);
+        float m8 = MODELVIEW_BUFFER.get(8), m9 = MODELVIEW_BUFFER.get(9), m10 = MODELVIEW_BUFFER.get(10);
+        float m12 = MODELVIEW_BUFFER.get(12), m13 = MODELVIEW_BUFFER.get(13), m14 = MODELVIEW_BUFFER.get(14);
+
+        double relX = -(m0 * m12 + m1 * m13 + m2 * m14);
+        double relY = -(m4 * m12 + m5 * m13 + m6 * m14);
+        double relZ = -(m8 * m12 + m9 * m13 + m10 * m14);
+
+        // Convert to world coordinates using entity's interpolated render position
+        cameraWorldX = relX + entity.prevPosX + (entity.posX - entity.prevPosX) * partialTicks;
+        cameraWorldY = relY + entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks;
+        cameraWorldZ = relZ + entity.prevPosZ + (entity.posZ - entity.prevPosZ) * partialTicks;
+        cameraPositionValid = true;
     }
 
     /**
@@ -70,9 +111,8 @@ public final class DecoupledCameraHandler {
             return;
         }
 
-        boolean shouldBeActive = Config.decoupledCameraEnabled
-            && (ShoulderSurfingCompat.isShoulderSurfingActive()
-                || (!ShoulderSurfingCompat.isAvailable() && mc.gameSettings.thirdPersonView > 0));
+        boolean shouldBeActive = Config.decoupledCameraEnabled && (ShoulderSurfingCompat.isShoulderSurfingActive()
+            || (!ShoulderSurfingCompat.isAvailable() && mc.gameSettings.thirdPersonView > 0));
 
         EntityLivingBase entity = mc.renderViewEntity;
         if (entity == null) {
@@ -156,7 +196,7 @@ public final class DecoupledCameraHandler {
      *
      * In 1.7.10, Entity.setAngles receives raw sensitivity-scaled deltas and applies * 0.15 internally.
      * We replicate that same scaling, matching the sign conventions:
-     *   vanilla: rotationYaw += yaw * 0.15;  rotationPitch -= pitch * 0.15;
+     * vanilla: rotationYaw += yaw * 0.15; rotationPitch -= pitch * 0.15;
      */
     public static boolean onSetAngles(float yaw, float pitch) {
         if (!active) {
@@ -361,31 +401,50 @@ public final class DecoupledCameraHandler {
     }
 
     /**
-     * Computes parallax-corrected aim rotation for the player.
-     * If objectMouseOver has a valid hit, returns yaw/pitch from the player's eye
-     * to the hit point (so arrows converge on the crosshair target despite camera offset).
-     * Falls back to camera direction for sky shots (no hit).
+     * Computes aim rotation so a projectile fired straight from the player's eye
+     * hits where the crosshair points. Raytraces from the camera's world position
+     * (accounting for SS shoulder offset) along the camera direction, then computes
+     * yaw/pitch from the player's eye to the hit point. All in world coordinates.
      * Ported from modern ShoulderSurfingImpl.lookAtCrosshairTargetInternal().
      */
     private static float[] computeAimRotation(EntityLivingBase entity) {
+        float effYaw = cameraYaw + yawOffset;
+        float effPitch = MathHelper.clamp_float(cameraPitch + pitchOffset, -90f, 90f);
+
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.objectMouseOver != null
-            && mc.objectMouseOver.typeOfHit != MovingObjectPosition.MovingObjectType.MISS
-            && mc.objectMouseOver.hitVec != null) {
-            double dx = mc.objectMouseOver.hitVec.xCoord - entity.posX;
-            double dy = mc.objectMouseOver.hitVec.yCoord - (entity.posY + entity.getEyeHeight());
-            double dz = mc.objectMouseOver.hitVec.zCoord - entity.posZ;
-            double horizontalDist = Math.sqrt(dx * dx + dz * dz);
-            float yaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
-            float pitch = MathHelper.clamp_float(
-                (float) (-(Math.atan2(dy, horizontalDist) * (180.0 / Math.PI))), -90.0f, 90.0f);
-            return new float[] { yaw, pitch };
+        if (cameraPositionValid && mc.theWorld != null) {
+            // Camera look direction (matches Entity.getLook() math)
+            float yawRad = effYaw * 0.017453292f;
+            float pitchRad = effPitch * 0.017453292f;
+            float f1 = MathHelper.cos(-yawRad - (float) Math.PI);
+            float f2 = MathHelper.sin(-yawRad - (float) Math.PI);
+            float f3 = -MathHelper.cos(-pitchRad);
+            float f4 = MathHelper.sin(-pitchRad);
+
+            double reach = 256.0;
+            Vec3 start = Vec3.createVectorHelper(cameraWorldX, cameraWorldY, cameraWorldZ);
+            Vec3 end = Vec3.createVectorHelper(
+                cameraWorldX + f2 * f3 * reach,
+                cameraWorldY + f4 * reach,
+                cameraWorldZ + f1 * f3 * reach);
+
+            MovingObjectPosition hit = mc.theWorld.rayTraceBlocks(start, end);
+            if (hit != null && hit.hitVec != null) {
+                // Direction from player eye to hit point (both world coords)
+                double eyeY = entity.posY + entity.getEyeHeight();
+                double dx = hit.hitVec.xCoord - entity.posX;
+                double dy = hit.hitVec.yCoord - eyeY;
+                double dz = hit.hitVec.zCoord - entity.posZ;
+                double horizontalDist = Math.sqrt(dx * dx + dz * dz);
+                float yaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
+                float pitch = MathHelper
+                    .clamp_float((float) (-(Math.atan2(dy, horizontalDist) * (180.0 / Math.PI))), -90.0f, 90.0f);
+                return new float[] { yaw, pitch };
+            }
         }
-        // No hit (sky shot) - fall back to camera direction
-        return new float[] {
-            cameraYaw + yawOffset,
-            MathHelper.clamp_float(cameraPitch + pitchOffset, -90f, 90f)
-        };
+
+        // No hit (sky) or no camera position yet use camera direction
+        return new float[] { effYaw, effPitch };
     }
 
     /**
@@ -398,7 +457,8 @@ public final class DecoupledCameraHandler {
         if (itemInUse == null) return false;
 
         // Check by EnumAction name
-        String actionName = itemInUse.getItemUseAction().name();
+        String actionName = itemInUse.getItemUseAction()
+            .name();
         for (String action : Config.decoupledCameraAimingActions) {
             if (actionName.equalsIgnoreCase(action)) {
                 return true;
@@ -430,8 +490,8 @@ public final class DecoupledCameraHandler {
         double horizontalDist = Math.sqrt(dx * dx + dz * dz);
 
         player.rotationYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
-        player.rotationPitch = MathHelper.clamp_float(
-            (float) (-(Math.atan2(dy, horizontalDist) * (180.0 / Math.PI))), -90.0f, 90.0f);
+        player.rotationPitch = MathHelper
+            .clamp_float((float) (-(Math.atan2(dy, horizontalDist) * (180.0 / Math.PI))), -90.0f, 90.0f);
     }
 
     private static void resetState(EntityLivingBase entity) {
@@ -447,6 +507,7 @@ public final class DecoupledCameraHandler {
         freeLooking = false;
         turningLockTicks = 0;
         aiming = false;
+        cameraPositionValid = false;
     }
 
     /**

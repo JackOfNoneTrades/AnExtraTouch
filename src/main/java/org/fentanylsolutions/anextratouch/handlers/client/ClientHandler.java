@@ -2,10 +2,11 @@ package org.fentanylsolutions.anextratouch.handlers.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
@@ -16,8 +17,6 @@ import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
 
 public class ClientHandler {
 
@@ -42,8 +41,7 @@ public class ClientHandler {
      */
     @SubscribeEvent(priority = EventPriority.NORMAL, receiveCanceled = true)
     public void onRenderCrosshair(RenderGameOverlayEvent.Pre event) {
-        if (event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS
-            && DecoupledCameraHandler.isActive()
+        if (event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && DecoupledCameraHandler.isActive()
             && ShoulderSurfingCompat.isAvailable()) {
             event.setCanceled(true);
         }
@@ -63,7 +61,8 @@ public class ClientHandler {
         int width = event.resolution.getScaledWidth();
         int height = event.resolution.getScaledHeight();
 
-        mc.getTextureManager().bindTexture(Gui.icons);
+        mc.getTextureManager()
+            .bindTexture(Gui.icons);
         GL11.glEnable(GL11.GL_BLEND);
         OpenGlHelper.glBlendFunc(GL11.GL_ONE_MINUS_DST_COLOR, GL11.GL_ONE_MINUS_SRC_COLOR, 1, 0);
 

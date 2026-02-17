@@ -38,15 +38,13 @@ public class ShoulderSurfingCompat {
         }
 
         static boolean shouldRenderCrosshair() {
-            com.teamderpy.shouldersurfing.client.ShoulderInstance instance =
-                com.teamderpy.shouldersurfing.client.ShoulderInstance.getInstance();
+            com.teamderpy.shouldersurfing.client.ShoulderInstance instance = com.teamderpy.shouldersurfing.client.ShoulderInstance
+                .getInstance();
             if (!instance.doShoulderSurfing()) return false;
-            com.teamderpy.shouldersurfing.config.Perspective perspective =
-                com.teamderpy.shouldersurfing.config.Perspective.current();
-            return com.teamderpy.shouldersurfing.config.Config.CLIENT
-                .getCrosshairVisibility(perspective)
-                .doRender(net.minecraft.client.Minecraft.getMinecraft().objectMouseOver,
-                    instance.isAiming());
+            com.teamderpy.shouldersurfing.config.Perspective perspective = com.teamderpy.shouldersurfing.config.Perspective
+                .current();
+            return com.teamderpy.shouldersurfing.config.Config.CLIENT.getCrosshairVisibility(perspective)
+                .doRender(net.minecraft.client.Minecraft.getMinecraft().objectMouseOver, instance.isAiming());
         }
     }
 }

@@ -85,6 +85,12 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "orientCamera", at = @At("RETURN"))
     private void anextratouch$onOrientCamera(float partialTicks, CallbackInfo ci) {
+        // Extract camera world position from GL matrix before overhaul modifies rotation.
+        // This accounts for ShoulderSurfing's shoulder offset so aim raytraces originate
+        // from the actual camera position, not the player's eye.
+        if (DecoupledCameraHandler.isActive()) {
+            DecoupledCameraHandler.updateCameraPosition(partialTicks);
+        }
         anextratouch$applyCameraOverhaul(mc.renderViewEntity, partialTicks);
         anextratouch$restoreRotation();
     }
