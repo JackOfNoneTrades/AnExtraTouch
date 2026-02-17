@@ -152,6 +152,11 @@ public class Config {
     public static float cameraRideVerticalPitch = 7.0f;
     public static float cameraRideHorizSmoothing = 1.0f;
     public static float cameraRideVertSmoothing = 1.0f;
+    // decoupled camera (shoulder surfing integration)
+    public static boolean decoupledCameraEnabled = true;
+    public static float decoupledCameraOffsetDecay = 0.5f;
+    public static float decoupledCameraPlayerTurnSpeed = 0.25f;
+
     // sound shakes
     public static boolean cameraSoundShakesEnabled = true;
     public static String[] cameraSoundShakes = {
@@ -836,6 +841,27 @@ public class Config {
                 0.0f,
                 100.0f,
                 "Vertical velocity smoothing factor when riding.");
+
+            // decoupled camera
+            decoupledCameraEnabled = config.getBoolean(
+                "decoupledCameraEnabled",
+                Categories.camera,
+                decoupledCameraEnabled,
+                "Enable decoupled camera when Shoulder Surfing is active. Mouse rotates camera independently of player body.");
+            decoupledCameraOffsetDecay = config.getFloat(
+                "decoupledCameraOffsetDecay",
+                Categories.camera,
+                decoupledCameraOffsetDecay,
+                0.0f,
+                1.0f,
+                "Free look offset decay rate per tick. 0 = instant snap back, 1 = no decay (offsets persist).");
+            decoupledCameraPlayerTurnSpeed = config.getFloat(
+                "decoupledCameraPlayerTurnSpeed",
+                Categories.camera,
+                decoupledCameraPlayerTurnSpeed,
+                0.0f,
+                1.0f,
+                "How fast the player body turns to face movement direction when decoupled. 0 = no turning, 1 = instant.");
 
             // sound shakes
             cameraSoundShakesEnabled = config.getBoolean(

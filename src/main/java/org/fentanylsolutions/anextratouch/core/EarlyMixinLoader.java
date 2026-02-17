@@ -28,6 +28,8 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
             .addMixin("MixinExplosion", MixinBuilder.Side.CLIENT)
             .addMixin("MixinEntityLightningBolt", MixinBuilder.Side.CLIENT)
             .addMixin("MixinEntityLivingBase", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinEntitySetAngles", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinEntityPlayerSP", MixinBuilder.Side.CLIENT)
             .build();
     }
 }

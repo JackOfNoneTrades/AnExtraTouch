@@ -111,6 +111,7 @@ public final class CameraHandler {
         }
 
         // current camera rotation (interpolated)
+        // when decoupled, entity rotation is already swapped to camera rotation by MixinEntityRenderer HEAD
         double currentYaw = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * partialTicks;
         double currentPitch = entity.prevRotationPitch
             + (entity.rotationPitch - entity.prevRotationPitch) * partialTicks;

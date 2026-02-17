@@ -6,6 +6,7 @@ import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.ClientHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.SmoothGuiHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.SoundShakeHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
@@ -48,6 +49,7 @@ public class ClientProxy extends CommonProxy {
             .register(clientHandler);
         MinecraftForge.EVENT_BUS.register(clientHandler);
         MinecraftForge.EVENT_BUS.register(new SoundShakeHandler());
+        DecoupledCameraHandler.registerKeybinding();
     }
 
     @Override
