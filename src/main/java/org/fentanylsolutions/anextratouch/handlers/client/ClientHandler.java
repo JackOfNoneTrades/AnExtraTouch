@@ -97,6 +97,7 @@ public class ClientHandler {
         rotationSwapped = false;
         if (!DecoupledCameraHandler.isActive()) return;
         if (DecoupledCameraHandler.isAimFirstPerson()) return; // vanilla FP handles rotation
+        if (!ShoulderSurfingCompat.isAvailable()) return;
 
         EntityLivingBase entity = Minecraft.getMinecraft().renderViewEntity;
         if (entity == null) return;

@@ -361,8 +361,9 @@ public final class DecoupledCameraHandler {
         // Skip when turning is locked - lookAtTarget already set the pitch.
         if (isMoving && !turningLocked) {
             float targetPitch = cameraPitch * 0.5f;
-            player.rotationPitch += degreesDifference(player.rotationPitch, targetPitch)
-                * Config.decoupledCameraPlayerTurnSpeed;
+            float basePitch = player.prevRotationPitch;
+            player.rotationPitch = basePitch
+                + degreesDifference(basePitch, targetPitch) * Config.decoupledCameraPlayerTurnSpeed;
         }
 
         if (freeLooking) {
@@ -384,7 +385,7 @@ public final class DecoupledCameraHandler {
         // When turning is locked (player facing interaction target), skip body yaw rotation
         // but still rotate movement input to be camera-relative (step 4)
         if (!turningLocked) {
-            float yRot = player.rotationYaw;
+            float yRot = player.prevRotationYaw;
 
             // Step 1: Rotate raw input by camera yaw to get world-space movement direction
             // Matches modern: Vec2f rotated = moveVector.rotateDegrees(cameraYRot)
@@ -398,9 +399,8 @@ public final class DecoupledCameraHandler {
             // Matches modern: yRot = yRotO + degreesDifference(yRotO, yRot) * 0.25F
             float newYaw = yRot + degreesDifference(yRot, targetYaw) * Config.decoupledCameraPlayerTurnSpeed;
 
-            // Update player rotation with proper prev tracking to avoid jitter
+            // Let vanilla keep prevRotationYaw from tick start for smooth interpolation.
             if (player.ridingEntity == null) {
-                player.prevRotationYaw += newYaw - player.rotationYaw;
                 player.rotationYaw = newYaw;
             }
         }

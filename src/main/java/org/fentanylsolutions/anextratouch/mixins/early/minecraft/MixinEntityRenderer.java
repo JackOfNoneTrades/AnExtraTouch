@@ -141,7 +141,7 @@ public abstract class MixinEntityRenderer {
     @Unique
     private void anextratouch$smoothCameraClipping() {
         float smoothing = Config.cameraClippingSmoothing;
-        if (smoothing <= 0f || mc.gameSettings.thirdPersonView == 0) {
+        if (smoothing <= 0f || mc.gameSettings.thirdPersonView == 0 || DecoupledCameraHandler.isActive()) {
             anextratouch$smoothedCamDist = -1f;
             return;
         }
@@ -184,7 +184,9 @@ public abstract class MixinEntityRenderer {
     @Unique
     private void anextratouch$smoothCameraFollow(EntityLivingBase entity, float partialTicks) {
         float smoothing = Config.cameraFollowSmoothing;
-        if (smoothing <= 0f || entity == null || mc.gameSettings.thirdPersonView == 0) {
+        if (smoothing <= 0f || entity == null
+            || mc.gameSettings.thirdPersonView == 0
+            || DecoupledCameraHandler.isActive()) {
             anextratouch$followInit = false;
             return;
         }
