@@ -1,5 +1,7 @@
 package org.fentanylsolutions.anextratouch.mixins.early.minecraft;
 
+import java.nio.FloatBuffer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.EntityLivingBase;
@@ -7,6 +9,7 @@ import net.minecraft.entity.EntityLivingBase;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -34,6 +37,12 @@ public abstract class MixinEntityRenderer {
     private float anextratouch$savedPrevPitch;
     @Unique
     private boolean anextratouch$rotationSwapped;
+
+    // Camera distance smoothing for clipping prevention
+    @Unique
+    private static final FloatBuffer anextratouch$matBuf = BufferUtils.createFloatBuffer(16);
+    @Unique
+    private float anextratouch$smoothedCamDist = -1f;
 
     /**
      * Swaps entity rotation to decoupled camera rotation. Call anextratouch$restoreRotation() after.
@@ -86,6 +95,8 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "orientCamera", at = @At("RETURN"))
     private void anextratouch$onOrientCamera(float partialTicks, CallbackInfo ci) {
+        // Smooth camera distance changes from clipping prevention
+        anextratouch$smoothCameraClipping();
         // Extract camera world position from GL matrix before overhaul modifies rotation.
         // This accounts for ShoulderSurfing's shoulder offset so aim raytraces originate
         // from the actual camera position, not the player's eye.
@@ -112,6 +123,50 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "getMouseOver", at = @At("RETURN"))
     private void anextratouch$afterGetMouseOver(float partialTicks, CallbackInfo ci) {
         anextratouch$restoreRotation();
+    }
+
+    /**
+     * Smooths camera distance changes caused by clipping prevention.
+     * Instead of snapping the camera forward/backward when hitting geometry,
+     * the distance is interpolated using the configured smoothing factor.
+     */
+    @Unique
+    private void anextratouch$smoothCameraClipping() {
+        float smoothing = Config.cameraClippingSmoothing;
+        if (smoothing <= 0f || mc.gameSettings.thirdPersonView == 0) {
+            anextratouch$smoothedCamDist = -1f;
+            return;
+        }
+
+        anextratouch$matBuf.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, anextratouch$matBuf);
+
+        float m12 = anextratouch$matBuf.get(12);
+        float m13 = anextratouch$matBuf.get(13);
+        float m14 = anextratouch$matBuf.get(14);
+        float dist = (float) Math.sqrt(m12 * m12 + m13 * m13 + m14 * m14);
+
+        if (anextratouch$smoothedCamDist < 0f || dist < 0.001f) {
+            anextratouch$smoothedCamDist = dist;
+            return;
+        }
+
+        float smoothed = anextratouch$smoothedCamDist * smoothing + dist * (1f - smoothing);
+        // Never exceed the clipped distance (would clip into walls).
+        // Snap in instantly, smooth out gradually.
+        if (smoothed > dist) {
+            smoothed = dist;
+        }
+        anextratouch$smoothedCamDist = smoothed;
+
+        if (Math.abs(smoothed - dist) < 0.001f) return;
+
+        float scale = smoothed / dist;
+        anextratouch$matBuf.put(12, m12 * scale);
+        anextratouch$matBuf.put(13, m13 * scale);
+        anextratouch$matBuf.put(14, m14 * scale);
+        anextratouch$matBuf.position(0);
+        GL11.glLoadMatrix(anextratouch$matBuf);
     }
 
     @Unique

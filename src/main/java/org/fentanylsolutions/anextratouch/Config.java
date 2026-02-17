@@ -152,6 +152,8 @@ public class Config {
     public static float cameraRideVerticalPitch = 7.0f;
     public static float cameraRideHorizSmoothing = 1.0f;
     public static float cameraRideVertSmoothing = 1.0f;
+    // camera clipping
+    public static float cameraClippingSmoothing = 0.5f;
     // decoupled camera (shoulder surfing integration)
     public static boolean decoupledCameraEnabled = true;
     public static float decoupledCameraOffsetDecay = 0.5f;
@@ -849,6 +851,15 @@ public class Config {
                 0.0f,
                 100.0f,
                 "Vertical velocity smoothing factor when riding.");
+
+            // camera clipping
+            cameraClippingSmoothing = config.getFloat(
+                "cameraClippingSmoothing",
+                Categories.camera,
+                cameraClippingSmoothing,
+                0.0f,
+                1.0f,
+                "Smoothing factor for third-person camera clipping prevention. 0 = instant snap (vanilla), higher = smoother transitions when the camera hits geometry.");
 
             // decoupled camera
             decoupledCameraEnabled = config.getBoolean(
