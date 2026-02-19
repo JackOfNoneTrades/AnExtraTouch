@@ -38,6 +38,6 @@ public abstract class MixinExplosion {
         shake.position.set(explosionX, explosionY, explosionZ);
         shake.radius = explosionSize * 10f;
         shake.trauma = Config.cameraExplosionTrauma;
-        shake.lengthInSeconds = 2f;
+        shake.lengthInSeconds = Config.cameraExplosionLength;
     }
 }

@@ -19,10 +19,12 @@ public class LateMixinLoader implements ILateMixinLoader {
     }
 
     @Override
-    public List<String> getMixins(Set<String> loadedCoreMods) {
-        return new EarlyMixinLoader.MixinBuilder()
-            .addMixin("MixinDSFootsteps", EarlyMixinLoader.Side.CLIENT, "dsurround")
-            .addMixin("MixinBlizzSnowTrail", EarlyMixinLoader.Side.BOTH, "ThermalFoundation")
+    public List<String> getMixins(Set<String> loadedMods) {
+        return new MixinBuilder().addMixin("MixinDSFootsteps", MixinBuilder.Side.CLIENT, "dsurround")
+            .addMixin("MixinBlizzSnowTrail", MixinBuilder.Side.BOTH, "ThermalFoundation")
+            .addMixin("MixinExplosionNT", MixinBuilder.Side.BOTH, "hbm")
+            .addMixin("MixinExplosionVNT", MixinBuilder.Side.BOTH, "hbm")
+            .addMixin("MixinRenderTorex", MixinBuilder.Side.CLIENT, "hbm")
             .build();
     }
 }

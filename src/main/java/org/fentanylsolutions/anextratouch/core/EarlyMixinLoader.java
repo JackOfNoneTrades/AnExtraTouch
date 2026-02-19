@@ -1,50 +1,15 @@
 package org.fentanylsolutions.anextratouch.core;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 
-import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
 @SuppressWarnings("unused")
 @IFMLLoadingPlugin.MCVersion("1.7.10")
 public class EarlyMixinLoader extends FentEarlyMixinLoader {
-
-    public enum Side {
-        CLIENT,
-        SERVER,
-        BOTH
-    }
-
-    public static boolean isServer() {
-        return FMLLaunchHandler.side()
-            .isServer();
-    }
-
-    public static class MixinBuilder {
-
-        private final List<String> mixins = new ArrayList<>();
-
-        public MixinBuilder addMixin(String name, Side side, String modid) {
-            if ((side == Side.CLIENT && isServer()) || (side == Side.SERVER && !isServer())) {
-                return this;
-            }
-
-            mixins.add(modid + "." + name);
-            return this;
-        }
-
-        public MixinBuilder addMixin(String name, Side side) {
-            return addMixin(name, side, "minecraft");
-        }
-
-        public List<String> build() {
-            return mixins;
-        }
-    }
 
     @Override
     public String getMixinConfig() {
@@ -57,12 +22,12 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
             // Accessors
 
             // Rest
-            .addMixin("MixinEntity", Side.BOTH)
-            .addMixin("MixinGuiScreen", Side.CLIENT)
-            .addMixin("MixinEntityRenderer", Side.CLIENT)
-            .addMixin("MixinExplosion", Side.CLIENT)
-            .addMixin("MixinEntityLightningBolt", Side.CLIENT)
-            .addMixin("MixinEntityLivingBase", Side.CLIENT)
+            .addMixin("MixinEntity", MixinBuilder.Side.BOTH)
+            .addMixin("MixinGuiScreen", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinEntityRenderer", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinExplosion", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinEntityLightningBolt", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinEntityLivingBase", MixinBuilder.Side.CLIENT)
             .build();
     }
 }

@@ -2,8 +2,10 @@ package org.fentanylsolutions.anextratouch.network;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.network.handler.HandlerArmorStep;
+import org.fentanylsolutions.anextratouch.network.handler.HandlerExplosionShake;
 import org.fentanylsolutions.anextratouch.network.handler.HandlerHello;
 import org.fentanylsolutions.anextratouch.network.message.MessageArmorStep;
+import org.fentanylsolutions.anextratouch.network.message.MessageExplosionShake;
 import org.fentanylsolutions.anextratouch.network.message.MessageHello;
 
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -18,5 +20,6 @@ public class NetworkHandler {
     public static void init() {
         channel.registerMessage(HandlerHello.class, MessageHello.class, discriminator++, Side.CLIENT);
         channel.registerMessage(HandlerArmorStep.class, MessageArmorStep.class, discriminator++, Side.CLIENT);
+        channel.registerMessage(HandlerExplosionShake.class, MessageExplosionShake.class, discriminator++, Side.CLIENT);
     }
 }

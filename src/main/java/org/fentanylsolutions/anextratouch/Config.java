@@ -131,6 +131,7 @@ public class Config {
     public static float cameraShakeMaxIntensity = 2.5f;
     public static float cameraShakeMaxFrequency = 6.0f;
     public static float cameraExplosionTrauma = 1.0f;
+    public static float cameraExplosionLength = 2.0f;
     public static float cameraThunderTrauma = 0.05f;
     public static float cameraHandSwingTrauma = 0.03f;
     public static boolean cameraFallShakeEnabled = true;
@@ -704,6 +705,13 @@ public class Config {
                 0.0f,
                 1.0f,
                 "Trauma intensity for explosion screen shakes.");
+            cameraExplosionLength = config.getFloat(
+                "cameraExplosionLength",
+                Categories.camera,
+                cameraExplosionLength,
+                0.0f,
+                100.0f,
+                "Duration in seconds for explosion screen shakes.");
             cameraThunderTrauma = config.getFloat(
                 "cameraThunderTrauma",
                 Categories.camera,
