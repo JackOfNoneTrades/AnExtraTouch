@@ -54,6 +54,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [LegendarySurvivalOverhaul](https://github.com/Alex-Hashtag/LegendarySurvivalOverhaul).
 * [Smooth Gui](https://github.com/Ezzenix/SmoothGui)
 * [Minecraft-CameraOverhaul](https://github.com/Mirsario/Minecraft-CameraOverhaul)
+* [Shoulder Surfing](https://github.com/Exopandora/shouldersurfing)
 * [GT:NH buildscript](https://github.com/GTNewHorizons/ExampleMod1.7.10).
 
 ## License
@@ -64,10 +65,11 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Legendary Survival Overhaul assets and code are licensed under LGPL 2.1](https://github.com/Alex-Hashtag/LegendarySurvivalOverhaul/blob/1.21.1/LICENSE.txt).
 * [Smooth Gui code is licensed under CC0-1.0](https://github.com/Ezzenix/SmoothGui/blob/main/LICENSE).
 * [Minecraft-CameraOverhaul code is licensed under GPL-3.0](https://github.com/Mirsario/Minecraft-CameraOverhaul/blob/dev/LICENSE.md)
+* [Shoulder Surfing code is licensed under MIT](https://github.com/Exopandora/ShoulderSurfing/blob/master/LICENSE)
 
 ## Buy me some creatine
 
-* [ko-fi.com](ko-fi.com/jackisasubtlejoke)
+* [ko-fi.com](https://ko-fi.com/jackisasubtlejoke)
 * Monero: `893tQ56jWt7czBsqAGPq8J5BDnYVCg2tvKpvwTcMY1LS79iDabopdxoUzNLEZtRTH4ewAcKLJ4DM4V41fvrJGHgeKArxwmJ`
 
 <br>
