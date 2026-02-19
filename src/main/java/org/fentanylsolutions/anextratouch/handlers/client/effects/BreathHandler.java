@@ -23,6 +23,9 @@ public class BreathHandler {
 
     @SubscribeEvent
     public void onLivingUpdate(LivingEvent.LivingUpdateEvent event) {
+        if (!Config.breathEnabled) {
+            return;
+        }
         if (!event.entity.worldObj.isRemote) {
             return;
         }

@@ -4,6 +4,7 @@ import java.util.WeakHashMap;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
@@ -30,6 +31,11 @@ public class WetParticleHandler {
     }
 
     private final WeakHashMap<EntityLivingBase, WetnessTracker> trackers = new WeakHashMap<>();
+
+    @SubscribeEvent
+    public void onTextureStitch(TextureStitchEvent.Post event) {
+        FallingWaterFX.invalidateWaterColor();
+    }
 
     // Gives entities DRIP
     // Entities also dry quicker when burning

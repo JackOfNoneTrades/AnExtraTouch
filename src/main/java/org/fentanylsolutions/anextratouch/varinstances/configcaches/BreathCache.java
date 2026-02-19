@@ -155,7 +155,7 @@ public class BreathCache {
     }
 
     public String getBreathDimensionMode(int dimensionId) {
-        return breathDimensionModes.getOrDefault(dimensionId, "normal");
+        return breathDimensionModes.getOrDefault(dimensionId, Config.breathDefaultDimensionMode);
     }
 
     public boolean isColdBiome(String biomeName) {

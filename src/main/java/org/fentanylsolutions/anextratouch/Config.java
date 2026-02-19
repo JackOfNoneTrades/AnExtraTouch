@@ -50,6 +50,7 @@ public class Config {
     public static int footprintParticleCap = 2000;
 
     // breath
+    public static boolean breathEnabled = true;
     public static String[] breathEntityClassList = { "Chicken", "SnowMan", "Zombie", "VillagerGolem", "Skeleton",
         "Creeper", "Enderman" };
     public static boolean breathEntityClassListIsBlacklist = true;
@@ -63,6 +64,7 @@ public class Config {
     public static float breathTemperatureThreshold = 0.5f;
     public static int breathAltitudeThreshold = 150;
     public static String[] breathDimensionRules = { "-1;never", "1;never" };
+    public static String breathDefaultDimensionMode = "normal";
     public static String[] breathColdBiomes = {};
     public static int breathRenderDistance = 64;
 
@@ -337,6 +339,11 @@ public class Config {
                 "Maximum number of footprint particles tracked at once. 0 = unlimited.");
 
             // breath
+            breathEnabled = config.getBoolean(
+                "breathEnabled",
+                Categories.breath,
+                breathEnabled,
+                "Enable breath particles on entities in cold environments.");
             breathEntityClassList = config.getStringList(
                 "breathEntityClassList",
                 Categories.breath,
@@ -403,7 +410,13 @@ public class Config {
                 "breathDimensionRules",
                 Categories.breath,
                 breathDimensionRules,
-                "Per-dimension breath rules. Format: \"dimensionId;mode\". Modes: \"normal\" (temperature + altitude checks), \"always\" (breath always visible), \"never\" (breath disabled). Unlisted dimensions default to \"normal\".");
+                "Per-dimension breath rules. Format: \"dimensionId;mode\". Modes: \"normal\" (temperature + altitude checks), \"always\" (breath always visible), \"never\" (breath disabled). Unlisted dimensions use breathDefaultDimensionMode.");
+            breathDefaultDimensionMode = config.getString(
+                "breathDefaultDimensionMode",
+                Categories.breath,
+                breathDefaultDimensionMode,
+                "Default breath mode for dimensions not listed in breathDimensionRules.",
+                new String[] { "normal", "always", "never" });
             breathColdBiomes = config.getStringList(
                 "breathColdBiomes",
                 Categories.breath,
