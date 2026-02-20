@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
@@ -164,8 +164,6 @@ public class FootprintManager {
         double camY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * (double) partialTicks;
         double camZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * (double) partialTicks;
 
-        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
-        int previousTexture = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         mc.getTextureManager()
             .bindTexture(FOOTPRINT_TEXLOC);
 
@@ -218,8 +216,8 @@ public class FootprintManager {
             tess.draw();
         } finally {
             GL11.glPopAttrib();
-            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, previousTexture);
+            mc.getTextureManager()
+                .bindTexture(TextureMap.locationBlocksTexture);
             GL11.glPolygonOffset(0.0f, 0.0f);
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
         }
