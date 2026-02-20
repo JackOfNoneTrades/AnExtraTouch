@@ -40,7 +40,11 @@ public class ClientProxy extends CommonProxy {
             .bus()
             .register(FootprintManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new SmoothGuiHandler());
-        MinecraftForge.EVENT_BUS.register(new BreathHandler());
+        BreathHandler breathHandler = new BreathHandler();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(breathHandler);
+        MinecraftForge.EVENT_BUS.register(breathHandler);
         MinecraftForge.EVENT_BUS.register(new WetParticleHandler());
         MinecraftForge.EVENT_BUS.register(FootprintManager.INSTANCE);
         ClientHandler clientHandler = new ClientHandler();

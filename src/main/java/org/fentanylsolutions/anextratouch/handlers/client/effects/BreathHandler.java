@@ -1,25 +1,38 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.EntityFX;
+import net.minecraft.client.renderer.ActiveRenderInfo;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityHorse;
 import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
+import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class BreathHandler {
+
+    private static final ResourceLocation PARTICLE_TEX = new ResourceLocation("textures/particle/particles.png");
+    private final List<FrostBreathFX> breathParticles = new ArrayList<>();
 
     @SubscribeEvent
     public void onLivingUpdate(LivingEvent.LivingUpdateEvent event) {
@@ -126,7 +139,86 @@ public class BreathHandler {
         double vz = trajectory.zCoord * speed;
 
         FrostBreathFX particle = new FrostBreathFX(event.entity.worldObj, x, y, z, vx, vy, vz, baby);
-        mc.effectRenderer.addEffect(particle);
+        breathParticles.add(particle);
+    }
+
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        if (!Config.breathEnabled || breathParticles.isEmpty()) {
+            if (!Config.breathEnabled) {
+                breathParticles.clear();
+            }
+            return;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null) {
+            breathParticles.clear();
+            return;
+        }
+
+        Iterator<FrostBreathFX> it = breathParticles.iterator();
+        while (it.hasNext()) {
+            FrostBreathFX fx = it.next();
+            if (fx == null || fx.isDead || fx.worldObj != mc.theWorld) {
+                it.remove();
+                continue;
+            }
+            fx.onUpdate();
+            if (fx.isDead) {
+                it.remove();
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
+        if (!Config.breathEnabled || breathParticles.isEmpty()) {
+            return;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityLivingBase viewer = mc.renderViewEntity;
+        if (viewer == null || mc.theWorld == null) {
+            return;
+        }
+
+        float rotX = ActiveRenderInfo.rotationX;
+        float rotZ = ActiveRenderInfo.rotationZ;
+        float rotYZ = ActiveRenderInfo.rotationYZ;
+        float rotXY = ActiveRenderInfo.rotationXY;
+        float rotXZ = ActiveRenderInfo.rotationXZ;
+        EntityFX.interpPosX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * (double) event.partialTicks;
+        EntityFX.interpPosY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * (double) event.partialTicks;
+        EntityFX.interpPosZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * (double) event.partialTicks;
+
+        mc.getTextureManager()
+            .bindTexture(PARTICLE_TEX);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+        try {
+            GL11.glColor4f(1f, 1f, 1f, 1f);
+            GL11.glDepthMask(false);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glAlphaFunc(GL11.GL_GREATER, 0.003921569f);
+
+            Tessellator tess = Tessellator.instance;
+            tess.startDrawingQuads();
+            for (FrostBreathFX fx : breathParticles) {
+                if (fx == null || fx.isDead || fx.worldObj != mc.theWorld) {
+                    continue;
+                }
+                tess.setBrightness(fx.getBrightnessForRender(event.partialTicks));
+                fx.renderParticle(tess, event.partialTicks, rotX, rotXZ, rotZ, rotYZ, rotXY);
+            }
+            tess.draw();
+        } finally {
+            GL11.glPopAttrib();
+            GL11.glAlphaFunc(GL11.GL_GREATER, 0.1f);
+        }
     }
 
     // Rotate a vector by yRot radians around Y axis, then xRot radians around X axis.
