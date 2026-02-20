@@ -654,10 +654,31 @@ public final class DecoupledCameraHandler {
                 double dx = hit.hitVec.xCoord - entity.posX;
                 double dy = hit.hitVec.yCoord - eyeY;
                 double dz = hit.hitVec.zCoord - entity.posZ;
+
+                // Validate that the hit is roughly in front of the camera direction.
+                // When the camera is inside a block (e.g. looking steeply up in 3rd person),
+                // rayTraceBlocks returns a hit behind/below the player, causing aim to flip.
+                double camDirX = f2 * f3;
+                double camDirY = f4;
+                double camDirZ = f1 * f3;
+                double dot = dx * camDirX + dy * camDirY + dz * camDirZ;
+                if (dot < 0) {
+                    return new float[] { effYaw, effPitch };
+                }
+
                 double horizontalDist = Math.sqrt(dx * dx + dz * dz);
-                float yaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
+                double totalDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (totalDist < 0.001) return new float[] { effYaw, effPitch };
+
+                float computedYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
                 float pitch = MathHelper
                     .clamp_float((float) (-(Math.atan2(dy, horizontalDist) * (180.0 / Math.PI))), -90.0f, 90.0f);
+
+                // At steep angles the yaw from atan2 becomes degenerate (gimbal lock).
+                // Blend toward camera yaw proportionally to how vertical the direction is.
+                float horizRatio = (float) (horizontalDist / totalDist);
+                float blend = Math.min(horizRatio * 5f, 1f);
+                float yaw = effYaw + degreesDifference(effYaw, computedYaw) * blend;
                 return new float[] { yaw, pitch };
             }
         }
@@ -748,8 +769,14 @@ public final class DecoupledCameraHandler {
         double dy = hitVec.yCoord - (player.posY + player.getEyeHeight());
         double dz = hitVec.zCoord - player.posZ;
         double horizontalDist = Math.sqrt(dx * dx + dz * dz);
+        double totalDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (totalDist < 0.001) return;
 
-        player.rotationYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
+        float computedYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0f;
+        // At steep angles, blend yaw toward current to avoid gimbal lock jitter
+        float horizRatio = (float) (horizontalDist / totalDist);
+        float blend = Math.min(horizRatio * 5f, 1f);
+        player.rotationYaw = player.rotationYaw + degreesDifference(player.rotationYaw, computedYaw) * blend;
         player.rotationPitch = MathHelper
             .clamp_float((float) (-(Math.atan2(dy, horizontalDist) * (180.0 / Math.PI))), -90.0f, 90.0f);
     }
