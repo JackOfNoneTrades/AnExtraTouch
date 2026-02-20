@@ -48,4 +48,8 @@ dependencies {
 
     //implementation(rfg.deobf("curse.maven:thermal-foundation-222880:2388752"))
     //implementation(rfg.deobf("curse.maven:cofh-core-69162:2388750"))
+
+    implementation(rfg.deobf("curse.maven:jingames-jrmcore-497507:4523117"))
+    implementation(rfg.deobf("curse.maven:jingames-jbra-client-497511:4505635"))
+    implementation(rfg.deobf("curse.maven:jingames-dragon-block-c-497518:4523119"))
 }

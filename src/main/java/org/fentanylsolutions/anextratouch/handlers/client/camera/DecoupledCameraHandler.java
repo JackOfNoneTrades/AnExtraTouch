@@ -14,6 +14,7 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.compat.DbcAimingCompat;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
@@ -256,6 +257,7 @@ public final class DecoupledCameraHandler {
             prevCameraYaw = cameraYaw;
             prevCameraPitch = cameraPitch;
         }
+
     }
 
     /**
@@ -671,6 +673,10 @@ public final class DecoupledCameraHandler {
      * These couple while held so instant-throw projectiles fire at the crosshair.
      */
     private static boolean computeAiming(EntityPlayerSP player) {
+        if (DbcAimingCompat.shouldRecouple(player)) {
+            return true;
+        }
+
         // Check sustained-use items by EnumAction (bow draw, etc.)
         if (player.isUsingItem()) {
             ItemStack itemInUse = player.getItemInUse();
