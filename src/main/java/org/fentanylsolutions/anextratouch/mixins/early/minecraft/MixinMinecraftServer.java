@@ -10,14 +10,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.llamalad7.mixinextras.sugar.Local;
 
-@Mixin(MinecraftServer.class)
+@Mixin(value = MinecraftServer.class, priority = 1100)
 public class MixinMinecraftServer {
 
     @Inject(
         method = "initialWorldChunkLoad",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/gen/ChunkProviderServer;loadChunk(II)Lnet/minecraft/world/chunk/Chunk;"))
+            target = "Lnet/minecraft/world/gen/ChunkProviderServer;loadChunk(II)Lnet/minecraft/world/chunk/Chunk;"),
+        require = 0,
+        expect = 0)
     private void initialWorldChunkLoad(CallbackInfo ci, @Local(ordinal = 0) int progress) {
         AnExtraTouch.vic.chunkLoadingProgress = (progress * 100 / 625);
     }
