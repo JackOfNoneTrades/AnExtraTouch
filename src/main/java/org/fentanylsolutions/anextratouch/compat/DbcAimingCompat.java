@@ -1,12 +1,10 @@
 package org.fentanylsolutions.anextratouch.compat;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.player.EntityPlayer;
 
-import JinRyuu.JRMCore.JRMCoreKeyHandler;
+import JinRyuu.JRMCore.JRMCoreH;
 import JinRyuu.JRMCore.i.ExtendedPlayer;
-import JinRyuu.JRMCore.p.DBC.DBCPacketHandlerClient;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -15,7 +13,7 @@ import cpw.mods.fml.relauncher.SideOnly;
  * Dragon Block C / JRMCore aiming compat.
  * Returns true when the player is in DBC combat states that should recouple camera aim:
  * - guard/block mode
- * - charging/releasing ki attacks
+ * - ki attack release
  */
 @SideOnly(Side.CLIENT)
 public class DbcAimingCompat {
@@ -39,7 +37,7 @@ public class DbcAimingCompat {
     }
 
     /**
-     * True when DBC/JRMCore runtime indicates the player is in a guard or ki attack state.
+     * True when DBC/JRMCore runtime indicates the player is in a guard or actively firing a ki attack.
      */
     public static boolean shouldRecouple(EntityPlayerSP player) {
         if (!isAvailable()) {
@@ -57,15 +55,9 @@ public class DbcAimingCompat {
             }
 
             int blocking = getBlocking(player);
-            int mode = getBlockMode();
-            boolean usePressed = isUsePressed();
-            boolean fnPressed = isFnPressed();
-            boolean guardByInput = mode != 0 && (usePressed || fnPressed || mode == 2);
-            boolean kiCharging = JinRyuu.DragonBC.common.DBCClientTickHandler.KAchrgOn
-                || JinRyuu.DragonBC.common.DBCClientTickHandler.charge
-                || JinRyuu.DragonBC.common.DBCKiTech.releasing;
+            boolean kiShooting = JRMCoreH.isShtng;
 
-            return blocking > 0 || guardByInput || kiCharging;
+            return blocking > 0 || kiShooting;
         }
 
         private static int getBlocking(EntityPlayerSP player) {
@@ -83,31 +75,5 @@ public class DbcAimingCompat {
             }
         }
 
-        private static int getBlockMode() {
-            try {
-                return DBCPacketHandlerClient.getDBCPlayerBlockMode();
-            } catch (Throwable ignored) {
-                return -1;
-            }
-        }
-
-        private static boolean isUsePressed() {
-            try {
-                Minecraft mc = Minecraft.getMinecraft();
-                return mc != null && mc.gameSettings != null
-                    && mc.gameSettings.keyBindUseItem != null
-                    && mc.gameSettings.keyBindUseItem.getIsKeyPressed();
-            } catch (Throwable ignored) {
-                return false;
-            }
-        }
-
-        private static boolean isFnPressed() {
-            try {
-                return JRMCoreKeyHandler.Fn != null && JRMCoreKeyHandler.Fn.getIsKeyPressed();
-            } catch (Throwable ignored) {
-                return false;
-            }
-        }
     }
 }
