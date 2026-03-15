@@ -1,8 +1,11 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
 import net.minecraft.block.BlockLiquid;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
+import net.minecraft.client.particle.EntitySplashFX;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
@@ -22,9 +25,14 @@ public class FallingWaterFX extends EntityFX {
         this.motionX = this.motionY = this.motionZ = 0.0D;
 
         if (cachedR < 0f) sampleWaterColor();
-        this.particleRed = cachedR;
-        this.particleGreen = cachedG;
-        this.particleBlue = cachedB;
+
+        // Apply the water block's color multiplier to handle mods that use
+        // grayscale water textures with biome-based color tinting
+        int colorMult = Blocks.water
+            .colorMultiplier(world, MathHelper.floor_double(x), MathHelper.floor_double(y), MathHelper.floor_double(z));
+        this.particleRed = cachedR * ((colorMult >> 16) & 0xFF) / 255f;
+        this.particleGreen = cachedG * ((colorMult >> 8) & 0xFF) / 255f;
+        this.particleBlue = cachedB * (colorMult & 0xFF) / 255f;
 
         this.setParticleTextureIndex(112);
         this.setSize(0.01F, 0.01F);
@@ -87,7 +95,16 @@ public class FallingWaterFX extends EntityFX {
 
         if (this.onGround) {
             this.setDead();
-            this.worldObj.spawnParticle("splash", this.posX, this.posY, this.posZ, 0.0D, 0.0D, 0.0D);
+            EntitySplashFX splash = new EntitySplashFX(
+                this.worldObj,
+                this.posX,
+                this.posY,
+                this.posZ,
+                0.0D,
+                0.0D,
+                0.0D);
+            splash.setRBGColorF(this.particleRed, this.particleGreen, this.particleBlue);
+            Minecraft.getMinecraft().effectRenderer.addEffect(splash);
         }
 
         int bx = MathHelper.floor_double(this.posX);
