@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -410,16 +411,20 @@ public abstract class MixinEntityRenderer {
      * Render footprints in the main world translucent phase (before water),
      * so water properly overlays submerged footprints.
      *
-     * Using INVOKE_STRING on "water" keeps this decoupled from branch-specific
-     * sortAndRender call ordinals while still running at the correct phase.
+     * Targets the sortAndRender call for the translucent pass (pass 1), sliced
+     * between the "water" and "entities" profiler sections. This is compatible
+     * with Psychedelicraft's ASM which inserts fixGLState() between the
+     * LDC "water" and the endStartSection() call, breaking INVOKE_STRING.
+     *
+     * Multiple sortAndRender(pass=1) call sites exist across the fancy/non-fancy
+     * and anaglyph branches, but only one executes per frame.
      */
     @Inject(
         method = "renderWorld",
         at = @At(
-            value = "INVOKE_STRING",
-            target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V",
-            args = "ldc=water",
-            shift = Shift.AFTER))
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/RenderGlobal;sortAndRender(Lnet/minecraft/entity/EntityLivingBase;ID)I"),
+        slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderFootprintsBeforeWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
     }

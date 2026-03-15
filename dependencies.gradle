@@ -53,4 +53,7 @@ dependencies {
     compileOnly(rfg.deobf("curse.maven:jingames-jrmcore-497507:4523117"))
     compileOnly(rfg.deobf("curse.maven:jingames-jbra-client-497511:4505635"))
     compileOnly(rfg.deobf("curse.maven:jingames-dragon-block-c-497518:4523119"))
+
+    //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:ivtoolkit-224535:2294442"))
+    //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:psychedelicraft-legacy-1256222:6547962"))
 }
