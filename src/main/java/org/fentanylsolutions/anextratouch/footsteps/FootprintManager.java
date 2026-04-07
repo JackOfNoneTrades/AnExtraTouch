@@ -164,9 +164,6 @@ public class FootprintManager {
         double camY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * (double) partialTicks;
         double camZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * (double) partialTicks;
 
-        mc.getTextureManager()
-            .bindTexture(FOOTPRINT_TEXLOC);
-
         GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
         GL11.glPolygonOffset(-5F, -5F);
 
@@ -178,8 +175,17 @@ public class FootprintManager {
         try {
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            // GL11.glDepthMask(false);
             GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glDisable(GL11.GL_ALPHA_TEST);
+            GL11.glDisable(GL11.GL_FOG);
+
+            // Enable lightmap so setBrightness vertex data is handled correctly
+            // by Angelica's FFP shader emulation (needs lightmap texture bound on unit 1)
+            mc.entityRenderer.enableLightmap((double) partialTicks);
+
+            // Bind footprint texture on unit 0 after enableLightmap (which temporarily activates unit 1)
+            mc.getTextureManager()
+                .bindTexture(FOOTPRINT_TEXLOC);
 
             Tessellator tess = Tessellator.instance;
             tess.startDrawingQuads();
@@ -214,6 +220,8 @@ public class FootprintManager {
             }
 
             tess.draw();
+
+            mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
             GL11.glPopAttrib();
             mc.getTextureManager()
