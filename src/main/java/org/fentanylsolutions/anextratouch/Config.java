@@ -165,6 +165,7 @@ public class Config {
     public static float cameraVerticalOffset = 0.0f;
     public static boolean cameraFovOverrideEnabled = false;
     public static float cameraFovOverride = 70.0f;
+    public static boolean simplePerspectiveToggle = false;
     // decoupled camera (shoulder surfing integration)
     public static boolean decoupledCameraEnabled = true;
     public static float decoupledCameraOffsetDecay = 0.5f;
@@ -940,6 +941,11 @@ public class Config {
                 30.0f,
                 110.0f,
                 "Camera FOV when in third person view. Only applies when cameraFovOverrideEnabled is true.");
+            simplePerspectiveToggle = config.getBoolean(
+                "simplePerspectiveToggle",
+                Categories.camera,
+                simplePerspectiveToggle,
+                "Make F5 toggle between first person and third person back, skipping the third person front view.");
 
             // decoupled camera
             decoupledCameraEnabled = config.getBoolean(
