@@ -11,7 +11,7 @@ import net.minecraftforge.common.config.ConfigElement;
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import cpw.mods.fml.client.IModGuiFactory;
 import cpw.mods.fml.client.config.GuiConfig;
@@ -42,7 +42,7 @@ public class GuiFactory implements IModGuiFactory {
         public ConfigGui(GuiScreen parentScreen) {
             super(
                 parentScreen,
-                ImmutableList.of(
+                Lists.newArrayList(
                     // Construct directly here to prevent stale references
                     new ConfigElement(
                         Config.getRawConfig()
