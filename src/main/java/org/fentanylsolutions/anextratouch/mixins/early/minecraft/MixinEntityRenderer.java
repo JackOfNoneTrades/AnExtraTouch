@@ -253,11 +253,14 @@ public abstract class MixinEntityRenderer {
             anextratouch$followPrevY = anextratouch$followCurrY;
             anextratouch$followPrevZ = anextratouch$followCurrZ;
 
-            // Snap on teleport (large position change)
-            double dx = entity.posX - anextratouch$followCurrX;
-            double dy = entity.posY - anextratouch$followCurrY;
-            double dz = entity.posZ - anextratouch$followCurrZ;
-            if (dx * dx + dy * dy + dz * dz > 64.0) {
+            // Snap on teleport (single-tick movement larger than any natural velocity).
+            // Use the entity's per-tick delta as the signal, not the smoothing lag — a high-velocity
+            // fall produces large steady-state lag without being a teleport, and snapping on it
+            // would rubber-band the camera.
+            double tdx = entity.posX - entity.prevPosX;
+            double tdy = entity.posY - entity.prevPosY;
+            double tdz = entity.posZ - entity.prevPosZ;
+            if (tdx * tdx + tdy * tdy + tdz * tdz > 64.0) {
                 anextratouch$followPrevX = renderX;
                 anextratouch$followPrevY = renderY;
                 anextratouch$followPrevZ = renderZ;
