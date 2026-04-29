@@ -5,13 +5,10 @@
 Various small visual, audio, and gameplay tweaks, aimed to enhance the game experience. For Minecraft 1.7.10.
 
 [![hub](images/badges/github.png)](https://github.com/JackOfNoneTrades/AnExtraTouch/releases)
+[![curse](images/badges/curse.png)](https://www.curseforge.com/minecraft/mc-mods/an-extra-touch)
 [![modrinth](images/badges/modrinth.png)](https://modrinth.com/mod/an-extra-touch)
 [![maven](images/badges/maven.png)](https://maven.fentanylsolutions.org/#/releases/org/fentanylsolutions/anextratouch)
 ![forge](images/badges/forge.png)
-
-<!--
-[![curse](images/badges/curse.png)](https://www.curseforge.com/minecraft/mc-mods/an-extra-touch)
--->
 
 ![footsteps](images/gifs/footsteps.gif)
 
