@@ -97,6 +97,8 @@ public class Config {
     // water splash
     public static boolean waterSplashEnabled = true;
     public static int waterSplashFallbackColor = 0x3F76E4;
+    public static boolean waterCascadeEnabled = true;
+    public static boolean waterfallSprayEnabled = true;
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -564,6 +566,16 @@ public class Config {
                 0,
                 0xFFFFFF,
                 "Fallback splash tint (hex RGB) used when the water_still texture has no color information (vanilla 1.7.10 ships it as grayscale). Modulated by the biome's water color multiplier and the texture's luminance. Default 0x3F76E4 matches modern Minecraft water. Set to 0xFFFFFF to disable the fallback (splashes appear grey in untinted biomes).");
+            waterCascadeEnabled = config.getBoolean(
+                "waterCascadeEnabled",
+                Categories.waterSplash,
+                waterCascadeEnabled,
+                "Enable Particular-style cascade foam particles where falling water feeds into more water.");
+            waterfallSprayEnabled = config.getBoolean(
+                "waterfallSprayEnabled",
+                Categories.waterSplash,
+                waterfallSprayEnabled,
+                "Enable Particular-style waterfall spray particles that use the generic_0 mist sprite.");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(

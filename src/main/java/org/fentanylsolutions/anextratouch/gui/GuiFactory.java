@@ -61,6 +61,9 @@ public class GuiFactory implements IModGuiFactory {
                             .getCategory(Config.Categories.rainSplash)),
                     new ConfigElement(
                         Config.getRawConfig()
+                            .getCategory(Config.Categories.waterSplash)),
+                    new ConfigElement(
+                        Config.getRawConfig()
                             .getCategory(Config.Categories.misc)),
                     new ConfigElement(
                         Config.getRawConfig()
