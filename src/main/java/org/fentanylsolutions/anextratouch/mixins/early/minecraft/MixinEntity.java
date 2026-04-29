@@ -6,6 +6,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.projectile.EntityArrow;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
@@ -154,35 +155,8 @@ public class MixinEntity {
         if (self instanceof EntityArrow) return;
         if (anextratouch$splashCooldown > 0) return;
 
-        // Find water surface around entity. Vanilla's handleWaterMovement uses a bbox
-        // expanded 0.4 blocks downward, so posY can sit above the water at trigger time.
-        // Scan a few blocks below up to a few above and find the topmost water block.
-        int x = MathHelper.floor_double(self.posX);
-        int z = MathHelper.floor_double(self.posZ);
-        int startY = MathHelper.floor_double(self.boundingBox.minY) - 2;
-        int surfaceY = -1;
-        int surfaceMeta = 0;
-
-        for (int i = 0; i < 8; i++) {
-            int y = startY + i;
-            Block here = self.worldObj.getBlock(x, y, z);
-            Block above = self.worldObj.getBlock(x, y + 1, z);
-            if (here.getMaterial() == Material.water && above.getMaterial() != Material.water) {
-                surfaceY = y;
-                surfaceMeta = self.worldObj.getBlockMetadata(x, y, z);
-                break;
-            }
-        }
-
-        if (surfaceY < 0) return;
-
-        double surfaceLevel;
-        Block surfaceBlock = self.worldObj.getBlock(x, surfaceY, z);
-        if (surfaceBlock instanceof BlockLiquid) {
-            surfaceLevel = (surfaceY + 1) - BlockLiquid.getLiquidHeightPercent(surfaceMeta);
-        } else {
-            surfaceLevel = surfaceY + 1;
-        }
+        double surfaceLevel = anextratouch$findWaterEntrySurface(self);
+        if (Double.isNaN(surfaceLevel)) return;
 
         double maxAbsVy = 0.0;
         int n = Math.min(anextratouch$velYCount, 4);
@@ -193,5 +167,42 @@ public class MixinEntity {
         WaterSplashManager.INSTANCE
             .spawnEmitter(self.worldObj, self.posX, surfaceLevel, self.posZ, self.width, (float) maxAbsVy);
         anextratouch$splashCooldown = 10;
+    }
+
+    @Unique
+    private static double anextratouch$findWaterEntrySurface(Entity entity) {
+        AxisAlignedBB box = entity.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D)
+            .contract(0.001D, 0.001D, 0.001D);
+
+        int minX = MathHelper.floor_double(box.minX);
+        int maxX = MathHelper.floor_double(box.maxX + 1.0D);
+        int minY = MathHelper.floor_double(box.minY);
+        int maxY = MathHelper.floor_double(box.maxY + 1.0D);
+        int minZ = MathHelper.floor_double(box.minZ);
+        int maxZ = MathHelper.floor_double(box.maxZ + 1.0D);
+
+        double bestSurface = Double.NaN;
+
+        for (int x = minX; x < maxX; x++) {
+            for (int y = minY; y < maxY; y++) {
+                for (int z = minZ; z < maxZ; z++) {
+                    Block block = entity.worldObj.getBlock(x, y, z);
+                    if (block.getMaterial() != Material.water) {
+                        continue;
+                    }
+
+                    double surface = y + 1.0D;
+                    if (block instanceof BlockLiquid) {
+                        surface -= BlockLiquid.getLiquidHeightPercent(entity.worldObj.getBlockMetadata(x, y, z));
+                    }
+
+                    if (box.maxY >= surface && (Double.isNaN(bestSurface) || surface > bestSurface)) {
+                        bestSurface = surface;
+                    }
+                }
+            }
+        }
+
+        return bestSurface;
     }
 }
