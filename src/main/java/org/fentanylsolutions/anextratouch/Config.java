@@ -18,6 +18,7 @@ public class Config {
         public static final String debug = "debug";
         public static final String trampling = "trampling";
         public static final String rainSplash = "rain_splash";
+        public static final String waterSplash = "water_splash";
         public static final String misc = "misc";
         public static final String smoothGui = "smooth_gui";
         public static final String camera = "camera";
@@ -92,6 +93,10 @@ public class Config {
     public static String[] tramplingBlocks = { "minecraft:tallgrass", "minecraft:double_plant", "minecraft:deadbush" };
     public static String[] tramplingEntityClassList = { "Player" };
     public static boolean tramplingEntityClassListIsBlacklist = false;
+
+    // water splash
+    public static boolean waterSplashEnabled = true;
+    public static int waterSplashFallbackColor = 0x3F76E4;
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -545,6 +550,20 @@ public class Config {
                 Categories.trampling,
                 tramplingEntityClassListIsBlacklist,
                 "Whether tramplingEntityClassList is a blacklist (true) or whitelist (false).");
+
+            // water splash
+            waterSplashEnabled = config.getBoolean(
+                "waterSplashEnabled",
+                Categories.waterSplash,
+                waterSplashEnabled,
+                "Enable enhanced water splash particles when entities enter water.");
+            waterSplashFallbackColor = config.getInt(
+                "waterSplashFallbackColor",
+                Categories.waterSplash,
+                waterSplashFallbackColor,
+                0,
+                0xFFFFFF,
+                "Fallback splash tint (hex RGB) used when the water_still texture has no color information (vanilla 1.7.10 ships it as grayscale). Modulated by the biome's water color multiplier and the texture's luminance. Default 0x3F76E4 matches modern Minecraft water. Set to 0xFFFFFF to disable the fallback (splashes appear grey in untinted biomes).");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(

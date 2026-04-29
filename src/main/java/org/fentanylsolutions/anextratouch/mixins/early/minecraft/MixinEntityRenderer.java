@@ -10,6 +10,7 @@ import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
@@ -430,6 +431,7 @@ public abstract class MixinEntityRenderer {
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderFootprintsBeforeWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
+        WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
     }
 
     /**

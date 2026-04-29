@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.particle.EntitySplashFX;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
@@ -24,20 +23,67 @@ public class FallingWaterFX extends EntityFX {
         super(world, x, y, z, 0.0D, 0.0D, 0.0D);
         this.motionX = this.motionY = this.motionZ = 0.0D;
 
-        if (cachedR < 0f) sampleWaterColor();
-
-        // Apply the water block's color multiplier to handle mods that use
-        // grayscale water textures with biome-based color tinting
-        int colorMult = Blocks.water
-            .colorMultiplier(world, MathHelper.floor_double(x), MathHelper.floor_double(y), MathHelper.floor_double(z));
-        this.particleRed = cachedR * ((colorMult >> 16) & 0xFF) / 255f;
-        this.particleGreen = cachedG * ((colorMult >> 8) & 0xFF) / 255f;
-        this.particleBlue = cachedB * (colorMult & 0xFF) / 255f;
+        float[] rgb = getWaterColor(world, x, y, z);
+        this.particleRed = rgb[0];
+        this.particleGreen = rgb[1];
+        this.particleBlue = rgb[2];
 
         this.setParticleTextureIndex(112);
         this.setSize(0.01F, 0.01F);
         this.particleGravity = 0.06F;
         this.particleMaxAge = (int) (64.0D / (Math.random() * 0.8D + 0.2D));
+    }
+
+    /**
+     * Returns the water color at the given block as {r, g, b} floats in [0,1].
+     *
+     * The base water sample is averaged from the water_still texture (so resource packs that
+     * recolor water are picked up). Vanilla 1.7.10 ships water_still as grayscale though, so
+     * if the sample has no color information we fall back to Config.waterSplashFallbackColor
+     * scaled by the texture's luminance. The result is then modulated by a 3x3 average of the
+     * surrounding biomes' getWaterColorMultiplier() (which fires Forge BiomeEvent.GetWaterColor
+     * so mods like BoP also tint correctly).
+     */
+    public static float[] getWaterColor(World world, double x, double y, double z) {
+        if (cachedR < 0f) sampleWaterColor();
+
+        int bx = MathHelper.floor_double(x);
+        int bz = MathHelper.floor_double(z);
+        int totalR = 0, totalG = 0, totalB = 0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int color = world.getBiomeGenForCoords(bx + dx, bz + dz)
+                    .getWaterColorMultiplier();
+                totalR += (color >> 16) & 0xFF;
+                totalG += (color >> 8) & 0xFF;
+                totalB += color & 0xFF;
+            }
+        }
+        float mr = (totalR / 9) / 255f;
+        float mg = (totalG / 9) / 255f;
+        float mb = (totalB / 9) / 255f;
+
+        float baseR = cachedR, baseG = cachedG, baseB = cachedB;
+        float texSat = Math.max(baseR, Math.max(baseG, baseB)) - Math.min(baseR, Math.min(baseG, baseB));
+        float biomeSat = Math.max(mr, Math.max(mg, mb)) - Math.min(mr, Math.min(mg, mb));
+        // Fallback only when neither the texture nor the biome carries color information,
+        // i.e. vanilla 1.7.10 grayscale water in a biome that doesn't tint water (jungle, plains).
+        if (texSat < 0.04f && biomeSat < 0.04f) {
+            float lum = (baseR + baseG + baseB) / 3f;
+            int fallback = org.fentanylsolutions.anextratouch.Config.waterSplashFallbackColor;
+            float fr = ((fallback >> 16) & 0xFF) / 255f;
+            float fg = ((fallback >> 8) & 0xFF) / 255f;
+            float fb = (fallback & 0xFF) / 255f;
+            float fLum = (fr + fg + fb) / 3f;
+            if (fLum > 0.001f) {
+                float scale = lum / fLum;
+                baseR = fr * scale;
+                baseG = fg * scale;
+                baseB = fb * scale;
+            }
+        }
+
+        return new float[] { Math.min(1f, baseR * mr), Math.min(1f, baseG * mg), Math.min(1f, baseB * mb) };
     }
 
     private static void sampleWaterColor() {

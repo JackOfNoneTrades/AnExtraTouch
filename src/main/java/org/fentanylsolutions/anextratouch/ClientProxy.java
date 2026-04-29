@@ -10,6 +10,7 @@ import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCamera
 import org.fentanylsolutions.anextratouch.handlers.client.camera.SoundShakeHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WetParticleHandler;
 import org.fentanylsolutions.anextratouch.varinstances.VarInstanceClient;
 
@@ -46,6 +47,9 @@ public class ClientProxy extends CommonProxy {
             .register(breathHandler);
         MinecraftForge.EVENT_BUS.register(breathHandler);
         MinecraftForge.EVENT_BUS.register(new WetParticleHandler());
+        FMLCommonHandler.instance()
+            .bus()
+            .register(WaterSplashManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(FootprintManager.INSTANCE);
         ClientHandler clientHandler = new ClientHandler();
         FMLCommonHandler.instance()
