@@ -97,6 +97,7 @@ public class Config {
     // water splash
     public static boolean waterSplashEnabled = true;
     public static int waterSplashFallbackColor = 0x3F76E4;
+    public static String[] waterSplashEntityBlacklist = { "EntityXPOrb" };
     public static boolean waterCascadeEnabled = true;
     public static boolean waterfallSprayEnabled = true;
 
@@ -559,6 +560,12 @@ public class Config {
                 Categories.waterSplash,
                 waterSplashEnabled,
                 "Enable enhanced water splash particles when entities enter water.");
+            waterSplashEntityBlacklist = config.getStringList(
+                "waterSplashEntityBlacklist",
+                Categories.waterSplash,
+                waterSplashEntityBlacklist,
+                "Entity class simple-names that should never spawn a water splash. Matches Class#getSimpleName(), e.g. \"EntityXPOrb\", \"EntityArrow\".");
+
             waterSplashFallbackColor = config.getInt(
                 "waterSplashFallbackColor",
                 Categories.waterSplash,

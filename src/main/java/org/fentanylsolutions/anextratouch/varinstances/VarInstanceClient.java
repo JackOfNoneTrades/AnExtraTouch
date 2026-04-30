@@ -2,6 +2,7 @@ package org.fentanylsolutions.anextratouch.varinstances;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
@@ -27,6 +28,9 @@ public class VarInstanceClient {
 
     // Rain splash
     public HashSet<Class<? extends Entity>> rainSplashEntities;
+
+    // Water splash entity blacklist (simple class names)
+    public Set<String> waterSplashEntityBlacklist = new HashSet<>();
 
     // Smooth GUI
     public HashSet<String> smoothGuiExcludedScreens;
@@ -110,6 +114,10 @@ public class VarInstanceClient {
         // Smooth GUI excluded screens
         smoothGuiExcludedScreens = new HashSet<>();
         Collections.addAll(smoothGuiExcludedScreens, Config.smoothGuiExcludedScreens);
+
+        // Water splash entity blacklist
+        waterSplashEntityBlacklist = new HashSet<>();
+        Collections.addAll(waterSplashEntityBlacklist, Config.waterSplashEntityBlacklist);
     }
 
     public void preInitHook() {}
