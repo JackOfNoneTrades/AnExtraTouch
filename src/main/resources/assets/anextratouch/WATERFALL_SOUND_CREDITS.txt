@@ -1,0 +1,26 @@
+Waterfall ambience assets copied from Dynamic Surroundings for 1.12.2.
+
+Files:
+- sounds/ambient/stream/waterfall0.ogg
+  Original credit: "Waterfall Winspit Dorset.wav" by genghis attenborough
+  License: Attribution Noncommercial
+
+- sounds/ambient/stream/waterfall1.ogg
+  Original credit: "Running-water-mountain-stream.mp3" by Alexander
+  License: CC BY-NC 4.0
+
+- sounds/ambient/stream/waterfall2.ogg
+  Original credit: "Waterfall" by Orpheuz
+  License: CC0
+
+- sounds/ambient/stream/waterfall3.ogg
+  Original credit: "Small Waterfall at the Mill" by willstepp
+  License: CC0
+
+- sounds/ambient/stream/waterfall4.ogg
+  Original credit: "Waterfall, Large, A.wav" by InspectorJ
+  License: Attribution
+
+- sounds/ambient/stream/waterfall5.ogg
+  Original credit: "Waterfall, Small, B.wav" by InspectorJ
+  License: Attribution

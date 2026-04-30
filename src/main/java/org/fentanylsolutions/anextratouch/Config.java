@@ -100,6 +100,9 @@ public class Config {
     public static String[] waterSplashEntityBlacklist = { "EntityXPOrb" };
     public static boolean waterCascadeEnabled = true;
     public static boolean waterfallSprayEnabled = true;
+    public static boolean waterfallSoundEnabled = true;
+    public static float waterfallSoundVolume = 1.0f;
+    public static float waterfallSoundCutoff = 0.0f;
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -583,6 +586,25 @@ public class Config {
                 Categories.waterSplash,
                 waterfallSprayEnabled,
                 "Enable Particular-style waterfall spray particles that use the generic_0 mist sprite.");
+            waterfallSoundEnabled = config.getBoolean(
+                "waterfallSoundEnabled",
+                Categories.waterSplash,
+                waterfallSoundEnabled,
+                "Enable looping Dynamic Surroundings-style waterfall ambience for cascade seams.");
+            waterfallSoundVolume = config.getFloat(
+                "waterfallSoundVolume",
+                Categories.waterSplash,
+                waterfallSoundVolume,
+                0.0f,
+                2.0f,
+                "Volume multiplier for waterfall ambience. Values above 1 also extend the audible radius a bit in 1.7.10.");
+            waterfallSoundCutoff = config.getFloat(
+                "waterfallSoundCutoff",
+                Categories.waterSplash,
+                waterfallSoundCutoff,
+                0.0f,
+                3.0f,
+                "Minimum cascade strength required before waterfall ambience will play.");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(

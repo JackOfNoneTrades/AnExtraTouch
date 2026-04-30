@@ -1,15 +1,23 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -30,14 +38,31 @@ public class WaterCascadeManager {
 
     public static final WaterCascadeManager INSTANCE = new WaterCascadeManager();
     static final int CASCADE_FRAME_COUNT = 12;
+    private static final int MAX_ACTIVE_WATERFALL_SOUNDS = 6;
+    private static final ResourceLocation[] WATERFALL_SOUND_VARIANTS = new ResourceLocation[11];
 
     private static final IIcon[] CASCADE_ICONS = new IIcon[CASCADE_FRAME_COUNT];
     private static IIcon sprayIcon;
 
     private final Map<ChunkPosition, Float> cascades = new HashMap<ChunkPosition, Float>();
+    private final Map<ChunkPosition, WaterfallLoopSound> waterfallSounds = new HashMap<ChunkPosition, WaterfallLoopSound>();
     private World currentWorld;
     private boolean needsNearbyRescan = true;
     private boolean wasCascadeEnabled;
+
+    static {
+        WATERFALL_SOUND_VARIANTS[0] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.0");
+        WATERFALL_SOUND_VARIANTS[1] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.0");
+        WATERFALL_SOUND_VARIANTS[2] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.1");
+        WATERFALL_SOUND_VARIANTS[3] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.1");
+        WATERFALL_SOUND_VARIANTS[4] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.2");
+        WATERFALL_SOUND_VARIANTS[5] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.3");
+        WATERFALL_SOUND_VARIANTS[6] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.3");
+        WATERFALL_SOUND_VARIANTS[7] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.4");
+        WATERFALL_SOUND_VARIANTS[8] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.4");
+        WATERFALL_SOUND_VARIANTS[9] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.5");
+        WATERFALL_SOUND_VARIANTS[10] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.5");
+    }
 
     static IIcon getCascadeIcon(int frame) {
         if (frame < 0 || frame >= CASCADE_FRAME_COUNT) {
@@ -82,6 +107,7 @@ public class WaterCascadeManager {
         World world = mc.theWorld;
         if (world == null) {
             cascades.clear();
+            stopAllWaterfallSounds();
             currentWorld = null;
             needsNearbyRescan = true;
             wasCascadeEnabled = false;
@@ -90,12 +116,14 @@ public class WaterCascadeManager {
 
         if (currentWorld != world) {
             cascades.clear();
+            stopAllWaterfallSounds();
             currentWorld = world;
             needsNearbyRescan = true;
         }
 
         if (!Config.waterCascadeEnabled) {
             cascades.clear();
+            stopAllWaterfallSounds();
             needsNearbyRescan = true;
             wasCascadeEnabled = false;
             return;
@@ -129,6 +157,8 @@ public class WaterCascadeManager {
             }
             spawnCascade(world, pos, strength);
         }
+
+        updateWaterfallSounds(mc, world);
     }
 
     public void onChunkFilled(Chunk chunk) {
@@ -220,6 +250,7 @@ public class WaterCascadeManager {
             ChunkPosition pos = iterator.next();
             if ((pos.chunkPosX >> 4) == chunkX && (pos.chunkPosZ >> 4) == chunkZ) {
                 iterator.remove();
+                removeWaterfallSound(pos);
             }
         }
     }
@@ -231,6 +262,7 @@ public class WaterCascadeManager {
             cascades.put(pos, Float.valueOf(strength));
         } else {
             cascades.remove(pos);
+            removeWaterfallSound(pos);
         }
     }
 
@@ -334,6 +366,103 @@ public class WaterCascadeManager {
         }
     }
 
+    private void updateWaterfallSounds(Minecraft mc, World world) {
+        if (!Config.waterfallSoundEnabled || Config.waterfallSoundVolume <= 0.0F) {
+            stopAllWaterfallSounds();
+            return;
+        }
+
+        if (mc.renderViewEntity == null || mc.getSoundHandler() == null) {
+            stopAllWaterfallSounds();
+            return;
+        }
+
+        final double maxDistanceSq = 48.0D * 48.0D;
+        final double viewerX = mc.renderViewEntity.posX;
+        final double viewerY = mc.renderViewEntity.posY;
+        final double viewerZ = mc.renderViewEntity.posZ;
+
+        List<SoundTarget> candidates = new ArrayList<SoundTarget>();
+        for (Map.Entry<ChunkPosition, Float> entry : cascades.entrySet()) {
+            float strength = entry.getValue()
+                .floatValue();
+            if (strength < Config.waterfallSoundCutoff) {
+                continue;
+            }
+
+            ChunkPosition pos = entry.getKey();
+            double soundX = pos.chunkPosX + 0.5D;
+            double soundY = pos.chunkPosY + 0.35D;
+            double soundZ = pos.chunkPosZ + 0.5D;
+            double dx = viewerX - soundX;
+            double dy = viewerY - soundY;
+            double dz = viewerZ - soundZ;
+            double distanceSq = dx * dx + dy * dy + dz * dz;
+
+            if (distanceSq <= maxDistanceSq) {
+                candidates.add(new SoundTarget(pos, strength, soundX, soundY, soundZ, distanceSq));
+            }
+        }
+
+        Collections.sort(candidates, SoundTarget.BY_DISTANCE);
+        Set<ChunkPosition> keep = new HashSet<ChunkPosition>();
+        int limit = Math.min(candidates.size(), MAX_ACTIVE_WATERFALL_SOUNDS);
+
+        for (int i = 0; i < limit; i++) {
+            SoundTarget target = candidates.get(i);
+            keep.add(target.pos);
+
+            WaterfallLoopSound sound = waterfallSounds.get(target.pos);
+            if (sound == null) {
+                ResourceLocation soundId = getWaterfallSoundId(target.strength);
+                sound = new WaterfallLoopSound(soundId, randomizePitch(world));
+                waterfallSounds.put(target.pos, sound);
+            }
+
+            sound.setState(target.x, target.y, target.z, getWaterfallSoundVolume(target.strength));
+            if (!mc.getSoundHandler()
+                .isSoundPlaying(sound)) {
+                mc.getSoundHandler()
+                    .playSound(sound);
+            }
+        }
+
+        Iterator<Map.Entry<ChunkPosition, WaterfallLoopSound>> iterator = waterfallSounds.entrySet()
+            .iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<ChunkPosition, WaterfallLoopSound> entry = iterator.next();
+            if (!keep.contains(entry.getKey())) {
+                stopSound(entry.getValue());
+                iterator.remove();
+            }
+        }
+    }
+
+    private void stopAllWaterfallSounds() {
+        Iterator<WaterfallLoopSound> iterator = waterfallSounds.values()
+            .iterator();
+        while (iterator.hasNext()) {
+            stopSound(iterator.next());
+        }
+        waterfallSounds.clear();
+    }
+
+    private void removeWaterfallSound(ChunkPosition pos) {
+        WaterfallLoopSound sound = waterfallSounds.remove(pos);
+        if (sound != null) {
+            stopSound(sound);
+        }
+    }
+
+    private void stopSound(WaterfallLoopSound sound) {
+        sound.stop();
+        Minecraft mc = Minecraft.getMinecraft();
+        SoundHandler handler = mc.getSoundHandler();
+        if (handler != null) {
+            handler.stopSound(sound);
+        }
+    }
+
     private float getWaterHeight(World world, int x, int y, int z) {
         Block block = world.getBlock(x, y, z);
         if (!(block instanceof BlockLiquid)) {
@@ -350,5 +479,46 @@ public class WaterCascadeManager {
 
     private double getWaterFlowDirection(World world, int x, int y, int z) {
         return BlockLiquid.getFlowDirection(world, x, y, z, Material.water);
+    }
+
+    private ResourceLocation getWaterfallSoundId(float strength) {
+        int index = MathHelper.clamp_int(Math.round(strength * 4.0F), 0, WATERFALL_SOUND_VARIANTS.length - 1);
+        return WATERFALL_SOUND_VARIANTS[index];
+    }
+
+    private float getWaterfallSoundVolume(float strength) {
+        float normalizedStrength = MathHelper.clamp_float(strength, 0.0F, 2.0F);
+        return Config.waterfallSoundVolume * (0.45F + normalizedStrength * 0.45F);
+    }
+
+    private float randomizePitch(World world) {
+        return 1.0F + 0.2F * (world.rand.nextFloat() - world.rand.nextFloat());
+    }
+
+    private static class SoundTarget {
+
+        private static final Comparator<SoundTarget> BY_DISTANCE = new Comparator<SoundTarget>() {
+
+            @Override
+            public int compare(SoundTarget left, SoundTarget right) {
+                return Double.compare(left.distanceSq, right.distanceSq);
+            }
+        };
+
+        final ChunkPosition pos;
+        final float strength;
+        final double x;
+        final double y;
+        final double z;
+        final double distanceSq;
+
+        SoundTarget(ChunkPosition pos, float strength, double x, double y, double z, double distanceSq) {
+            this.pos = pos;
+            this.strength = strength;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.distanceSq = distanceSq;
+        }
     }
 }

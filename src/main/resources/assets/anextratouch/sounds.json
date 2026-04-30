@@ -95,5 +95,41 @@
       "anextratouch:rain_splash/water_through10",
       "anextratouch:rain_splash/water_through11"
     ]
+  },
+  "waterfall.0": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:ambient/stream/waterfall0"
+    ]
+  },
+  "waterfall.1": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:ambient/stream/waterfall1"
+    ]
+  },
+  "waterfall.2": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:ambient/stream/waterfall2"
+    ]
+  },
+  "waterfall.3": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:ambient/stream/waterfall3"
+    ]
+  },
+  "waterfall.4": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:ambient/stream/waterfall4"
+    ]
+  },
+  "waterfall.5": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:ambient/stream/waterfall5"
+    ]
   }
 }
