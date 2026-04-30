@@ -41,6 +41,7 @@ dependencies {
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
     runtimeOnlyNonPublishable(rfg.deobf("com.mikanon:cristalinewater:1.5"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:bugtorch:1.2.14"))
+    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:biomes-o-plenty:2.1.0.2308"))
 
     //compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
     implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
