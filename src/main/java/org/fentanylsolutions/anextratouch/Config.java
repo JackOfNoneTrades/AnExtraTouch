@@ -207,6 +207,7 @@ public class Config {
         "sound=mob.wither.shoot;trauma=0.1;radius=30;frequency=1.0;duration=0.3", };
 
     // misc
+    public static boolean cakeEatingParticlesEnabled = true;
     public static boolean blizzSnowTrailEnabled = true;
     public static boolean loadingProgressBarEnabled = true;
 
@@ -1118,6 +1119,11 @@ public class Config {
                 "Sounds that trigger camera shake. Format: \"sound=<name>;trauma=<0..1>;radius=<blocks>;frequency=<speed>;duration=<seconds>\". Only sound and trauma are required. trauma is scaled by the sound's effective volume (including category/master sliders). radius (default 16) is the distance falloff range. frequency (default 1.0) controls shake speed. duration (default 0.3) is shake length in seconds. Use the sound resource path (e.g. mob.zombie.step) or full name (e.g. minecraft:mob.zombie.step) to only match a specific domain. Examples: \"sound=mob.zombie.step;trauma=0.05\", \"sound=random.explode;trauma=0.8;radius=32;frequency=1.5;duration=2.0\".");
 
             // misc
+            cakeEatingParticlesEnabled = config.getBoolean(
+                "cakeEatingParticlesEnabled",
+                Categories.misc,
+                cakeEatingParticlesEnabled,
+                "Enable Particular-style eating sound and crumbs when taking a bite of cake.");
             blizzSnowTrailEnabled = config.getBoolean(
                 "blizzSnowTrailEnabled",
                 Categories.misc,
