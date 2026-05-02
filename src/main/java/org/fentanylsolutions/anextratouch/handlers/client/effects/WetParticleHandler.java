@@ -28,6 +28,25 @@ public class WetParticleHandler {
 
         int wetness;
         int tickCounter;
+        boolean hasWaterColor;
+        float waterRed;
+        float waterGreen;
+        float waterBlue;
+
+        void setWaterColor(float[] rgb) {
+            this.waterRed = rgb[0];
+            this.waterGreen = rgb[1];
+            this.waterBlue = rgb[2];
+            this.hasWaterColor = true;
+        }
+
+        float[] getWaterColor() {
+            return new float[] { this.waterRed, this.waterGreen, this.waterBlue };
+        }
+
+        void clearWaterColor() {
+            this.hasWaterColor = false;
+        }
     }
 
     private final WeakHashMap<EntityLivingBase, WetnessTracker> trackers = new WeakHashMap<>();
@@ -61,29 +80,42 @@ public class WetParticleHandler {
             trackers.put((EntityLivingBase) event.entity, tracker);
         }
 
+        boolean inWater = event.entity.isInWater();
+        boolean wetFromRain = Config.wetnessRainEnabled && event.entity.isWet();
+
         // Update wetness every WETNESS_TICK_INTERVAL ticks
         tracker.tickCounter++;
         if (tracker.tickCounter >= WETNESS_TICK_INTERVAL) {
             tracker.tickCounter = 0;
 
             int wetnessLimit = (int) (WETNESS_LIMIT * Config.wetnessDuration);
-            if (event.entity.isInWater()) {
+            if (inWater) {
                 tracker.wetness = Math.min(wetnessLimit, tracker.wetness + WETNESS_FLUID_INCREASE);
-            } else if (Config.wetnessRainEnabled && event.entity.isWet()) {
+                updateWaterColor(tracker, (EntityLivingBase) event.entity);
+            } else if (wetFromRain) {
                 tracker.wetness = Math.min(wetnessLimit, tracker.wetness + WETNESS_RAIN_INCREASE);
+                updateWaterColor(tracker, (EntityLivingBase) event.entity);
             } else if (event.entity.isBurning()) {
                 tracker.wetness = Math.max(0, tracker.wetness - WETNESS_FIRE_DECREASE);
             } else {
                 tracker.wetness = Math.max(0, tracker.wetness - WETNESS_DECREASE);
             }
+
+            if (tracker.wetness <= 0) {
+                tracker.clearWaterColor();
+            }
         }
 
-        if (tracker.wetness > 0 && !event.entity.isInWater()) {
+        if (tracker.wetness > 0 && !inWater) {
             int wetnessLimit = (int) (WETNESS_LIMIT * Config.wetnessDuration);
             float wetRatio = Math.min((float) tracker.wetness / wetnessLimit, 1.0f);
             int spawnRate = Math.round((1.0f - wetRatio) * 10f / Config.wetnessParticleDensity);
 
             if (spawnRate <= 0 || event.entity.worldObj.getTotalWorldTime() % spawnRate == 0) {
+                if (!tracker.hasWaterColor) {
+                    updateWaterColor(tracker, (EntityLivingBase) event.entity);
+                }
+
                 double x = event.entity.boundingBox.minX + event.entity.worldObj.rand.nextFloat()
                     * (event.entity.boundingBox.maxX - event.entity.boundingBox.minX);
                 double y = event.entity.boundingBox.minY + event.entity.worldObj.rand.nextFloat()
@@ -91,8 +123,13 @@ public class WetParticleHandler {
                 double z = event.entity.boundingBox.minZ + event.entity.worldObj.rand.nextFloat()
                     * (event.entity.boundingBox.maxZ - event.entity.boundingBox.minZ);
 
-                Minecraft.getMinecraft().effectRenderer.addEffect(new FallingWaterFX(event.entity.worldObj, x, y, z));
+                Minecraft.getMinecraft().effectRenderer
+                    .addEffect(new FallingWaterFX(event.entity.worldObj, x, y, z, tracker.getWaterColor()));
             }
         }
+    }
+
+    private static void updateWaterColor(WetnessTracker tracker, EntityLivingBase entity) {
+        tracker.setWaterColor(FallingWaterFX.getWaterColor(entity.worldObj, entity.posX, entity.posY, entity.posZ));
     }
 }

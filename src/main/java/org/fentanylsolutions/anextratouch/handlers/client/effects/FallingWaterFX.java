@@ -20,10 +20,13 @@ public class FallingWaterFX extends EntityFX {
     private static float cachedR = -1f, cachedG, cachedB;
 
     public FallingWaterFX(World world, double x, double y, double z) {
+        this(world, x, y, z, getWaterColor(world, x, y, z));
+    }
+
+    public FallingWaterFX(World world, double x, double y, double z, float[] rgb) {
         super(world, x, y, z, 0.0D, 0.0D, 0.0D);
         this.motionX = this.motionY = this.motionZ = 0.0D;
 
-        float[] rgb = getWaterColor(world, x, y, z);
         this.particleRed = rgb[0];
         this.particleGreen = rgb[1];
         this.particleBlue = rgb[2];
