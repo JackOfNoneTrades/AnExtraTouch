@@ -1,9 +1,13 @@
 package org.fentanylsolutions.anextratouch.mixins.early.minecraft;
 
+import java.util.Random;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.World;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
@@ -12,14 +16,19 @@ import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
 import org.fentanylsolutions.anextratouch.handlers.server.ServerArmorHandler;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
 public class MixinEntity {
+
+    @Shadow
+    protected Random rand;
 
     // Track position for actual distance calculation
     @Unique
@@ -49,15 +58,6 @@ public class MixinEntity {
     // handleWaterMovement override skips the vanilla playSound path.
     @Unique
     private boolean anextratouch$wasInWater;
-
-    // End-of-previous-tick position. Used to interpolate the actual surface crossing point
-    // for fast entities (arrows) where posX at trigger time is already a full tick past entry.
-    @Unique
-    private double anextratouch$prevTickX = Double.NaN;
-    @Unique
-    private double anextratouch$prevTickY = Double.NaN;
-    @Unique
-    private double anextratouch$prevTickZ = Double.NaN;
 
     // Hook into call site of func_145780_a (step sound method) inside moveEntity, because we'd be missing overrides
     // that are noops
@@ -163,27 +163,29 @@ public class MixinEntity {
         Entity self = (Entity) (Object) this;
         if (!self.worldObj.isRemote) return;
         if (!Config.waterSplashEnabled) return;
+        if (self instanceof EntityArrow) return;
         if (anextratouch$splashCooldown > 0) return;
         if (anextratouch$isSplashBlacklisted(self)) return;
 
-        double surfaceLevel = anextratouch$findWaterEntrySurface(self);
-        if (Double.isNaN(surfaceLevel)) return;
-
-        double maxAbsVy = 0.0;
-        int n = Math.min(anextratouch$velYCount, 4);
-        for (int i = 0; i < n; i++) {
-            if (anextratouch$velY[i] > maxAbsVy) maxAbsVy = anextratouch$velY[i];
+        double surfaceLevel = anextratouch$resolveSplashY(self);
+        if (anextratouch$isSplashInsideFluid(self.worldObj, self.posX, surfaceLevel, self.posZ)) {
+            anextratouch$splashCooldown = 10;
+            return;
         }
 
-        WaterSplashManager.INSTANCE
-            .spawnEmitter(self.worldObj, self.posX, surfaceLevel, self.posZ, self.width, (float) maxAbsVy);
+        WaterSplashManager.INSTANCE.spawnEmitter(
+            self.worldObj,
+            self.posX,
+            surfaceLevel,
+            self.posZ,
+            self.width,
+            anextratouch$getMaxSplashSpeed());
         anextratouch$splashCooldown = 10;
     }
 
     @Unique
     private static double anextratouch$findWaterEntrySurface(Entity entity) {
-        AxisAlignedBB box = entity.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D)
-            .contract(0.001D, 0.001D, 0.001D);
+        AxisAlignedBB box = anextratouch$getWaterProbeBox(entity);
 
         int minX = MathHelper.floor_double(box.minX);
         int maxX = MathHelper.floor_double(box.maxX + 1.0D);
@@ -206,6 +208,10 @@ public class MixinEntity {
                         continue;
                     }
 
+                    if (WaterSplashManager.isSplashFluidAllowed(entity.worldObj, x, y + 1, z)) {
+                        continue;
+                    }
+
                     if (box.maxY >= surface && (Double.isNaN(bestSurface) || surface > bestSurface)) {
                         bestSurface = surface;
                     }
@@ -224,12 +230,10 @@ public class MixinEntity {
                 .getSimpleName());
     }
 
-    // True if any water block intersects the entity's bbox. Doesn't require the bbox to
-    // straddle the surface (so items fully submerged after a single physics step still register).
+    // Mirrors vanilla's handleMaterialAcceleration block scan, but against splash-capable Forge fluids too.
     @Unique
     private static boolean anextratouch$isInWater(Entity e) {
-        AxisAlignedBB box = e.boundingBox.expand(0.0D, -0.4D, 0.0D)
-            .contract(0.001D, 0.001D, 0.001D);
+        AxisAlignedBB box = anextratouch$getWaterProbeBox(e);
         int minX = MathHelper.floor_double(box.minX);
         int maxX = MathHelper.floor_double(box.maxX + 1.0D);
         int minY = MathHelper.floor_double(box.minY);
@@ -239,28 +243,109 @@ public class MixinEntity {
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
-                    if (WaterSplashManager.intersectsSplashFluid(box, e.worldObj, x, y, z)) return true;
+                    double surface = WaterSplashManager.getSplashFluidSurfaceY(e.worldObj, x, y, z);
+                    if (surface >= 0.0D && (double) maxY >= surface) return true;
                 }
             }
         }
         return false;
     }
 
-    // Find the water surface Y at or just above the entity's column. Used to position the
-    // splash visual when the entity is already underwater and findWaterEntrySurface returns NaN.
     @Unique
-    private static double anextratouch$findWaterSurfaceAbove(Entity e) {
-        int x = MathHelper.floor_double(e.posX);
-        int z = MathHelper.floor_double(e.posZ);
-        int startY = MathHelper.floor_double(e.boundingBox.minY) - 2;
-        for (int i = 0; i < 16; i++) {
-            int y = startY + i;
-            double surface = WaterSplashManager.getSplashFluidSurfaceY(e.worldObj, x, y, z);
-            if (surface >= 0.0D && !WaterSplashManager.isSplashFluidAllowed(e.worldObj, x, y + 1, z)) {
-                return surface;
+    private static boolean anextratouch$isSplashInsideFluid(World world, double x, double y, double z) {
+        int blockX = MathHelper.floor_double(x);
+        int blockY = MathHelper.floor_double(y);
+        int blockZ = MathHelper.floor_double(z);
+        double surface = WaterSplashManager.getSplashFluidSurfaceY(world, blockX, blockY, blockZ);
+        if (surface < 0.0D) {
+            return false;
+        }
+
+        return y >= blockY - 1.0e-4D && y < surface - 1.0e-4D;
+    }
+
+    @Unique
+    private static AxisAlignedBB anextratouch$getWaterProbeBox(Entity e) {
+        return e.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D)
+            .contract(0.001D, 0.001D, 0.001D);
+    }
+
+    @Unique
+    private static double anextratouch$getVanillaSplashY(Entity e) {
+        return MathHelper.floor_double(e.boundingBox.minY) + 1.0D;
+    }
+
+    @Unique
+    private static double anextratouch$resolveSplashY(Entity e) {
+        double surface = anextratouch$findWaterEntrySurface(e);
+        return Double.isNaN(surface) ? anextratouch$getVanillaSplashY(e) : surface;
+    }
+
+    @Unique
+    private float anextratouch$getMaxSplashSpeed() {
+        double maxAbsVy = 0.0D;
+        int n = Math.min(anextratouch$velYCount, 4);
+        for (int i = 0; i < n; i++) {
+            if (anextratouch$velY[i] > maxAbsVy) maxAbsVy = anextratouch$velY[i];
+        }
+        return (float) maxAbsVy;
+    }
+
+    @Unique
+    private void anextratouch$spawnVanillaSplashParticles(Entity e, double y) {
+        int count = (int) (1.0F + e.width * 20.0F);
+        for (int i = 0; i < count; i++) {
+            float xOffset = (this.rand.nextFloat() * 2.0F - 1.0F) * e.width;
+            float zOffset = (this.rand.nextFloat() * 2.0F - 1.0F) * e.width;
+            e.worldObj.spawnParticle(
+                "bubble",
+                e.posX + xOffset,
+                y,
+                e.posZ + zOffset,
+                e.motionX,
+                e.motionY - this.rand.nextFloat() * 0.2F,
+                e.motionZ);
+        }
+
+        boolean centerInsideFluid = anextratouch$isSplashInsideFluid(e.worldObj, e.posX, y, e.posZ);
+        for (int i = 0; i < count; i++) {
+            float xOffset = (this.rand.nextFloat() * 2.0F - 1.0F) * e.width;
+            float zOffset = (this.rand.nextFloat() * 2.0F - 1.0F) * e.width;
+            double x = e.posX + xOffset;
+            double z = e.posZ + zOffset;
+            if (!centerInsideFluid && !anextratouch$isSplashInsideFluid(e.worldObj, x, y, z)) {
+                e.worldObj.spawnParticle("splash", x, y, z, e.motionX, e.motionY, e.motionZ);
             }
         }
-        return Double.NaN;
+    }
+
+    @Unique
+    private void anextratouch$playClientSplashSound(Entity e, double x, double y, double z) {
+        float volume = MathHelper
+            .sqrt_double(e.motionX * e.motionX * 0.2D + e.motionY * e.motionY + e.motionZ * e.motionZ * 0.2D) * 0.2F;
+        // Floor so low-motion entries (items dropped from a chest) are still audible.
+        volume = Math.max(0.2F, Math.min(1.0F, volume));
+        float pitch = 1.0F + (this.rand.nextFloat() - this.rand.nextFloat()) * 0.4F;
+        // World.playSoundAtEntity routes through worldAccesses.playSound which is a no-op on
+        // RenderGlobal. Vanilla client sounds normally arrive via S29PacketSoundEffect ->
+        // WorldClient.playSound(...). We're already on the client, so call that directly.
+        e.worldObj.playSound(x, y, z, "game.neutral.swim.splash", volume, pitch, false);
+    }
+
+    @Redirect(
+        method = "handleWaterMovement",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;spawnParticle(Ljava/lang/String;DDDDDD)V"))
+    private void anextratouch$skipSubmergedVanillaSplash(World world, String particleName, double x, double y, double z,
+        double motionX, double motionY, double motionZ) {
+        if (Config.waterSplashEnabled && "splash".equals(particleName)) {
+            Entity self = (Entity) (Object) this;
+            if (self instanceof EntityArrow || anextratouch$isSplashInsideFluid(world, self.posX, y, self.posZ)
+                || anextratouch$isSplashInsideFluid(world, x, y, z)) {
+                return;
+            }
+        }
+
+        world.spawnParticle(particleName, x, y, z, motionX, motionY, motionZ);
     }
 
     // Generic water-entry detector for entities whose handleWaterMovement override skips the
@@ -272,54 +357,29 @@ public class MixinEntity {
         Entity self = (Entity) (Object) this;
         if (!self.worldObj.isRemote) return;
         if (!Config.waterSplashEnabled) return;
+        if (self instanceof EntityArrow) return;
 
         boolean inWaterNow = anextratouch$isInWater(self);
 
         if (inWaterNow && !anextratouch$wasInWater
             && anextratouch$splashCooldown == 0
             && !anextratouch$isSplashBlacklisted(self)) {
-            double surface = anextratouch$findWaterSurfaceAbove(self);
-            if (!Double.isNaN(surface)) {
-                // Interpolate the surface crossing point along the entity's last-tick path so
-                // fast-moving arrows don't drop their splash a tick behind their visible position.
-                double splashX = self.posX;
-                double splashZ = self.posZ;
-                if (!Double.isNaN(anextratouch$prevTickY)) {
-                    double dy = self.posY - anextratouch$prevTickY;
-                    if (Math.abs(dy) > 1.0e-4) {
-                        double t = (surface - anextratouch$prevTickY) / dy;
-                        if (t >= 0.0 && t <= 1.0) {
-                            splashX = anextratouch$prevTickX + (self.posX - anextratouch$prevTickX) * t;
-                            splashZ = anextratouch$prevTickZ + (self.posZ - anextratouch$prevTickZ) * t;
-                        }
-                    }
-                }
-                double maxAbsVy = 0.0;
-                int n = Math.min(anextratouch$velYCount, 4);
-                for (int i = 0; i < n; i++) {
-                    if (anextratouch$velY[i] > maxAbsVy) maxAbsVy = anextratouch$velY[i];
-                }
-                WaterSplashManager.INSTANCE
-                    .spawnEmitter(self.worldObj, splashX, surface, splashZ, self.width, (float) maxAbsVy);
-                // Play vanilla splash sound. Items/XP orbs/etc skip this in their overridden
-                // handleWaterMovement, so we add it here for parity with living-entity splashes.
-                float volume = MathHelper.sqrt_double(
-                    self.motionX * self.motionX * 0.2 + self.motionY * self.motionY + self.motionZ * self.motionZ * 0.2)
-                    * 0.2F;
-                // Floor so low-motion entries (items dropped from a chest) are still audible.
-                volume = Math.max(0.2F, Math.min(1.0F, volume));
-                float pitch = 1.0F + (self.worldObj.rand.nextFloat() - self.worldObj.rand.nextFloat()) * 0.4F;
-                // World.playSoundAtEntity routes through worldAccesses.playSound which is a no-op on
-                // RenderGlobal. Vanilla client sounds normally arrive via S29PacketSoundEffect ->
-                // WorldClient.playSound(...). We're already on the client, so call that directly.
-                self.worldObj.playSound(splashX, surface, splashZ, "game.neutral.swim.splash", volume, pitch, false);
-                anextratouch$splashCooldown = 10;
+            double splashY = anextratouch$resolveSplashY(self);
+            boolean centerInsideFluid = anextratouch$isSplashInsideFluid(self.worldObj, self.posX, splashY, self.posZ);
+            if (!centerInsideFluid) {
+                WaterSplashManager.INSTANCE.spawnEmitter(
+                    self.worldObj,
+                    self.posX,
+                    splashY,
+                    self.posZ,
+                    self.width,
+                    anextratouch$getMaxSplashSpeed());
+                anextratouch$playClientSplashSound(self, self.posX, splashY, self.posZ);
             }
+            anextratouch$spawnVanillaSplashParticles(self, anextratouch$getVanillaSplashY(self));
+            anextratouch$splashCooldown = 10;
         }
 
         anextratouch$wasInWater = inWaterNow;
-        anextratouch$prevTickX = self.posX;
-        anextratouch$prevTickY = self.posY;
-        anextratouch$prevTickZ = self.posZ;
     }
 }
