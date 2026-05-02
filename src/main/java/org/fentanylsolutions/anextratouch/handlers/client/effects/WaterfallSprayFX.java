@@ -13,12 +13,15 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class WaterfallSprayFX extends EntityFX {
 
     public WaterfallSprayFX(World world, double x, double y, double z, double velX, double velZ) {
+        this(world, x, y, z, velX, velZ, FallingWaterFX.getWaterColor(world, x, y, z));
+    }
+
+    public WaterfallSprayFX(World world, double x, double y, double z, double velX, double velZ, float[] rgb) {
         super(world, x, y, z, 0.0D, 0.0D, 0.0D);
         this.motionX *= 0.30000001192092896D;
         this.motionY = (double) ((float) Math.random() * 0.2F + 0.1F);
         this.motionZ *= 0.30000001192092896D;
 
-        float[] rgb = FallingWaterFX.getWaterColor(world, x, y, z);
         this.particleRed = rgb[0];
         this.particleGreen = rgb[1];
         this.particleBlue = rgb[2];
@@ -77,8 +80,10 @@ public class WaterfallSprayFX extends EntityFX {
             int x = MathHelper.floor_double(this.posX);
             int y = MathHelper.floor_double(this.posY);
             int z = MathHelper.floor_double(this.posZ);
-            double liquidY = (double) ((float) (y + 1)
-                - BlockLiquid.getLiquidHeightPercent(this.worldObj.getBlockMetadata(x, y, z)));
+            double fluidSurfaceY = WetnessFluidHelper.getWettableFluidSurfaceY(this.worldObj, x, y, z);
+            double liquidY = fluidSurfaceY >= 0.0D ? fluidSurfaceY
+                : (double) ((float) (y + 1)
+                    - BlockLiquid.getLiquidHeightPercent(this.worldObj.getBlockMetadata(x, y, z)));
 
             if (this.posY < liquidY) {
                 this.setDead();

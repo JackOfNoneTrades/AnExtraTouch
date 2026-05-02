@@ -390,6 +390,9 @@ public final class WakeTrailManager {
         if (block.getMaterial() != Material.water) {
             return false;
         }
+        if (!WetnessFluidHelper.isFluidInteractionAllowed(world, x, y, z)) {
+            return false;
+        }
 
         Block above = world.getBlock(x, y + 1, z);
         return above.getMaterial() != Material.water;

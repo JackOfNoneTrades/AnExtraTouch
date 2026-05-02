@@ -12,18 +12,23 @@ import java.util.Set;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.event.world.ChunkEvent;
+import net.minecraftforge.fluids.BlockFluidBase;
+import net.minecraftforge.fluids.BlockFluidClassic;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.IFluidBlock;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
@@ -187,6 +192,10 @@ public class WaterCascadeManager {
         updateAround(chunk.worldObj, x, y, z);
     }
 
+    public void onConfigReload() {
+        needsNearbyRescan = true;
+    }
+
     private boolean rescanNearbyChunks(Minecraft mc) {
         if (mc.renderViewEntity == null) {
             return false;
@@ -218,14 +227,13 @@ public class WaterCascadeManager {
             for (int localY = 0; localY < 16; localY++) {
                 for (int localZ = 0; localZ < 16; localZ++) {
                     for (int localX = 0; localX < 16; localX++) {
-                        if (storage.getBlockByExtId(localX, localY, localZ)
-                            .getMaterial() != Material.water) {
-                            continue;
-                        }
-
                         int x = (chunk.xPosition << 4) + localX;
                         int y = baseY + localY;
                         int z = (chunk.zPosition << 4) + localZ;
+                        if (WetnessFluidHelper.getCascadeFluid(chunk.worldObj, x, y, z) == null) {
+                            continue;
+                        }
+
                         updateCascade(chunk.worldObj, x, y, z);
                     }
                 }
@@ -275,13 +283,23 @@ public class WaterCascadeManager {
             return 0.0F;
         }
 
-        if (!isFlowingWater(world, x, y, z)) {
+        Fluid fallingFluid = WetnessFluidHelper.getCascadeFluid(world, x, y, z);
+        if (fallingFluid == null) {
             return 0.0F;
         }
-        if (!isStillWaterSurface(world, x, y - 1, z)) {
+
+        if (!isFallingFluid(world, x, y, z, fallingFluid)) {
             return 0.0F;
         }
-        if (!isWater(world, x, y - 2, z)) {
+
+        Fluid impactFluid = WetnessFluidHelper.getCascadeFluid(world, x, y - 1, z);
+        if (impactFluid == null) {
+            return 0.0F;
+        }
+        if (!isStillFluidSurface(world, x, y - 1, z, impactFluid)) {
+            return 0.0F;
+        }
+        if (!WetnessFluidHelper.isSameCascadeFluid(world, x, y - 2, z, impactFluid)) {
             return 0.0F;
         }
 
@@ -292,10 +310,10 @@ public class WaterCascadeManager {
         }
 
         int strength = 0;
-        if (isWater(world, x, y - 1, z - 1)) strength++;
-        if (isWater(world, x + 1, y - 1, z)) strength++;
-        if (isWater(world, x, y - 1, z + 1)) strength++;
-        if (isWater(world, x - 1, y - 1, z)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x, y - 1, z - 1, impactFluid)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x + 1, y - 1, z, impactFluid)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x, y - 1, z + 1, impactFluid)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x - 1, y - 1, z, impactFluid)) strength++;
 
         if (strength <= 0) {
             return 0.0F;
@@ -304,31 +322,39 @@ public class WaterCascadeManager {
         return (float) strength;
     }
 
-    private boolean isFlowingWater(World world, int x, int y, int z) {
+    private boolean isFallingFluid(World world, int x, int y, int z, Fluid fluid) {
         Block block = world.getBlock(x, y, z);
-        if (block.getMaterial() != Material.water) {
-            return false;
+        if (fluid == FluidRegistry.WATER && block instanceof BlockLiquid) {
+            return block == net.minecraft.init.Blocks.flowing_water || world.getBlockMetadata(x, y, z) >= 8;
         }
 
-        return block == net.minecraft.init.Blocks.flowing_water || world.getBlockMetadata(x, y, z) >= 8;
+        if (block instanceof BlockFluidClassic) {
+            BlockFluidClassic fluidBlock = (BlockFluidClassic) block;
+            return !fluidBlock.isSourceBlock(world, x, y, z) && (fluidBlock.isFlowingVertically(world, x, y, z)
+                || WetnessFluidHelper.getCascadeFluid(world, x, y - 1, z) != null);
+        }
+
+        if (block instanceof BlockFluidBase || block instanceof IFluidBlock) {
+            return WetnessFluidHelper.getCascadeFluid(world, x, y - 1, z) != null
+                && WetnessFluidHelper.getWettableFluidHeight(world, x, y, z) < 0.999F;
+        }
+
+        return false;
     }
 
-    private boolean isImpactFlowingWater(World world, int x, int y, int z) {
-        if (!isWater(world, x, y, z)) {
+    private boolean isStillFluidSurface(World world, int x, int y, int z, Fluid fluid) {
+        if (!WetnessFluidHelper.isSameCascadeFluid(world, x, y, z, fluid)) {
             return false;
         }
 
-        int meta = world.getBlockMetadata(x, y, z);
-        return meta >= 8 || getWaterFlowDirection(world, x, y, z) > -999.0D;
-    }
-
-    private boolean isStillWaterSurface(World world, int x, int y, int z) {
-        if (!isWater(world, x, y, z)) {
-            return false;
+        Block block = world.getBlock(x, y, z);
+        if (fluid == FluidRegistry.WATER && block instanceof BlockLiquid) {
+            int meta = world.getBlockMetadata(x, y, z);
+            return meta < 8 && WetnessFluidHelper.getFluidFlowDirection(world, x, y, z) <= -999.0D;
         }
 
-        int meta = world.getBlockMetadata(x, y, z);
-        return meta < 8 && getWaterFlowDirection(world, x, y, z) <= -999.0D;
+        return WetnessFluidHelper.getWettableFluidHeight(world, x, y, z) >= 0.999F
+            && WetnessFluidHelper.getFluidFlowDirection(world, x, y, z) <= -999.0D;
     }
 
     private void spawnCascade(World world, ChunkPosition pos, float strength) {
@@ -349,13 +375,45 @@ public class WaterCascadeManager {
             z += world.rand.nextDouble();
         }
 
-        float columnHeight = getWaterHeight(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+        float columnHeight = getFluidHeight(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
         double y = pos.chunkPosY + world.rand.nextDouble() * columnHeight;
 
         CascadeFX cascade = new CascadeFX(world, x, y, z);
         float size = strength / 4.0F * columnHeight;
         cascade.multipleParticleScaleBy(1.0F - (1.0F - size) / 2.0F);
         mc.effectRenderer.addEffect(cascade);
+
+        maybeSpawnForgeWaterfallSpray(world, pos);
+    }
+
+    private void maybeSpawnForgeWaterfallSpray(World world, ChunkPosition pos) {
+        if (!Config.waterfallSprayEnabled || sprayIcon == null) {
+            return;
+        }
+
+        Block block = world.getBlock(pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+        if (block instanceof BlockLiquid || !(block instanceof IFluidBlock) || world.rand.nextInt(3) != 0) {
+            return;
+        }
+
+        double px = pos.chunkPosX;
+        double pz = pos.chunkPosZ;
+        if (world.rand.nextBoolean()) {
+            px += world.rand.nextDouble();
+            pz += world.rand.nextInt(2);
+        } else {
+            px += world.rand.nextInt(2);
+            pz += world.rand.nextDouble();
+        }
+
+        double py = pos.chunkPosY + 0.05D + world.rand.nextDouble() * 0.25D;
+        Vec3 flow = Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
+        try {
+            block.velocityToAddToEntity(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ, null, flow);
+        } catch (Throwable ignored) {}
+        float[] rgb = WetnessFluidHelper.getWettableFluidColor(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+        Minecraft.getMinecraft().effectRenderer
+            .addEffect(new WaterfallSprayFX(world, px, py, pz, flow.xCoord * 0.075D, flow.zCoord * 0.075D, rgb));
     }
 
     private void updateWaterfallSounds(Minecraft mc, World world) {
@@ -455,22 +513,13 @@ public class WaterCascadeManager {
         }
     }
 
-    private float getWaterHeight(World world, int x, int y, int z) {
-        Block block = world.getBlock(x, y, z);
-        if (!(block instanceof BlockLiquid)) {
+    private float getFluidHeight(World world, int x, int y, int z) {
+        float height = WetnessFluidHelper.getWettableFluidHeight(world, x, y, z);
+        if (height < 0.0F) {
             return 1.0F;
         }
 
-        return 1.0F - BlockLiquid.getLiquidHeightPercent(world.getBlockMetadata(x, y, z));
-    }
-
-    private boolean isWater(World world, int x, int y, int z) {
-        return world.getBlock(x, y, z)
-            .getMaterial() == Material.water;
-    }
-
-    private double getWaterFlowDirection(World world, int x, int y, int z) {
-        return BlockLiquid.getFlowDirection(world, x, y, z, Material.water);
+        return height;
     }
 
     private ResourceLocation getWaterfallSoundId(float strength) {

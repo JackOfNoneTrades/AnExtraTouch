@@ -1,5 +1,12 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
@@ -9,15 +16,21 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraftforge.fluids.BlockFluidBase;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.IFluidBlock;
+
+import org.fentanylsolutions.anextratouch.Config;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 final class WetnessFluidHelper {
+
+    private static final FluidBlacklist fluidInteractionBlacklist = new FluidBlacklist();
+    private static final FluidBlacklist cascadeFluidBlacklist = new FluidBlacklist();
 
     private WetnessFluidHelper() {}
 
@@ -57,9 +70,10 @@ final class WetnessFluidHelper {
                             && intersectsForgeFluid(bb, world, x, y, z, fluidBlock)) {
                             return new FluidSample(getFluidColor(world, x, y, z, block, fluid));
                         }
-                    } else if (block.getMaterial() == Material.water && intersectsVanillaLiquid(bb, world, x, y, z)) {
-                        return new FluidSample(FallingWaterFX.getWaterColor(world, x + 0.5D, y + 0.5D, z + 0.5D));
-                    }
+                    } else if (block.getMaterial() == Material.water && !isIgnoredFluid(block, FluidRegistry.WATER)
+                        && intersectsVanillaLiquid(bb, world, x, y, z)) {
+                            return new FluidSample(FallingWaterFX.getWaterColor(world, x + 0.5D, y + 0.5D, z + 0.5D));
+                        }
                 }
             }
         }
@@ -79,7 +93,7 @@ final class WetnessFluidHelper {
         Block block = world.getBlock(x, y, z);
         if (block instanceof IFluidBlock) {
             IFluidBlock fluidBlock = (IFluidBlock) block;
-            Fluid fluid = fluidBlock.getFluid();
+            Fluid fluid = getInteractableFluid(world, x, y, z, block, fluidBlock);
             if (!isWettableFluid(world, x, y, z, block, fluid)) {
                 return -1.0D;
             }
@@ -87,11 +101,16 @@ final class WetnessFluidHelper {
             return getForgeFluidSurfaceY(world, x, y, z, fluidBlock);
         }
 
-        if (block.getMaterial() == Material.water) {
+        if (block.getMaterial() == Material.water && !isIgnoredFluid(block, FluidRegistry.WATER)) {
             return getVanillaLiquidSurfaceY(world, x, y, z);
         }
 
         return -1.0D;
+    }
+
+    static float getWettableFluidHeight(World world, int x, int y, int z) {
+        double surfaceY = getWettableFluidSurfaceY(world, x, y, z);
+        return surfaceY < 0.0D ? -1.0F : (float) (surfaceY - y);
     }
 
     static boolean isWettableFluidAt(World world, double x, double y, double z) {
@@ -102,12 +121,100 @@ final class WetnessFluidHelper {
             MathHelper.floor_double(z)) >= 0.0D;
     }
 
+    static boolean isFluidInteractionAllowed(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        Fluid fluid = block instanceof IFluidBlock ? ((IFluidBlock) block).getFluid()
+            : block.getMaterial() == Material.water ? FluidRegistry.WATER : null;
+        return !isIgnoredFluid(block, fluid);
+    }
+
+    static Fluid getInteractableFluid(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof IFluidBlock) {
+            return getInteractableFluid(world, x, y, z, block, (IFluidBlock) block);
+        }
+
+        if (block.getMaterial() == Material.water && !isIgnoredFluid(block, FluidRegistry.WATER)) {
+            return FluidRegistry.WATER;
+        }
+
+        return null;
+    }
+
+    static Fluid getCascadeFluid(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof IFluidBlock) {
+            Fluid fluid = ((IFluidBlock) block).getFluid();
+            return isCascadeFluid(world, x, y, z, block, fluid) ? fluid : null;
+        }
+
+        if (block.getMaterial() == Material.water && !isCascadeIgnoredFluid(block, FluidRegistry.WATER)) {
+            return FluidRegistry.WATER;
+        }
+
+        return null;
+    }
+
+    static boolean isSameInteractableFluid(World world, int x, int y, int z, Fluid fluid) {
+        Fluid other = getInteractableFluid(world, x, y, z);
+        return other != null && other == fluid;
+    }
+
+    static boolean isSameCascadeFluid(World world, int x, int y, int z, Fluid fluid) {
+        Fluid other = getCascadeFluid(world, x, y, z);
+        return other != null && other == fluid;
+    }
+
+    static double getFluidFlowDirection(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof BlockLiquid && block.getMaterial() == Material.water) {
+            return BlockLiquid.getFlowDirection(world, x, y, z, Material.water);
+        }
+        if (block instanceof BlockFluidBase) {
+            return BlockFluidBase.getFlowDirection(world, x, y, z);
+        }
+        return -1000.0D;
+    }
+
+    static float[] getWettableFluidColor(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        Fluid fluid = getInteractableFluid(world, x, y, z);
+        return fluid == null ? FallingWaterFX.getWaterColor(world, x + 0.5D, y + 0.5D, z + 0.5D)
+            : getFluidColor(world, x, y, z, block, fluid);
+    }
+
     private static boolean isWettableFluid(World world, int x, int y, int z, Block block, Fluid fluid) {
-        if (fluid == null || fluid == FluidRegistry.LAVA || block.getMaterial() == Material.lava) {
+        if (fluid == null || fluid == FluidRegistry.LAVA
+            || block.getMaterial() == Material.lava
+            || isIgnoredFluid(block, fluid)) {
             return false;
         }
 
         return !fluid.isGaseous(world, x, y, z);
+    }
+
+    private static boolean isCascadeFluid(World world, int x, int y, int z, Block block, Fluid fluid) {
+        return isWettableFluid(world, x, y, z, block, fluid) && !isCascadeIgnoredFluid(block, fluid);
+    }
+
+    private static Fluid getInteractableFluid(World world, int x, int y, int z, Block block, IFluidBlock fluidBlock) {
+        Fluid fluid = fluidBlock.getFluid();
+        return isWettableFluid(world, x, y, z, block, fluid) ? fluid : null;
+    }
+
+    private static boolean isIgnoredFluid(Block block, Fluid fluid) {
+        return fluidInteractionBlacklist.isIgnored(block, fluid, Config.fluidInteractionBlacklist);
+    }
+
+    private static boolean isCascadeIgnoredFluid(Block block, Fluid fluid) {
+        return isIgnoredFluid(block, fluid)
+            || cascadeFluidBlacklist.isIgnored(block, fluid, Config.cascadeFluidBlacklist);
+    }
+
+    private static String normalizeName(String name) {
+        return name == null ? ""
+            : name.trim()
+                .toLowerCase(Locale.ENGLISH);
     }
 
     private static boolean intersectsVanillaLiquid(AxisAlignedBB bb, World world, int x, int y, int z) {
@@ -221,5 +328,82 @@ final class WetnessFluidHelper {
 
     private static float clamp(float value) {
         return Math.max(0.0F, Math.min(1.0F, value));
+    }
+
+    private static final class FluidBlacklist {
+
+        private String[] cachedEntries = new String[0];
+        private String[] cachedEntriesRef;
+        private final Set<String> ignoredExactNames = new HashSet<String>();
+        private final Set<String> ignoredBareNames = new HashSet<String>();
+        private final Map<Block, Boolean> ignoredBlockCache = new IdentityHashMap<Block, Boolean>();
+
+        boolean isIgnored(Block block, Fluid fluid, String[] entries) {
+            refresh(entries);
+            if (this.ignoredExactNames.isEmpty()) {
+                return false;
+            }
+
+            Boolean cached = this.ignoredBlockCache.get(block);
+            if (cached != null) {
+                return cached.booleanValue();
+            }
+
+            String fluidName = fluid == null ? null : FluidRegistry.getFluidName(fluid);
+            String fallbackFluidName = fluid == null ? null : fluid.getName();
+            String blockName = Block.blockRegistry.getNameForObject(block);
+
+            boolean ignored = isNameIgnored(fluidName) || isNameIgnored(fallbackFluidName) || isNameIgnored(blockName);
+            this.ignoredBlockCache.put(block, Boolean.valueOf(ignored));
+            return ignored;
+        }
+
+        private void refresh(String[] entries) {
+            if (entries == null) {
+                entries = new String[0];
+            }
+
+            if (entries == this.cachedEntriesRef) {
+                return;
+            }
+
+            if (Arrays.equals(this.cachedEntries, entries)) {
+                this.cachedEntriesRef = entries;
+                return;
+            }
+
+            this.cachedEntriesRef = entries;
+            this.cachedEntries = entries.clone();
+            this.ignoredExactNames.clear();
+            this.ignoredBareNames.clear();
+            this.ignoredBlockCache.clear();
+
+            for (String rawEntry : entries) {
+                String entry = normalizeName(rawEntry);
+                if (entry.length() == 0) {
+                    continue;
+                }
+
+                this.ignoredExactNames.add(entry);
+                if (!entry.contains(":")) {
+                    this.ignoredBareNames.add(entry);
+                }
+            }
+        }
+
+        private boolean isNameIgnored(String name) {
+            if (name == null) {
+                return false;
+            }
+
+            String normalizedName = normalizeName(name);
+            if (this.ignoredExactNames.contains(normalizedName)) {
+                return true;
+            }
+
+            int namespaceSeparator = normalizedName.indexOf(':');
+            return namespaceSeparator >= 0
+                && this.ignoredBareNames.contains(normalizedName.substring(namespaceSeparator + 1));
+        }
     }
 }

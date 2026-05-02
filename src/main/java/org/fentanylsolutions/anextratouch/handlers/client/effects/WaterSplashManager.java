@@ -243,9 +243,16 @@ public class WaterSplashManager {
     }
 
     private static boolean isWater(World world, double x, double y, double z) {
-        Block block = world
-            .getBlock(MathHelper.floor_double(x), MathHelper.floor_double(y), MathHelper.floor_double(z));
-        return block.getMaterial() == net.minecraft.block.material.Material.water;
+        int blockX = MathHelper.floor_double(x);
+        int blockY = MathHelper.floor_double(y);
+        int blockZ = MathHelper.floor_double(z);
+        Block block = world.getBlock(blockX, blockY, blockZ);
+        return block.getMaterial() == net.minecraft.block.material.Material.water
+            && isSplashFluidAllowed(world, blockX, blockY, blockZ);
+    }
+
+    public static boolean isSplashFluidAllowed(World world, int x, int y, int z) {
+        return WetnessFluidHelper.isFluidInteractionAllowed(world, x, y, z);
     }
 
     public void renderInWorldPass(float partialTicks) {

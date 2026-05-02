@@ -34,6 +34,10 @@ public class WaterfallLoopSound extends MovingSound {
         this.nextY = (float) y;
         this.nextZ = (float) z;
         this.nextVolume = volume;
+        this.xPosF = this.nextX;
+        this.yPosF = this.nextY;
+        this.zPosF = this.nextZ;
+        this.volume = this.nextVolume;
         this.stopped = false;
     }
 

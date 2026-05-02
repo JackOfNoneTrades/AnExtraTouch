@@ -204,6 +204,9 @@ public class MixinEntity {
                     if (block.getMaterial() != Material.water) {
                         continue;
                     }
+                    if (!WaterSplashManager.isSplashFluidAllowed(entity.worldObj, x, y, z)) {
+                        continue;
+                    }
 
                     double surface = y + 1.0D;
                     if (block instanceof BlockLiquid) {
@@ -244,7 +247,8 @@ public class MixinEntity {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
                     if (e.worldObj.getBlock(x, y, z)
-                        .getMaterial() == Material.water) return true;
+                        .getMaterial() == Material.water
+                        && WaterSplashManager.isSplashFluidAllowed(e.worldObj, x, y, z)) return true;
                 }
             }
         }
@@ -262,7 +266,8 @@ public class MixinEntity {
             int y = startY + i;
             Block here = e.worldObj.getBlock(x, y, z);
             Block above = e.worldObj.getBlock(x, y + 1, z);
-            if (here.getMaterial() == Material.water && above.getMaterial() != Material.water) {
+            if (here.getMaterial() == Material.water && WaterSplashManager.isSplashFluidAllowed(e.worldObj, x, y, z)
+                && above.getMaterial() != Material.water) {
                 int meta = e.worldObj.getBlockMetadata(x, y, z);
                 if (here instanceof BlockLiquid) return (y + 1) - BlockLiquid.getLiquidHeightPercent(meta);
                 return y + 1;

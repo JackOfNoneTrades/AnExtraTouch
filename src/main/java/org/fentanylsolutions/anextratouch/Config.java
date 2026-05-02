@@ -19,6 +19,7 @@ public class Config {
         public static final String trampling = "trampling";
         public static final String rainSplash = "rain_splash";
         public static final String waterSplash = "water_splash";
+        public static final String fluidInteractions = "fluid_interactions";
         public static final String misc = "misc";
         public static final String smoothGui = "smooth_gui";
         public static final String camera = "camera";
@@ -112,6 +113,10 @@ public class Config {
     public static boolean waterWakesEnabled = true;
     public static float waterWakeAlpha = 1.0f;
     public static float waterWakeDensity = 1.0f;
+
+    // fluid interactions
+    public static String[] fluidInteractionBlacklist = {};
+    public static String[] cascadeFluidBlacklist = { "honey" };
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -670,6 +675,18 @@ public class Config {
                 "Multiplier for how densely Wakes-style surface trails are stamped behind moving entities.");
             config.getCategory(Categories.waterSplash)
                 .remove("cristalineWaterRippleAlphaMultiplier");
+
+            // fluid interactions
+            fluidInteractionBlacklist = config.getStringList(
+                "fluidInteractionBlacklist",
+                Categories.fluidInteractions,
+                fluidInteractionBlacklist,
+                "Forge fluids this mod should ignore for wetness, splashes, ripples, and wake trails. Use fluid registry names like \"water\", \"honey\", \"poison\", or \"hell_blood\". Block registry names like \"minecraft:water\" are also accepted as a fallback.");
+            cascadeFluidBlacklist = config.getStringList(
+                "cascadeFluidBlacklist",
+                Categories.fluidInteractions,
+                cascadeFluidBlacklist,
+                "Forge fluids this mod should ignore only for cascade foam, waterfall spray, and waterfall sounds. This is additive with fluidInteractionBlacklist. Defaults include Biomes O' Plenty honey because it reads poorly as waterfall foam.");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(

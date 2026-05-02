@@ -83,6 +83,7 @@ public class ClientProxy extends CommonProxy {
     public void onConfigReload() {
         super.onConfigReload();
         AnExtraTouch.vic.populateListsFromConfig();
+        WaterCascadeManager.INSTANCE.onConfigReload();
     }
 
 }
