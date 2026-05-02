@@ -28,24 +28,24 @@ public class WetParticleHandler {
 
         int wetness;
         int tickCounter;
-        boolean hasWaterColor;
-        float waterRed;
-        float waterGreen;
-        float waterBlue;
+        boolean hasWetColor;
+        float wetRed;
+        float wetGreen;
+        float wetBlue;
 
-        void setWaterColor(float[] rgb) {
-            this.waterRed = rgb[0];
-            this.waterGreen = rgb[1];
-            this.waterBlue = rgb[2];
-            this.hasWaterColor = true;
+        void setWetColor(float[] rgb) {
+            this.wetRed = rgb[0];
+            this.wetGreen = rgb[1];
+            this.wetBlue = rgb[2];
+            this.hasWetColor = true;
         }
 
-        float[] getWaterColor() {
-            return new float[] { this.waterRed, this.waterGreen, this.waterBlue };
+        float[] getWetColor() {
+            return new float[] { this.wetRed, this.wetGreen, this.wetBlue };
         }
 
-        void clearWaterColor() {
-            this.hasWaterColor = false;
+        void clearWetColor() {
+            this.hasWetColor = false;
         }
     }
 
@@ -80,8 +80,10 @@ public class WetParticleHandler {
             trackers.put((EntityLivingBase) event.entity, tracker);
         }
 
-        boolean inWater = event.entity.isInWater();
-        boolean wetFromRain = Config.wetnessRainEnabled && event.entity.isWet();
+        EntityLivingBase entity = (EntityLivingBase) event.entity;
+        WetnessFluidHelper.FluidSample fluidSample = WetnessFluidHelper.findWettableFluid(entity);
+        boolean inFluid = fluidSample != null;
+        boolean wetFromRain = Config.wetnessRainEnabled && WetnessFluidHelper.isRainingOn(entity);
 
         // Update wetness every WETNESS_TICK_INTERVAL ticks
         tracker.tickCounter++;
@@ -89,12 +91,12 @@ public class WetParticleHandler {
             tracker.tickCounter = 0;
 
             int wetnessLimit = (int) (WETNESS_LIMIT * Config.wetnessDuration);
-            if (inWater) {
+            if (inFluid) {
                 tracker.wetness = Math.min(wetnessLimit, tracker.wetness + WETNESS_FLUID_INCREASE);
-                updateWaterColor(tracker, (EntityLivingBase) event.entity);
+                tracker.setWetColor(fluidSample.rgb);
             } else if (wetFromRain) {
                 tracker.wetness = Math.min(wetnessLimit, tracker.wetness + WETNESS_RAIN_INCREASE);
-                updateWaterColor(tracker, (EntityLivingBase) event.entity);
+                updateRainColor(tracker, entity);
             } else if (event.entity.isBurning()) {
                 tracker.wetness = Math.max(0, tracker.wetness - WETNESS_FIRE_DECREASE);
             } else {
@@ -102,18 +104,18 @@ public class WetParticleHandler {
             }
 
             if (tracker.wetness <= 0) {
-                tracker.clearWaterColor();
+                tracker.clearWetColor();
             }
         }
 
-        if (tracker.wetness > 0 && !inWater) {
+        if (tracker.wetness > 0 && !inFluid) {
             int wetnessLimit = (int) (WETNESS_LIMIT * Config.wetnessDuration);
             float wetRatio = Math.min((float) tracker.wetness / wetnessLimit, 1.0f);
             int spawnRate = Math.round((1.0f - wetRatio) * 10f / Config.wetnessParticleDensity);
 
             if (spawnRate <= 0 || event.entity.worldObj.getTotalWorldTime() % spawnRate == 0) {
-                if (!tracker.hasWaterColor) {
-                    updateWaterColor(tracker, (EntityLivingBase) event.entity);
+                if (!tracker.hasWetColor) {
+                    updateRainColor(tracker, entity);
                 }
 
                 double x = event.entity.boundingBox.minX + event.entity.worldObj.rand.nextFloat()
@@ -124,12 +126,12 @@ public class WetParticleHandler {
                     * (event.entity.boundingBox.maxZ - event.entity.boundingBox.minZ);
 
                 Minecraft.getMinecraft().effectRenderer
-                    .addEffect(new FallingWaterFX(event.entity.worldObj, x, y, z, tracker.getWaterColor()));
+                    .addEffect(new FallingWaterFX(event.entity.worldObj, x, y, z, tracker.getWetColor()));
             }
         }
     }
 
-    private static void updateWaterColor(WetnessTracker tracker, EntityLivingBase entity) {
-        tracker.setWaterColor(FallingWaterFX.getWaterColor(entity.worldObj, entity.posX, entity.posY, entity.posZ));
+    private static void updateRainColor(WetnessTracker tracker, EntityLivingBase entity) {
+        tracker.setWetColor(FallingWaterFX.getWaterColor(entity.worldObj, entity.posX, entity.posY, entity.posZ));
     }
 }
