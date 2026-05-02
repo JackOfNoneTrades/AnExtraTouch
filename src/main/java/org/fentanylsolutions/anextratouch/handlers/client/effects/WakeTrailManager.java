@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -20,6 +18,8 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidRegistry;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.lwjgl.opengl.GL11;
@@ -40,7 +40,6 @@ public final class WakeTrailManager {
     private static final int MAX_NODES = 512;
     private static final int FLOOD_FILL_DISTANCE = 2;
     private static final int FLOOD_FILL_TICK_DELAY = 2;
-    private static final float WATER_OFFSET = 8.0F / 9.0F;
     private static final float SURFACE_OFFSET = 0.014F;
     private static final float INITIAL_STRENGTH = 20.0F;
     private static final float WAVE_PROPAGATION_FACTOR = 0.95F;
@@ -230,7 +229,7 @@ public final class WakeTrailManager {
             return;
         }
 
-        int y = MathHelper.floor_double(surfaceY);
+        int y = MathHelper.floor_double(surfaceY - 1.0E-4D);
         float strength = INITIAL_STRENGTH * density;
         thickNodeTrail(world, fromX, fromZ, toX, toZ, y, strength, distance, entity.width);
     }
@@ -365,11 +364,11 @@ public final class WakeTrailManager {
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    if (!isWaterSurface(world, x, y, z)) {
+                    if (!isWakeSurface(world, x, y, z)) {
                         continue;
                     }
 
-                    double surface = getWaterSurfaceY(world, x, y, z);
+                    double surface = getWakeSurfaceY(world, x, y, z);
                     if (surface > best) {
                         best = surface;
                     }
@@ -385,29 +384,33 @@ public final class WakeTrailManager {
         return box.maxY > surfaceY + 0.01D && box.minY < surfaceY + 0.45D;
     }
 
-    private static boolean isWaterSurface(World world, int x, int y, int z) {
-        Block block = world.getBlock(x, y, z);
-        if (block.getMaterial() != Material.water) {
-            return false;
-        }
-        if (!WetnessFluidHelper.isFluidInteractionAllowed(world, x, y, z)) {
+    private static boolean isWakeSurface(World world, int x, int y, int z) {
+        if (getWakeSurfaceY(world, x, y, z) < 0.0D) {
             return false;
         }
 
-        Block above = world.getBlock(x, y + 1, z);
-        return above.getMaterial() != Material.water;
+        return WetnessFluidHelper.getInteractableFluid(world, x, y + 1, z) == null;
     }
 
     private static boolean isValidNodePos(World world, int x, int y, int z) {
-        if (!isWaterSurface(world, x, y, z)) {
+        if (!isWakeSurface(world, x, y, z)) {
             return false;
         }
 
-        return world.getBlockMetadata(x, y, z) == 0;
+        Fluid fluid = WetnessFluidHelper.getInteractableFluid(world, x, y, z);
+        if (fluid == FluidRegistry.WATER && world.getBlock(x, y, z) instanceof BlockLiquid) {
+            return world.getBlockMetadata(x, y, z) == 0;
+        }
+
+        return WetnessFluidHelper.getWettableFluidHeight(world, x, y, z) >= 0.999F;
     }
 
-    private static double getWaterSurfaceY(World world, int x, int y, int z) {
-        return (double) (y + 1) - BlockLiquid.getLiquidHeightPercent(world.getBlockMetadata(x, y, z));
+    private static double getWakeSurfaceY(World world, int x, int y, int z) {
+        return WetnessFluidHelper.getWettableFluidSurfaceY(world, x, y, z);
+    }
+
+    private static float[] sampleWakeFluidColor(World world, int x, int y, int z) {
+        return WetnessFluidHelper.getWettableFluidColor(world, x, y, z);
     }
 
     private static void renderNode(Tessellator tessellator, WakeNode node, double camX, double camY, double camZ,
@@ -419,16 +422,15 @@ public final class WakeTrailManager {
             return;
         }
 
-        float[] tint = FallingWaterFX.getWaterColor(node.world, node.x + 0.5D, node.y + WATER_OFFSET, node.z + 0.5D);
         double pixelSize = 1.0D / NODE_RES;
-        double y = node.y + WATER_OFFSET + SURFACE_OFFSET - camY;
+        double y = node.surfaceY + SURFACE_OFFSET - camY;
 
         tessellator.setBrightness(FULL_BRIGHT);
         for (int pixelZ = 0; pixelZ < NODE_RES; pixelZ++) {
             double z0 = node.z + pixelZ * pixelSize - camZ;
             double z1 = z0 + pixelSize;
             for (int pixelX = 0; pixelX < NODE_RES; pixelX++) {
-                int[] color = sampleColor(node.getWave(pixelX, pixelZ), tint, ageFade);
+                int[] color = sampleColor(node.getWave(pixelX, pixelZ), node.tint, ageFade);
                 if (color[3] <= 2) {
                     continue;
                 }
@@ -590,6 +592,8 @@ public final class WakeTrailManager {
         final int x;
         final int y;
         final int z;
+        final double surfaceY;
+        final float[] tint;
         final float[][][] u = new float[3][NODE_RES + 2][NODE_RES + 2];
         final float[][] initialValues = new float[NODE_RES + 2][NODE_RES + 2];
         int floodLevel;
@@ -602,6 +606,8 @@ public final class WakeTrailManager {
             this.x = x;
             this.y = y;
             this.z = z;
+            this.surfaceY = getWakeSurfaceY(world, x, y, z);
+            this.tint = sampleWakeFluidColor(world, x, y, z);
             this.floodLevel = floodLevel;
         }
 

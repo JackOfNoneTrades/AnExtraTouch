@@ -116,6 +116,7 @@ public class Config {
 
     // fluid interactions
     public static String[] fluidInteractionBlacklist = {};
+    public static String[] splashFluidBlacklist = { "honey" };
     public static String[] cascadeFluidBlacklist = { "honey" };
 
     // rain splash
@@ -681,7 +682,12 @@ public class Config {
                 "fluidInteractionBlacklist",
                 Categories.fluidInteractions,
                 fluidInteractionBlacklist,
-                "Forge fluids this mod should ignore for wetness, splashes, ripples, and wake trails. Use fluid registry names like \"water\", \"honey\", \"poison\", or \"hell_blood\". Block registry names like \"minecraft:water\" are also accepted as a fallback.");
+                "Forge fluids this mod should ignore globally. Feature-specific blacklists are additive with this list. Use fluid registry names like \"water\", \"honey\", \"poison\", or \"hell_blood\". Block registry names like \"minecraft:water\" are also accepted as a fallback.");
+            splashFluidBlacklist = config.getStringList(
+                "splashFluidBlacklist",
+                Categories.fluidInteractions,
+                splashFluidBlacklist,
+                "Forge fluids this mod should ignore only for enhanced water splashes. This is additive with fluidInteractionBlacklist. Defaults include Biomes O' Plenty honey because it reads poorly as splash foam.");
             cascadeFluidBlacklist = config.getStringList(
                 "cascadeFluidBlacklist",
                 Categories.fluidInteractions,

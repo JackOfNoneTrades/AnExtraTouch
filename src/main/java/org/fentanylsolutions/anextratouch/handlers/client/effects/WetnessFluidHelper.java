@@ -30,6 +30,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 public final class WetnessFluidHelper {
 
     private static final FluidBlacklist fluidInteractionBlacklist = new FluidBlacklist();
+    private static final FluidBlacklist splashFluidBlacklist = new FluidBlacklist();
     private static final FluidBlacklist cascadeFluidBlacklist = new FluidBlacklist();
 
     private WetnessFluidHelper() {}
@@ -149,6 +150,20 @@ public final class WetnessFluidHelper {
         }
 
         if (block.getMaterial() == Material.water && !isCascadeIgnoredFluid(block, FluidRegistry.WATER)) {
+            return FluidRegistry.WATER;
+        }
+
+        return null;
+    }
+
+    static Fluid getSplashFluid(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof IFluidBlock) {
+            Fluid fluid = ((IFluidBlock) block).getFluid();
+            return isSplashFluid(world, x, y, z, block, fluid) ? fluid : null;
+        }
+
+        if (block.getMaterial() == Material.water && !isSplashIgnoredFluid(block, FluidRegistry.WATER)) {
             return FluidRegistry.WATER;
         }
 
@@ -293,6 +308,10 @@ public final class WetnessFluidHelper {
         return isWettableFluid(world, x, y, z, block, fluid) && !isCascadeIgnoredFluid(block, fluid);
     }
 
+    private static boolean isSplashFluid(World world, int x, int y, int z, Block block, Fluid fluid) {
+        return isWettableFluid(world, x, y, z, block, fluid) && !isSplashIgnoredFluid(block, fluid);
+    }
+
     private static Fluid getInteractableFluid(World world, int x, int y, int z, Block block, IFluidBlock fluidBlock) {
         Fluid fluid = fluidBlock.getFluid();
         return isWettableFluid(world, x, y, z, block, fluid) ? fluid : null;
@@ -300,6 +319,11 @@ public final class WetnessFluidHelper {
 
     private static boolean isIgnoredFluid(Block block, Fluid fluid) {
         return fluidInteractionBlacklist.isIgnored(block, fluid, Config.fluidInteractionBlacklist);
+    }
+
+    private static boolean isSplashIgnoredFluid(Block block, Fluid fluid) {
+        return isIgnoredFluid(block, fluid)
+            || splashFluidBlacklist.isIgnored(block, fluid, Config.splashFluidBlacklist);
     }
 
     private static boolean isCascadeIgnoredFluid(Block block, Fluid fluid) {

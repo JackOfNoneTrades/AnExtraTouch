@@ -282,7 +282,7 @@ public class WaterSplashManager {
     }
 
     public static boolean isSplashFluidAllowed(World world, int x, int y, int z) {
-        return WetnessFluidHelper.getInteractableFluid(world, x, y, z) != null;
+        return WetnessFluidHelper.getSplashFluid(world, x, y, z) != null;
     }
 
     public void renderInWorldPass(float partialTicks) {
