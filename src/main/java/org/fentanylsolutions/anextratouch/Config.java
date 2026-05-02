@@ -109,6 +109,9 @@ public class Config {
     public static boolean waterDripRipplesEnabled = true;
     public static float waterRippleAlpha = 0.8f;
     public static float rainRippleDensity = 1.0f;
+    public static boolean waterWakesEnabled = true;
+    public static float waterWakeAlpha = 1.0f;
+    public static float waterWakeDensity = 1.0f;
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -646,6 +649,25 @@ public class Config {
                 0.0f,
                 32.0f,
                 "Multiplier for how many rain ripples spawn on water surfaces.");
+            waterWakesEnabled = config.getBoolean(
+                "waterWakesEnabled",
+                Categories.waterSplash,
+                waterWakesEnabled,
+                "Enable Wakes-style trails behind boats, players, mobs, and items moving on the water surface.");
+            waterWakeAlpha = config.getFloat(
+                "waterWakeAlpha",
+                Categories.waterSplash,
+                waterWakeAlpha,
+                0.0f,
+                1.0f,
+                "Opacity for Wakes-style surface trails.");
+            waterWakeDensity = config.getFloat(
+                "waterWakeDensity",
+                Categories.waterSplash,
+                waterWakeDensity,
+                0.0f,
+                8.0f,
+                "Multiplier for how densely Wakes-style surface trails are stamped behind moving entities.");
             config.getCategory(Categories.waterSplash)
                 .remove("cristalineWaterRippleAlphaMultiplier");
 

@@ -10,6 +10,7 @@ import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
 import org.lwjgl.BufferUtils;
@@ -434,6 +435,17 @@ public abstract class MixinEntityRenderer {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterRippleManager.INSTANCE.renderInWorldPass(partialTicks);
+    }
+
+    @Inject(
+        method = "renderWorld",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/RenderGlobal;sortAndRender(Lnet/minecraft/entity/EntityLivingBase;ID)I",
+            shift = Shift.AFTER),
+        slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
+    private void anextratouch$renderWakesAfterWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks);
     }
 
     /**

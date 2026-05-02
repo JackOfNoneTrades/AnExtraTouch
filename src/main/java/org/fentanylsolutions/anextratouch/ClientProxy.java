@@ -10,6 +10,7 @@ import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCamera
 import org.fentanylsolutions.anextratouch.handlers.client.camera.SoundShakeHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
@@ -55,6 +56,9 @@ public class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(WaterRippleManager.INSTANCE);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(WakeTrailManager.INSTANCE);
         FMLCommonHandler.instance()
             .bus()
             .register(WaterCascadeManager.INSTANCE);

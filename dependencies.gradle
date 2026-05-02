@@ -43,6 +43,8 @@ dependencies {
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:bugtorch:1.2.14"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:biomes-o-plenty:2.1.0.2308"))
 
+    //devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.23-GTNH-pre:dev")
+
     //compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
     implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
     //implementation (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
