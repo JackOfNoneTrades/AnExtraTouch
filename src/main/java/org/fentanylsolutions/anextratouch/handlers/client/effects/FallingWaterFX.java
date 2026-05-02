@@ -171,7 +171,7 @@ public class FallingWaterFX extends EntityFX {
                 : (float) (by + 1) - BlockLiquid.getLiquidHeightPercent(this.worldObj.getBlockMetadata(bx, by, bz));
 
             if (this.posY < collisionY) {
-                if (fluidSurfaceY >= 0.0D) {
+                if (fluidSurfaceY >= 0.0D && this.prevPosY >= fluidSurfaceY) {
                     WaterRippleManager.INSTANCE.trySpawnDripRipple(this.worldObj, this.posX, this.posY, this.posZ);
                 }
                 this.setDead();
