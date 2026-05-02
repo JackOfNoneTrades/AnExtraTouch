@@ -165,11 +165,14 @@ public class FallingWaterFX extends EntityFX {
             .isLiquid()
             || block.getMaterial()
                 .isSolid()) {
-            double d0 = (float) (by + 1)
-                - BlockLiquid.getLiquidHeightPercent(this.worldObj.getBlockMetadata(bx, by, bz));
+            double fluidSurfaceY = WetnessFluidHelper.getWettableFluidSurfaceY(this.worldObj, bx, by, bz);
+            double collisionY = fluidSurfaceY >= 0.0D ? fluidSurfaceY
+                : (float) (by + 1) - BlockLiquid.getLiquidHeightPercent(this.worldObj.getBlockMetadata(bx, by, bz));
 
-            if (this.posY < d0) {
-                WaterRippleManager.INSTANCE.trySpawnDripRipple(this.worldObj, this.posX, this.posY, this.posZ);
+            if (this.posY < collisionY) {
+                if (fluidSurfaceY >= 0.0D) {
+                    WaterRippleManager.INSTANCE.trySpawnDripRipple(this.worldObj, this.posX, this.posY, this.posZ);
+                }
                 this.setDead();
             }
         }

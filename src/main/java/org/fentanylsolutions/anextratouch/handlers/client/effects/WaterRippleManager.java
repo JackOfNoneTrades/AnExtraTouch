@@ -5,9 +5,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockLiquid;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -37,6 +34,7 @@ public final class WaterRippleManager {
     private static final int MAX_AGE = 7;
     private static final float HALF_SIZE = 0.25F;
     private static final float SURFACE_OFFSET = 0.012F;
+    private static final double SURFACE_FLUID_CHECK_OFFSET = 1.0E-4D;
     private static final float CRISTALINE_WATER_INVERSE_ALPHA = 1.0F - 180.0F / 255.0F;
     private static final ResourceLocation[] RIPPLE_TEX = makeFrames();
     private static Boolean cristalineWaterLoaded;
@@ -58,7 +56,7 @@ public final class WaterRippleManager {
         int blockX = MathHelper.floor_double(x);
         int blockY = MathHelper.floor_double(y);
         int blockZ = MathHelper.floor_double(z);
-        double surfaceY = getWaterSurfaceY(world, blockX, blockY, blockZ);
+        double surfaceY = WetnessFluidHelper.getWettableFluidSurfaceY(world, blockX, blockY, blockZ);
         if (surfaceY < 0.0D || y >= surfaceY) {
             return false;
         }
@@ -97,7 +95,11 @@ public final class WaterRippleManager {
         Iterator<Ripple> iterator = ripples.iterator();
         while (iterator.hasNext()) {
             Ripple ripple = iterator.next();
-            if (ripple.world != mc.theWorld || !isWater(ripple.world, ripple.x, ripple.y - SURFACE_OFFSET, ripple.z)) {
+            if (ripple.world != mc.theWorld || !WetnessFluidHelper.isWettableFluidAt(
+                ripple.world,
+                ripple.x,
+                ripple.y - SURFACE_OFFSET - SURFACE_FLUID_CHECK_OFFSET,
+                ripple.z)) {
                 iterator.remove();
                 continue;
             }
@@ -194,7 +196,7 @@ public final class WaterRippleManager {
                 continue;
             }
 
-            double surfaceY = getWaterSurfaceY(world, x, y - 1, z);
+            double surfaceY = getRainFluidSurfaceY(world, x, y, z);
             if (surfaceY >= 0.0D) {
                 spawnRipple(
                     world,
@@ -215,18 +217,13 @@ public final class WaterRippleManager {
         return frames;
     }
 
-    private static double getWaterSurfaceY(World world, int x, int y, int z) {
-        Block block = world.getBlock(x, y, z);
-        if (block.getMaterial() != Material.water) {
-            return -1.0D;
+    private static double getRainFluidSurfaceY(World world, int x, int precipitationY, int z) {
+        double surfaceY = WetnessFluidHelper.getWettableFluidSurfaceY(world, x, precipitationY - 1, z);
+        if (surfaceY >= 0.0D) {
+            return surfaceY;
         }
 
-        return (double) (y + 1) - BlockLiquid.getLiquidHeightPercent(world.getBlockMetadata(x, y, z));
-    }
-
-    private static boolean isWater(World world, double x, double y, double z) {
-        return world.getBlock(MathHelper.floor_double(x), MathHelper.floor_double(y), MathHelper.floor_double(z))
-            .getMaterial() == Material.water;
+        return WetnessFluidHelper.getWettableFluidSurfaceY(world, x, precipitationY, z);
     }
 
     private static int frameForAge(int prevAge, int age, float partialTicks) {

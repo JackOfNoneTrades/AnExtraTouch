@@ -75,6 +75,33 @@ final class WetnessFluidHelper {
             || world.canLightningStrikeAt(x, MathHelper.floor_double(entity.posY + entity.height), z);
     }
 
+    static double getWettableFluidSurfaceY(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof IFluidBlock) {
+            IFluidBlock fluidBlock = (IFluidBlock) block;
+            Fluid fluid = fluidBlock.getFluid();
+            if (!isWettableFluid(world, x, y, z, block, fluid)) {
+                return -1.0D;
+            }
+
+            return getForgeFluidSurfaceY(world, x, y, z, fluidBlock);
+        }
+
+        if (block.getMaterial() == Material.water) {
+            return getVanillaLiquidSurfaceY(world, x, y, z);
+        }
+
+        return -1.0D;
+    }
+
+    static boolean isWettableFluidAt(World world, double x, double y, double z) {
+        return getWettableFluidSurfaceY(
+            world,
+            MathHelper.floor_double(x),
+            MathHelper.floor_double(y),
+            MathHelper.floor_double(z)) >= 0.0D;
+    }
+
     private static boolean isWettableFluid(World world, int x, int y, int z, Block block, Fluid fluid) {
         if (fluid == null || fluid == FluidRegistry.LAVA || block.getMaterial() == Material.lava) {
             return false;
@@ -84,19 +111,13 @@ final class WetnessFluidHelper {
     }
 
     private static boolean intersectsVanillaLiquid(AxisAlignedBB bb, World world, int x, int y, int z) {
-        double surfaceY = (double) ((float) (y + 1)
-            - BlockLiquid.getLiquidHeightPercent(world.getBlockMetadata(x, y, z)));
+        double surfaceY = getVanillaLiquidSurfaceY(world, x, y, z);
         return bb.maxY >= surfaceY && bb.minY < (double) (y + 1);
     }
 
     private static boolean intersectsForgeFluid(AxisAlignedBB bb, World world, int x, int y, int z,
         IFluidBlock fluidBlock) {
-        float filled;
-        try {
-            filled = fluidBlock.getFilledPercentage(world, x, y, z);
-        } catch (Exception ignored) {
-            filled = 1.0F;
-        }
+        float filled = getFilledPercentage(world, x, y, z, fluidBlock);
 
         if (filled == 0.0F) {
             return false;
@@ -106,6 +127,28 @@ final class WetnessFluidHelper {
         double fluidMinY = filled > 0.0F ? y : y + 1.0D - amount;
         double fluidMaxY = filled > 0.0F ? y + amount : y + 1.0D;
         return bb.maxY >= fluidMinY && bb.minY < fluidMaxY;
+    }
+
+    private static double getVanillaLiquidSurfaceY(World world, int x, int y, int z) {
+        return (double) ((float) (y + 1) - BlockLiquid.getLiquidHeightPercent(world.getBlockMetadata(x, y, z)));
+    }
+
+    private static double getForgeFluidSurfaceY(World world, int x, int y, int z, IFluidBlock fluidBlock) {
+        float filled = getFilledPercentage(world, x, y, z, fluidBlock);
+        if (filled == 0.0F) {
+            return -1.0D;
+        }
+
+        float amount = Math.min(Math.abs(filled), 1.0F);
+        return filled > 0.0F ? y + amount : y + 1.0D;
+    }
+
+    private static float getFilledPercentage(World world, int x, int y, int z, IFluidBlock fluidBlock) {
+        try {
+            return fluidBlock.getFilledPercentage(world, x, y, z);
+        } catch (Exception ignored) {
+            return 1.0F;
+        }
     }
 
     private static float[] getFluidColor(World world, int x, int y, int z, Block block, Fluid fluid) {
