@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
@@ -77,6 +76,7 @@ public class WaterSplashManager {
         float width;
         float height;
         float speed;
+        float r, g, b;
         int age;
         boolean spawnedSecondWave;
     }
@@ -90,14 +90,15 @@ public class WaterSplashManager {
 
         speed = Math.min(SPEED_CAP, speed);
         float height = (speed / 2f + width / 3f);
+        float[] rgb = sampleSplashFluidColor(world, x, y, z);
 
-        spawnSplash(world, x, y, z, width, height, false);
+        spawnSplash(world, x, y, z, width, height, false, rgb);
         spawnSplash(world, x, y, z, width, height, true);
         spawnRing(world, x, y, z, width);
 
         if (speed > 0.5f) {
             float dropletSpeed = (1.5f / 8f + speed * 1f / 8f) + (width / 6f);
-            spawnDroplets(world, x, y, z, width, dropletSpeed, 0.15f);
+            spawnDroplets(world, x, y, z, width, dropletSpeed, 0.15f, rgb);
         }
 
         Emitter e = new Emitter();
@@ -108,10 +109,18 @@ public class WaterSplashManager {
         e.width = width;
         e.height = height;
         e.speed = speed;
+        e.r = rgb[0];
+        e.g = rgb[1];
+        e.b = rgb[2];
         emitters.add(e);
     }
 
     private void spawnSplash(World world, double x, double y, double z, float width, float height, boolean foam) {
+        spawnSplash(world, x, y, z, width, height, foam, null);
+    }
+
+    private void spawnSplash(World world, double x, double y, double z, float width, float height, boolean foam,
+        float[] rgb) {
         Splash s = new Splash();
         s.world = world;
         s.x = x;
@@ -123,7 +132,9 @@ public class WaterSplashManager {
         if (foam) {
             s.r = s.g = s.b = 1.0f;
         } else {
-            float[] rgb = FallingWaterFX.getWaterColor(world, x, y, z);
+            if (rgb == null) {
+                rgb = sampleSplashFluidColor(world, x, y, z);
+            }
             s.r = rgb[0];
             s.g = rgb[1];
             s.b = rgb[2];
@@ -143,7 +154,8 @@ public class WaterSplashManager {
         rings.add(r);
     }
 
-    private void spawnDroplets(World world, double x, double y, double z, float width, float speed, float spread) {
+    private void spawnDroplets(World world, double x, double y, double z, float width, float speed, float spread,
+        float[] rgb) {
         java.util.Random rand = world.rand;
         int count = (int) (width * 20f);
         for (int i = 0; i < count; i++) {
@@ -155,7 +167,7 @@ public class WaterSplashManager {
             double py = y + 1.0 / 16.0;
             double pz = z + zVel / spread * width;
 
-            EntityFX drop = new FallingWaterFX(world, px, py, pz);
+            EntityFX drop = new FallingWaterFX(world, px, py, pz, rgb);
             drop.motionX = xVel;
             drop.motionY = yVel;
             drop.motionZ = zVel;
@@ -199,16 +211,17 @@ public class WaterSplashManager {
                 e.spawnedSecondWave = true;
                 float w2 = e.width * 0.66f;
                 float h2 = e.height * 2f;
-                spawnSplash(e.world, e.x, e.y, e.z, w2, h2, false);
+                float[] rgb = new float[] { e.r, e.g, e.b };
+                spawnSplash(e.world, e.x, e.y, e.z, w2, h2, false, rgb);
                 spawnSplash(e.world, e.x, e.y, e.z, w2, h2, true);
                 spawnRing(e.world, e.x, e.y, e.z, w2);
                 if (e.speed > 0.5f) {
                     float dropletSpeed = (3f / 8f + e.speed * 1f / 8f) + (e.width / 6f);
-                    spawnDroplets(e.world, e.x, e.y, e.z, w2, dropletSpeed, 0.05f);
+                    spawnDroplets(e.world, e.x, e.y, e.z, w2, dropletSpeed, 0.05f, rgb);
                 }
             }
             // emitter dies if no longer in water or aged out
-            if (e.age >= EMITTER_MAX_AGE || !isWater(e.world, e.x, e.y, e.z)) {
+            if (e.age >= EMITTER_MAX_AGE || !isSplashFluid(e.world, e.x, e.y, e.z)) {
                 ei.remove();
             }
         }
@@ -222,7 +235,7 @@ public class WaterSplashManager {
             }
             s.prevAge = s.age;
             s.age++;
-            if (s.age >= VISUAL_MAX_AGE || !isWater(s.world, s.x, s.y, s.z)) {
+            if (s.age >= VISUAL_MAX_AGE || !isSplashFluid(s.world, s.x, s.y, s.z)) {
                 si.remove();
             }
         }
@@ -236,23 +249,40 @@ public class WaterSplashManager {
             }
             r.prevAge = r.age;
             r.age++;
-            if (r.age >= VISUAL_MAX_AGE || !isWater(r.world, r.x, r.y, r.z)) {
+            if (r.age >= VISUAL_MAX_AGE || !isSplashFluid(r.world, r.x, r.y, r.z)) {
                 ri.remove();
             }
         }
     }
 
-    private static boolean isWater(World world, double x, double y, double z) {
+    private static boolean isSplashFluid(World world, double x, double y, double z) {
         int blockX = MathHelper.floor_double(x);
         int blockY = MathHelper.floor_double(y);
         int blockZ = MathHelper.floor_double(z);
-        Block block = world.getBlock(blockX, blockY, blockZ);
-        return block.getMaterial() == net.minecraft.block.material.Material.water
-            && isSplashFluidAllowed(world, blockX, blockY, blockZ);
+        return isSplashFluid(world, blockX, blockY, blockZ) || isSplashFluid(world, blockX, blockY - 1, blockZ);
+    }
+
+    private static boolean isSplashFluid(World world, int x, int y, int z) {
+        return isSplashFluidAllowed(world, x, y, z);
+    }
+
+    private static float[] sampleSplashFluidColor(World world, double x, double y, double z) {
+        int blockX = MathHelper.floor_double(x);
+        int blockY = MathHelper.floor_double(y);
+        int blockZ = MathHelper.floor_double(z);
+
+        if (isSplashFluid(world, blockX, blockY, blockZ)) {
+            return WetnessFluidHelper.getWettableFluidColor(world, blockX, blockY, blockZ);
+        }
+        if (isSplashFluid(world, blockX, blockY - 1, blockZ)) {
+            return WetnessFluidHelper.getWettableFluidColor(world, blockX, blockY - 1, blockZ);
+        }
+
+        return FallingWaterFX.getWaterColor(world, x, y, z);
     }
 
     public static boolean isSplashFluidAllowed(World world, int x, int y, int z) {
-        return WetnessFluidHelper.isFluidInteractionAllowed(world, x, y, z);
+        return WetnessFluidHelper.getInteractableFluid(world, x, y, z) != null;
     }
 
     public void renderInWorldPass(float partialTicks) {
