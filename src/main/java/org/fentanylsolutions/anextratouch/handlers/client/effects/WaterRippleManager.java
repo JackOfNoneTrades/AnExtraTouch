@@ -1,12 +1,18 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.client.resources.IResource;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.MathHelper;
@@ -35,7 +41,10 @@ public final class WaterRippleManager {
     private static final float SURFACE_OFFSET = 0.012F;
     private static final double SURFACE_FLUID_CHECK_OFFSET = 1.0E-4D;
     private static final float CRISTALINE_WATER_INVERSE_ALPHA = 1.0F - 180.0F / 255.0F;
+    private static final int FULL_BRIGHT = 15728880;
+    private static final RippleFrame EMPTY_FRAME = new RippleFrame(new RipplePixel[0], 1, 1);
     private static final ResourceLocation[] RIPPLE_TEX = makeFrames();
+    private static final RippleFrame[] RIPPLE_FRAMES = new RippleFrame[FRAME_COUNT];
     private static Boolean cristalineWaterLoaded;
 
     private final List<Ripple> ripples = new ArrayList<Ripple>();
@@ -136,11 +145,13 @@ public final class WaterRippleManager {
             GL11.glDepthMask(false);
 
             mc.entityRenderer.enableLightmap((double) partialTicks);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
             for (Ripple ripple : ripples) {
                 if (ripple.world == mc.theWorld) {
                     renderRipple(mc, ripple, camX, camY, camZ, partialTicks);
                 }
             }
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
             GL11.glDepthMask(true);
@@ -240,27 +251,93 @@ public final class WaterRippleManager {
     private static void renderRipple(Minecraft mc, Ripple ripple, double camX, double camY, double camZ,
         float partialTicks) {
         int frame = frameForAge(ripple.prevAge, ripple.age, partialTicks);
-        mc.getTextureManager()
-            .bindTexture(RIPPLE_TEX[frame]);
+        RippleFrame rippleFrame = getRippleFrame(mc, frame);
+        if (rippleFrame.pixels.length == 0) {
+            return;
+        }
 
         float x = (float) (ripple.x - camX);
         float y = (float) (ripple.y - camY);
         float z = (float) (ripple.z - camZ);
-        int brightness = ripple.world.getLightBrightnessForSkyBlocks(
-            MathHelper.floor_double(ripple.x),
-            MathHelper.floor_double(ripple.y),
-            MathHelper.floor_double(ripple.z),
-            0);
+        double pixelWidth = (double) (HALF_SIZE * 2.0F) / rippleFrame.width;
+        double pixelDepth = (double) (HALF_SIZE * 2.0F) / rippleFrame.height;
 
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawingQuads();
-        tessellator.setBrightness(brightness);
-        tessellator.setColorRGBA_F(1.0F, 1.0F, 1.0F, getEffectiveAlpha());
-        tessellator.addVertexWithUV(x - HALF_SIZE, y, z - HALF_SIZE, 1.0D, 1.0D);
-        tessellator.addVertexWithUV(x - HALF_SIZE, y, z + HALF_SIZE, 1.0D, 0.0D);
-        tessellator.addVertexWithUV(x + HALF_SIZE, y, z + HALF_SIZE, 0.0D, 0.0D);
-        tessellator.addVertexWithUV(x + HALF_SIZE, y, z - HALF_SIZE, 0.0D, 1.0D);
+        tessellator.setBrightness(FULL_BRIGHT);
+        for (RipplePixel pixel : rippleFrame.pixels) {
+            int alpha = getRenderedPixelAlpha(pixel.alpha);
+            if (alpha <= 2) {
+                continue;
+            }
+
+            double x0 = x - HALF_SIZE + pixel.x * pixelWidth;
+            double x1 = x0 + pixelWidth;
+            double z0 = z - HALF_SIZE + pixel.z * pixelDepth;
+            double z1 = z0 + pixelDepth;
+            tessellator.setColorRGBA(pixel.red, pixel.green, pixel.blue, alpha);
+            tessellator.addVertex(x0, y, z0);
+            tessellator.addVertex(x0, y, z1);
+            tessellator.addVertex(x1, y, z1);
+            tessellator.addVertex(x1, y, z0);
+        }
         tessellator.draw();
+    }
+
+    private static RippleFrame getRippleFrame(Minecraft mc, int frame) {
+        RippleFrame rippleFrame = RIPPLE_FRAMES[frame];
+        if (rippleFrame == null) {
+            rippleFrame = loadRippleFrame(mc, frame);
+            RIPPLE_FRAMES[frame] = rippleFrame;
+        }
+        return rippleFrame;
+    }
+
+    private static RippleFrame loadRippleFrame(Minecraft mc, int frame) {
+        InputStream inputStream = null;
+        try {
+            IResource resource = mc.getResourceManager()
+                .getResource(RIPPLE_TEX[frame]);
+            inputStream = resource.getInputStream();
+            BufferedImage image = ImageIO.read(inputStream);
+            return image == null ? EMPTY_FRAME : readRippleFrame(image);
+        } catch (IOException ignored) {
+            return EMPTY_FRAME;
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException ignored) {}
+            }
+        }
+    }
+
+    private static RippleFrame readRippleFrame(BufferedImage image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        List<RipplePixel> pixels = new ArrayList<RipplePixel>();
+        for (int pixelZ = 0; pixelZ < height; pixelZ++) {
+            for (int pixelX = 0; pixelX < width; pixelX++) {
+                int argb = image.getRGB(pixelX, pixelZ);
+                int alpha = (argb >> 24) & 0xFF;
+                if (alpha <= 2) {
+                    continue;
+                }
+
+                pixels
+                    .add(new RipplePixel(pixelX, pixelZ, (argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, alpha));
+            }
+        }
+
+        return new RippleFrame(pixels.toArray(new RipplePixel[pixels.size()]), width, height);
+    }
+
+    private static int getRenderedPixelAlpha(int textureAlpha) {
+        if (textureAlpha == 0xFF) {
+            return 0xFF;
+        }
+
+        return (int) (textureAlpha * getEffectiveAlpha());
     }
 
     private static float getEffectiveAlpha() {
@@ -286,5 +363,37 @@ public final class WaterRippleManager {
         double z;
         int age;
         int prevAge;
+    }
+
+    private static class RippleFrame {
+
+        final RipplePixel[] pixels;
+        final int width;
+        final int height;
+
+        RippleFrame(RipplePixel[] pixels, int width, int height) {
+            this.pixels = pixels;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
+    private static class RipplePixel {
+
+        final int x;
+        final int z;
+        final int red;
+        final int green;
+        final int blue;
+        final int alpha;
+
+        RipplePixel(int x, int z, int red, int green, int blue, int alpha) {
+            this.x = x;
+            this.z = z;
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
+            this.alpha = alpha;
+        }
     }
 }
