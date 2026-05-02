@@ -14,6 +14,12 @@ public class CascadeFX extends EntityFX {
 
     public CascadeFX(World world, double x, double y, double z) {
         super(world, x, y, z);
+        this.prevPosX = this.posX;
+        this.prevPosY = this.posY;
+        this.prevPosZ = this.posZ;
+        this.lastTickPosX = this.posX;
+        this.lastTickPosY = this.posY;
+        this.lastTickPosZ = this.posZ;
         // Particular's CascadeParticle: small horizontal random, no vertical velocity.
         this.motionX = world.rand.nextDouble() * 0.25D - 0.125D;
         this.motionY = 0.0D;

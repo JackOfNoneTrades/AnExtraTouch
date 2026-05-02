@@ -285,8 +285,7 @@ public class WaterCascadeManager {
             return 0.0F;
         }
 
-        if (!world.isAirBlock(x, y, z - 1)
-            && !world.isAirBlock(x + 1, y, z)
+        if (!world.isAirBlock(x, y, z - 1) && !world.isAirBlock(x + 1, y, z)
             && !world.isAirBlock(x, y, z + 1)
             && !world.isAirBlock(x - 1, y, z)) {
             return 0.0F;
