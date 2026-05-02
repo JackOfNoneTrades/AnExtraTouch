@@ -275,43 +275,34 @@ public class WaterCascadeManager {
             return 0.0F;
         }
 
-        if (!isImpactFlowingWater(world, x, y, z)) {
-            return 0.0F;
-        }
-        if (!isWater(world, x, y + 1, z)) {
+        if (!isFlowingWater(world, x, y, z)) {
             return 0.0F;
         }
         if (!isStillWaterSurface(world, x, y - 1, z)) {
             return 0.0F;
         }
-
-        boolean foundAir = false;
-        for (int dx = -1; dx <= 1 && !foundAir; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                if (dx == 0 && dz == 0) {
-                    continue;
-                }
-                if (world.isAirBlock(x + dx, y, z + dz)) {
-                    foundAir = true;
-                    break;
-                }
-            }
-        }
-        if (!foundAir) {
+        if (!isWater(world, x, y - 2, z)) {
             return 0.0F;
         }
 
-        float landingSize = 0.0F;
-        if (isWater(world, x, y - 1, z - 1)) landingSize += 1.0F;
-        if (isWater(world, x + 1, y - 1, z)) landingSize += 1.0F;
-        if (isWater(world, x, y - 1, z + 1)) landingSize += 1.0F;
-        if (isWater(world, x - 1, y - 1, z)) landingSize += 1.0F;
-
-        if (landingSize < 1.0F) {
+        if (!world.isAirBlock(x, y, z - 1)
+            && !world.isAirBlock(x + 1, y, z)
+            && !world.isAirBlock(x, y, z + 1)
+            && !world.isAirBlock(x - 1, y, z)) {
             return 0.0F;
         }
 
-        return getWaterHeight(world, x, y, z) + (landingSize - 2.0F) / 2.0F;
+        int strength = 0;
+        if (isWater(world, x, y - 1, z - 1)) strength++;
+        if (isWater(world, x + 1, y - 1, z)) strength++;
+        if (isWater(world, x, y - 1, z + 1)) strength++;
+        if (isWater(world, x - 1, y - 1, z)) strength++;
+
+        if (strength <= 0) {
+            return 0.0F;
+        }
+
+        return (float) strength;
     }
 
     private boolean isFlowingWater(World world, int x, int y, int z) {
@@ -347,23 +338,25 @@ public class WaterCascadeManager {
             return;
         }
 
-        int particleCount = strength >= 1.6F ? 3 : 2;
-        for (int i = 0; i < particleCount; i++) {
-            double offsetX = world.rand.nextGaussian() / 5.0D;
-            double offsetZ = world.rand.nextGaussian() / 5.0D;
-            double signX = offsetX == 0.0D ? (world.rand.nextBoolean() ? 1.0D : -1.0D) : Math.signum(offsetX);
-            double signZ = offsetZ == 0.0D ? (world.rand.nextBoolean() ? 1.0D : -1.0D) : Math.signum(offsetZ);
-
-            CascadeFX cascade = new CascadeFX(
-                world,
-                pos.chunkPosX + 0.5D + offsetX,
-                pos.chunkPosY + 0.1D + world.rand.nextDouble() * 0.35D,
-                pos.chunkPosZ + 0.5D + offsetZ,
-                world.rand.nextFloat() * strength / 10.0F * signX,
-                world.rand.nextFloat() * strength / 10.0F,
-                world.rand.nextFloat() * strength / 10.0F * signZ);
-            mc.effectRenderer.addEffect(cascade);
+        // Particular spawns one foam particle per cascade per tick along a random edge, with Y
+        // sampled inside the falling water column.
+        double x = pos.chunkPosX;
+        double z = pos.chunkPosZ;
+        if (world.rand.nextBoolean()) {
+            x += world.rand.nextDouble();
+            z += world.rand.nextInt(2);
+        } else {
+            x += world.rand.nextInt(2);
+            z += world.rand.nextDouble();
         }
+
+        float columnHeight = getWaterHeight(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+        double y = pos.chunkPosY + world.rand.nextDouble() * columnHeight;
+
+        CascadeFX cascade = new CascadeFX(world, x, y, z);
+        float size = strength / 4.0F * columnHeight;
+        cascade.multipleParticleScaleBy(1.0F - (1.0F - size) / 2.0F);
+        mc.effectRenderer.addEffect(cascade);
     }
 
     private void updateWaterfallSounds(Minecraft mc, World world) {

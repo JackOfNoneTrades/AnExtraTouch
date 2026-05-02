@@ -1,7 +1,6 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
@@ -13,57 +12,28 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class CascadeFX extends EntityFX {
 
-    public CascadeFX(World world, double x, double y, double z, double velX, double velY, double velZ) {
-        super(world, x, y, z, velX, velY, velZ);
-        this.motionX = velX;
-        this.motionY = velY;
-        this.motionZ = velZ;
-        this.particleMaxAge = 10;
-        this.particleScale = 4.0F;
+    public CascadeFX(World world, double x, double y, double z) {
+        super(world, x, y, z);
+        // Particular's CascadeParticle: small horizontal random, no vertical velocity.
+        this.motionX = world.rand.nextDouble() * 0.25D - 0.125D;
+        this.motionY = 0.0D;
+        this.motionZ = world.rand.nextDouble() * 0.25D - 0.125D;
+        this.particleMaxAge = 9;
+        // Modern billboard particle scale is rendered directly; 1.7.10 renders 0.1 * particleScale.
+        this.particleScale = 10.0F;
+        // EntityFX.onUpdate applies motionY -= 0.04 * particleGravity. Particular's super.tick
+        // applies velocityY -= 0.04 * gravityStrength (0.4f), so set particleGravity = 0.4 to match.
+        this.particleGravity = 0.4F;
         updateSpriteForAge();
         removeIfInsideSolidBlock();
     }
 
     @Override
     public void onUpdate() {
-        this.prevPosX = this.posX;
-        this.prevPosY = this.posY;
-        this.prevPosZ = this.posZ;
-
-        if (this.particleAge++ >= this.particleMaxAge) {
-            this.setDead();
-        }
-
+        super.onUpdate();
         if (this.isDead) {
             return;
         }
-
-        int nextX = MathHelper.floor_double(this.posX);
-        int nextY = MathHelper.floor_double(this.posY + this.motionY);
-        int nextZ = MathHelper.floor_double(this.posZ);
-        if (this.onGround || (this.particleAge > 10 && this.worldObj.getBlock(nextX, nextY, nextZ)
-            .getMaterial() == Material.water)) {
-            this.motionX *= 0.5D;
-            this.motionY *= 0.5D;
-            this.motionZ *= 0.5D;
-        }
-
-        if (this.worldObj.getBlock(nextX, nextY, nextZ)
-            .getMaterial() == Material.water
-            && this.worldObj.isAirBlock(
-                MathHelper.floor_double(this.posX),
-                MathHelper.floor_double(this.posY),
-                MathHelper.floor_double(this.posZ))) {
-            this.motionX *= 0.9D;
-            this.motionY *= 0.9D;
-            this.motionZ *= 0.9D;
-        }
-
-        this.motionX *= 0.95D;
-        this.motionY -= 0.02D;
-        this.motionZ *= 0.95D;
-        this.moveEntity(this.motionX, this.motionY, this.motionZ);
-
         removeIfInsideSolidBlock();
         updateSpriteForAge();
     }
