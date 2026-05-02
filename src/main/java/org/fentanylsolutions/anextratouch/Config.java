@@ -105,6 +105,10 @@ public class Config {
     public static float waterfallSoundCutoff = 0.0f;
     public static boolean chestBubblesEnabled = true;
     public static boolean soulSandChestBubblesEnabled = true;
+    public static boolean rainRipplesEnabled = true;
+    public static boolean waterDripRipplesEnabled = true;
+    public static float waterRippleAlpha = 0.6f;
+    public static float rainRippleDensity = 25.0f;
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -617,6 +621,32 @@ public class Config {
                 Categories.waterSplash,
                 soulSandChestBubblesEnabled,
                 "Enable Particular-style underwater chests on soul sand randomly opening and releasing bubbles.");
+            rainRipplesEnabled = config.getBoolean(
+                "rainRipplesEnabled",
+                Categories.waterSplash,
+                rainRipplesEnabled,
+                "Enable Particular-style water ripples where rain hits water surfaces.");
+            waterDripRipplesEnabled = config.getBoolean(
+                "waterDripRipplesEnabled",
+                Categories.waterSplash,
+                waterDripRipplesEnabled,
+                "Enable Particular-style water ripples where falling water drip particles hit water surfaces.");
+            waterRippleAlpha = config.getFloat(
+                "waterRippleAlpha",
+                Categories.waterSplash,
+                waterRippleAlpha,
+                0.0f,
+                1.0f,
+                "Opacity for Particular-style water ripples.");
+            rainRippleDensity = config.getFloat(
+                "rainRippleDensity",
+                Categories.waterSplash,
+                rainRippleDensity,
+                0.0f,
+                32.0f,
+                "Multiplier for how many rain ripples spawn on water surfaces.");
+            config.getCategory(Categories.waterSplash)
+                .remove("cristalineWaterRippleAlphaMultiplier");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(

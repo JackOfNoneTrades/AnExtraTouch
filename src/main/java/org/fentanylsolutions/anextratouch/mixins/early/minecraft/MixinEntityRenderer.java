@@ -10,6 +10,7 @@ import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -412,8 +413,8 @@ public abstract class MixinEntityRenderer {
     }
 
     /**
-     * Render footprints in the main world translucent phase (before water),
-     * so water properly overlays submerged footprints.
+     * Render surface overlays in the main world translucent phase (before water),
+     * so water properly overlays submerged footprints and distant ripples.
      *
      * Targets the sortAndRender call for the translucent pass (pass 1), sliced
      * between the "water" and "entities" profiler sections. This is compatible
@@ -432,6 +433,7 @@ public abstract class MixinEntityRenderer {
     private void anextratouch$renderFootprintsBeforeWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
+        WaterRippleManager.INSTANCE.renderInWorldPass(partialTicks);
     }
 
     /**
