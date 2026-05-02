@@ -103,6 +103,8 @@ public class Config {
     public static boolean waterfallSoundEnabled = true;
     public static float waterfallSoundVolume = 1.0f;
     public static float waterfallSoundCutoff = 0.0f;
+    public static boolean chestBubblesEnabled = true;
+    public static boolean soulSandChestBubblesEnabled = true;
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -605,6 +607,16 @@ public class Config {
                 0.0f,
                 3.0f,
                 "Minimum cascade strength required before waterfall ambience will play.");
+            chestBubblesEnabled = config.getBoolean(
+                "chestBubblesEnabled",
+                Categories.waterSplash,
+                chestBubblesEnabled,
+                "Enable Particular-style bubble bursts when opening underwater chests.");
+            soulSandChestBubblesEnabled = config.getBoolean(
+                "soulSandChestBubblesEnabled",
+                Categories.waterSplash,
+                soulSandChestBubblesEnabled,
+                "Enable Particular-style underwater chests on soul sand randomly opening and releasing bubbles.");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(

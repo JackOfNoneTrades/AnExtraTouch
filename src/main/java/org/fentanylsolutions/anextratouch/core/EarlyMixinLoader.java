@@ -22,6 +22,8 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
             // Accessors
 
             // Rest
+            .addMixin("MixinBlockChest", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinBlockEnderChest", MixinBuilder.Side.CLIENT)
             .addMixin("MixinBlockLiquid", MixinBuilder.Side.CLIENT)
             .addMixin("MixinChunk", MixinBuilder.Side.CLIENT)
             .addMixin("MixinEntity", MixinBuilder.Side.BOTH)
@@ -33,6 +35,8 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
             .addMixin("MixinEntitySetAngles", MixinBuilder.Side.CLIENT)
             .addMixin("MixinEntityPlayerSP", MixinBuilder.Side.CLIENT)
             .addMixin("MixinSoundHandler", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinTileEntityChest", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinTileEntityEnderChest", MixinBuilder.Side.CLIENT)
             .addMixin("MixinLoadingScreenRenderer", MixinBuilder.Side.CLIENT)
             .addMixin("MixinMinecraft", MixinBuilder.Side.CLIENT)
             .addMixin("MixinMinecraftServer", MixinBuilder.Side.CLIENT)
