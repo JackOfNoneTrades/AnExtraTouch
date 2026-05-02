@@ -29,6 +29,7 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
             .addMixin("MixinChunk", MixinBuilder.Side.CLIENT)
             .addMixin("MixinEntity", MixinBuilder.Side.BOTH)
             .addMixin("MixinEntityDropParticleFX", MixinBuilder.Side.CLIENT)
+            .addMixin("MixinEntityRainFX", MixinBuilder.Side.CLIENT)
             .addMixin("MixinGuiScreen", MixinBuilder.Side.CLIENT)
             .addMixin("MixinEntityRenderer", MixinBuilder.Side.CLIENT)
             .addMixin("MixinExplosion", MixinBuilder.Side.CLIENT)
