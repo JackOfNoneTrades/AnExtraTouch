@@ -31,6 +31,10 @@ public class MixinEntityRainFX {
 
     private void anextratouch$applyFluidTint() {
         EntityFX particle = (EntityFX) (Object) this;
-        WaterParticleTint.applyTint(particle, (Object) this instanceof EntitySplashFX);
+        if ((Object) this instanceof EntitySplashFX) {
+            WaterParticleTint.applyTint(particle, true);
+        } else {
+            WaterParticleTint.applyTintWithWaterFallback(particle, false);
+        }
     }
 }

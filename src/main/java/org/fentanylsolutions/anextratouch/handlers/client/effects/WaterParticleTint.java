@@ -34,6 +34,21 @@ public final class WaterParticleTint {
         return true;
     }
 
+    public static float[] getTintWithWaterFallback(World world, double x, double y, double z, boolean searchNearby) {
+        return searchNearby ? WetnessFluidHelper.getFluidColorNearOrBelow(world, x, y, z)
+            : WetnessFluidHelper.getFluidColorAtOrBelow(world, x, y, z);
+    }
+
+    public static void applyTintWithWaterFallback(EntityFX particle, boolean searchNearby) {
+        float[] rgb = getTintWithWaterFallback(
+            particle.worldObj,
+            particle.posX,
+            particle.posY,
+            particle.posZ,
+            searchNearby);
+        particle.setRBGColorF(rgb[0], rgb[1], rgb[2]);
+    }
+
     private static boolean isAngelicaLoaded() {
         if (angelicaLoaded == null) {
             angelicaLoaded = Loader.isModLoaded("angelica");

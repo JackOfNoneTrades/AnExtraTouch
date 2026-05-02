@@ -32,11 +32,7 @@ public abstract class MixinEntityBubbleFX extends EntityFX {
     private void anextratouch$tintBubble(World world, double x, double y, double z, double motionX, double motionY,
         double motionZ, CallbackInfo ci) {
         NeutralParticleTexture.ensureApplied();
-        EntityFX particle = (EntityFX) (Object) this;
-        float[] rgb = WaterParticleTint.getTint(world, x, y, z, true);
-        if (rgb == null) {
-            rgb = new float[] { particle.getRedColorF(), particle.getGreenColorF(), particle.getBlueColorF() };
-        }
+        float[] rgb = WaterParticleTint.getTintWithWaterFallback(world, x, y, z, true);
         this.anextratouch$tintRed = rgb[0];
         this.anextratouch$tintGreen = rgb[1];
         this.anextratouch$tintBlue = rgb[2];
