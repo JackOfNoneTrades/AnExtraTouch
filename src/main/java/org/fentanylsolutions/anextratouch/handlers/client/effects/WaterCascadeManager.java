@@ -23,6 +23,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.client.event.TextureStitchEvent;
+import net.minecraftforge.client.event.sound.SoundLoadEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.fluids.BlockFluidBase;
 import net.minecraftforge.fluids.BlockFluidClassic;
@@ -44,6 +45,7 @@ public class WaterCascadeManager {
     public static final WaterCascadeManager INSTANCE = new WaterCascadeManager();
     static final int CASCADE_FRAME_COUNT = 12;
     private static final int MAX_ACTIVE_WATERFALL_SOUNDS = 6;
+    private static final int SHADER_PACK_SOUND_CHECK_INTERVAL = 20;
     private static final ResourceLocation[] WATERFALL_SOUND_VARIANTS = new ResourceLocation[11];
 
     private static final IIcon[] CASCADE_ICONS = new IIcon[CASCADE_FRAME_COUNT];
@@ -54,6 +56,10 @@ public class WaterCascadeManager {
     private World currentWorld;
     private boolean needsNearbyRescan = true;
     private boolean wasCascadeEnabled;
+    private boolean wasGamePaused;
+    private boolean waterfallSoundsNeedRefresh;
+    private int shaderPackSoundCheckTicks;
+    private Boolean lastAngelicaShaderPackInUse;
 
     static {
         WATERFALL_SOUND_VARIANTS[0] = new ResourceLocation(AnExtraTouch.MODID, "waterfall.0");
@@ -93,6 +99,11 @@ public class WaterCascadeManager {
     }
 
     @SubscribeEvent
+    public void onSoundLoad(SoundLoadEvent event) {
+        onSoundSystemStopped();
+    }
+
+    @SubscribeEvent
     public void onChunkUnload(ChunkEvent.Unload event) {
         if (!event.world.isRemote) {
             return;
@@ -116,6 +127,10 @@ public class WaterCascadeManager {
             currentWorld = null;
             needsNearbyRescan = true;
             wasCascadeEnabled = false;
+            wasGamePaused = false;
+            waterfallSoundsNeedRefresh = false;
+            shaderPackSoundCheckTicks = 0;
+            lastAngelicaShaderPackInUse = null;
             return;
         }
 
@@ -124,6 +139,10 @@ public class WaterCascadeManager {
             stopAllWaterfallSounds();
             currentWorld = world;
             needsNearbyRescan = true;
+            wasGamePaused = false;
+            waterfallSoundsNeedRefresh = false;
+            shaderPackSoundCheckTicks = 0;
+            lastAngelicaShaderPackInUse = null;
         }
 
         if (!Config.waterCascadeEnabled) {
@@ -131,6 +150,10 @@ public class WaterCascadeManager {
             stopAllWaterfallSounds();
             needsNearbyRescan = true;
             wasCascadeEnabled = false;
+            wasGamePaused = false;
+            waterfallSoundsNeedRefresh = false;
+            shaderPackSoundCheckTicks = 0;
+            lastAngelicaShaderPackInUse = null;
             return;
         }
 
@@ -161,6 +184,19 @@ public class WaterCascadeManager {
                 entry.setValue(Float.valueOf(strength));
             }
             spawnCascade(world, pos, strength);
+        }
+
+        if (hasAngelicaShaderPackStateChanged()) {
+            requestWaterfallSoundRefresh();
+        }
+
+        if (mc.isGamePaused()) {
+            wasGamePaused = true;
+            return;
+        }
+        if (wasGamePaused) {
+            wasGamePaused = false;
+            requestWaterfallSoundRefresh();
         }
 
         updateWaterfallSounds(mc, world);
@@ -194,6 +230,19 @@ public class WaterCascadeManager {
 
     public void onConfigReload() {
         needsNearbyRescan = true;
+    }
+
+    public void onSoundSystemResumed() {
+        requestWaterfallSoundRefresh();
+    }
+
+    public void onSoundSystemStopped() {
+        waterfallSounds.clear();
+        requestWaterfallSoundRefresh();
+    }
+
+    public void onRenderAudioContextChanged() {
+        requestWaterfallSoundRefresh();
     }
 
     private boolean rescanNearbyChunks(Minecraft mc) {
@@ -418,13 +467,20 @@ public class WaterCascadeManager {
 
     private void updateWaterfallSounds(Minecraft mc, World world) {
         if (!Config.waterfallSoundEnabled || Config.waterfallSoundVolume <= 0.0F) {
+            waterfallSoundsNeedRefresh = false;
             stopAllWaterfallSounds();
             return;
         }
 
         if (mc.renderViewEntity == null || mc.getSoundHandler() == null) {
+            waterfallSoundsNeedRefresh = false;
             stopAllWaterfallSounds();
             return;
+        }
+
+        if (waterfallSoundsNeedRefresh) {
+            stopAllWaterfallSounds();
+            waterfallSoundsNeedRefresh = false;
         }
 
         final double maxDistanceSq = 48.0D * 48.0D;
@@ -511,6 +567,31 @@ public class WaterCascadeManager {
         if (handler != null) {
             handler.stopSound(sound);
         }
+    }
+
+    private void requestWaterfallSoundRefresh() {
+        waterfallSoundsNeedRefresh = true;
+    }
+
+    private boolean hasAngelicaShaderPackStateChanged() {
+        shaderPackSoundCheckTicks++;
+        if (shaderPackSoundCheckTicks < SHADER_PACK_SOUND_CHECK_INTERVAL) {
+            return false;
+        }
+        shaderPackSoundCheckTicks = 0;
+
+        boolean shaderPackInUse = AngelicaShaderHelper.isShaderPackInUse();
+        if (lastAngelicaShaderPackInUse == null) {
+            lastAngelicaShaderPackInUse = Boolean.valueOf(shaderPackInUse);
+            return shaderPackInUse;
+        }
+
+        if (lastAngelicaShaderPackInUse.booleanValue() == shaderPackInUse) {
+            return false;
+        }
+
+        lastAngelicaShaderPackInUse = Boolean.valueOf(shaderPackInUse);
+        return true;
     }
 
     private float getFluidHeight(World world, int x, int y, int z) {

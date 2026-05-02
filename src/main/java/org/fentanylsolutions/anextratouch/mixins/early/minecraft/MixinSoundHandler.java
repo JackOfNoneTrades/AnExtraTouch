@@ -6,6 +6,7 @@ import net.minecraft.entity.player.EntityPlayer;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -84,5 +85,15 @@ public class MixinSoundHandler {
         player.prevRotationYaw = anextratouch$pyaw;
         player.prevRotationPitch = anextratouch$ppitch;
         anextratouch$swapped = false;
+    }
+
+    @Inject(method = "resumeSounds", at = @At("TAIL"))
+    private void anextratouch$refreshWaterfallsAfterResume(CallbackInfo ci) {
+        WaterCascadeManager.INSTANCE.onSoundSystemResumed();
+    }
+
+    @Inject(method = "stopSounds", at = @At("TAIL"))
+    private void anextratouch$clearWaterfallsAfterStop(CallbackInfo ci) {
+        WaterCascadeManager.INSTANCE.onSoundSystemStopped();
     }
 }

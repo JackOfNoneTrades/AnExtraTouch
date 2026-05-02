@@ -11,6 +11,7 @@ import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
 import org.lwjgl.BufferUtils;
@@ -467,5 +468,15 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "renderHand", at = @At("RETURN"))
     private void anextratouch$onRenderHandEnd(float partialTicks, int pass, CallbackInfo ci) {
         anextratouch$renderingHand = false;
+    }
+
+    @Inject(method = "activateNextShader", at = @At("TAIL"))
+    private void anextratouch$refreshWaterfallsAfterShaderActivation(CallbackInfo ci) {
+        WaterCascadeManager.INSTANCE.onRenderAudioContextChanged();
+    }
+
+    @Inject(method = "deactivateShader", at = @At("TAIL"))
+    private void anextratouch$refreshWaterfallsAfterShaderDeactivation(CallbackInfo ci) {
+        WaterCascadeManager.INSTANCE.onRenderAudioContextChanged();
     }
 }
