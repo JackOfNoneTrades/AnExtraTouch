@@ -107,8 +107,8 @@ public class Config {
     public static boolean soulSandChestBubblesEnabled = true;
     public static boolean rainRipplesEnabled = true;
     public static boolean waterDripRipplesEnabled = true;
-    public static float waterRippleAlpha = 0.6f;
-    public static float rainRippleDensity = 25.0f;
+    public static float waterRippleAlpha = 0.8f;
+    public static float rainRippleDensity = 1.0f;
 
     // rain splash
     public static boolean rainSplashEnabled = true;

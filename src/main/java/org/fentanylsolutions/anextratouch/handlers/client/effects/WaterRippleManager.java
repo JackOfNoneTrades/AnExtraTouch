@@ -1,5 +1,6 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +40,10 @@ public final class WaterRippleManager {
     private static final float CRISTALINE_WATER_INVERSE_ALPHA = 1.0F - 180.0F / 255.0F;
     private static final ResourceLocation[] RIPPLE_TEX = makeFrames();
     private static Boolean cristalineWaterLoaded;
+    private static Boolean angelicaLoaded;
+    private static boolean irisApiLookupComplete;
+    private static Object irisApi;
+    private static Method isShaderPackInUseMethod;
 
     private final List<Ripple> ripples = new ArrayList<Ripple>();
     private final java.util.Random rainRandom = new java.util.Random();
@@ -268,7 +273,7 @@ public final class WaterRippleManager {
 
     private static float getEffectiveAlpha() {
         float alpha = Config.waterRippleAlpha;
-        if (isCristalineWaterLoaded()) {
+        if (isCristalineWaterLoaded() && !isAngelicaShaderPackInUse()) {
             alpha *= CRISTALINE_WATER_INVERSE_ALPHA;
         }
         return Math.min(1.0F, Math.max(0.0F, alpha));
@@ -279,6 +284,44 @@ public final class WaterRippleManager {
             cristalineWaterLoaded = Loader.isModLoaded("cristalinewater");
         }
         return cristalineWaterLoaded;
+    }
+
+    private static boolean isAngelicaShaderPackInUse() {
+        if (!isAngelicaLoaded()) {
+            return false;
+        }
+
+        if (!irisApiLookupComplete) {
+            irisApiLookupComplete = true;
+
+            try {
+                Class<?> irisApiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+                Method getInstance = irisApiClass.getMethod("getInstance");
+                irisApi = getInstance.invoke(null);
+                isShaderPackInUseMethod = irisApiClass.getMethod("isShaderPackInUse");
+            } catch (Throwable ignored) {
+                irisApi = null;
+                isShaderPackInUseMethod = null;
+            }
+        }
+
+        if (irisApi == null || isShaderPackInUseMethod == null) {
+            return false;
+        }
+
+        try {
+            Object result = isShaderPackInUseMethod.invoke(irisApi);
+            return result instanceof Boolean && ((Boolean) result).booleanValue();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isAngelicaLoaded() {
+        if (angelicaLoaded == null) {
+            angelicaLoaded = Loader.isModLoaded("angelica");
+        }
+        return angelicaLoaded;
     }
 
     private static class Ripple {
