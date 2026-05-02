@@ -144,6 +144,7 @@ public class FallingWaterFX extends EntityFX {
 
         if (this.onGround) {
             this.setDead();
+            NeutralParticleTexture.ensureApplied();
             EntitySplashFX splash = new EntitySplashFX(
                 this.worldObj,
                 this.posX,

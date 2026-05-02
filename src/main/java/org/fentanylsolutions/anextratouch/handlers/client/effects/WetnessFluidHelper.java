@@ -27,7 +27,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-final class WetnessFluidHelper {
+public final class WetnessFluidHelper {
 
     private static final FluidBlacklist fluidInteractionBlacklist = new FluidBlacklist();
     private static final FluidBlacklist cascadeFluidBlacklist = new FluidBlacklist();
@@ -181,6 +181,102 @@ final class WetnessFluidHelper {
         Fluid fluid = getInteractableFluid(world, x, y, z);
         return fluid == null ? FallingWaterFX.getWaterColor(world, x + 0.5D, y + 0.5D, z + 0.5D)
             : getFluidColor(world, x, y, z, block, fluid);
+    }
+
+    public static float[] getFluidColorAtOrBelow(World world, double x, double y, double z) {
+        return getFluidColorAtOrBelow(world, x, y, z, false);
+    }
+
+    public static float[] getNonWaterFluidColorAtOrBelow(World world, double x, double y, double z) {
+        return getFluidColorAtOrBelow(world, x, y, z, true);
+    }
+
+    private static float[] getFluidColorAtOrBelow(World world, double x, double y, double z, boolean nonWaterOnly) {
+        int blockX = MathHelper.floor_double(x);
+        int blockY = MathHelper.floor_double(y);
+        int blockZ = MathHelper.floor_double(z);
+
+        float[] rgb = getInteractableFluidColor(world, blockX, blockY, blockZ, nonWaterOnly);
+        if (rgb != null) {
+            return rgb;
+        }
+
+        rgb = getInteractableFluidColor(world, blockX, blockY - 1, blockZ, nonWaterOnly);
+        if (rgb != null) {
+            return rgb;
+        }
+
+        if (nonWaterOnly) {
+            return null;
+        }
+
+        return FallingWaterFX.getWaterColor(world, x, y, z);
+    }
+
+    public static float[] getFluidColorNearOrBelow(World world, double x, double y, double z) {
+        return getFluidColorNearOrBelow(world, x, y, z, false);
+    }
+
+    public static float[] getNonWaterFluidColorNearOrBelow(World world, double x, double y, double z) {
+        return getFluidColorNearOrBelow(world, x, y, z, true);
+    }
+
+    private static float[] getFluidColorNearOrBelow(World world, double x, double y, double z, boolean nonWaterOnly) {
+        int blockX = MathHelper.floor_double(x);
+        int blockY = MathHelper.floor_double(y);
+        int blockZ = MathHelper.floor_double(z);
+
+        float[] rgb = getInteractableFluidColor(world, blockX, blockY, blockZ, nonWaterOnly);
+        if (rgb != null) {
+            return rgb;
+        }
+
+        rgb = getInteractableFluidColor(world, blockX, blockY - 1, blockZ, nonWaterOnly);
+        if (rgb != null) {
+            return rgb;
+        }
+
+        for (int dy = 0; dy >= -2; dy--) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dz == 0) {
+                        continue;
+                    }
+
+                    rgb = getInteractableFluidColor(world, blockX + dx, blockY + dy, blockZ + dz, nonWaterOnly);
+                    if (rgb != null) {
+                        return rgb;
+                    }
+                }
+            }
+        }
+
+        if (nonWaterOnly) {
+            return null;
+        }
+
+        return FallingWaterFX.getWaterColor(world, x, y, z);
+    }
+
+    static boolean isInsideInteractableFluid(World world, double x, double y, double z) {
+        int blockX = MathHelper.floor_double(x);
+        int blockY = MathHelper.floor_double(y);
+        int blockZ = MathHelper.floor_double(z);
+        return getInteractableFluid(world, blockX, blockY, blockZ) != null;
+    }
+
+    private static float[] getInteractableFluidColor(World world, int blockX, int blockY, int blockZ) {
+        return getInteractableFluidColor(world, blockX, blockY, blockZ, false);
+    }
+
+    private static float[] getInteractableFluidColor(World world, int blockX, int blockY, int blockZ,
+        boolean nonWaterOnly) {
+        Fluid fluid = getInteractableFluid(world, blockX, blockY, blockZ);
+        if (fluid != null && (!nonWaterOnly || fluid != FluidRegistry.WATER)) {
+            return getWettableFluidColor(world, blockX, blockY, blockZ);
+        }
+
+        return null;
     }
 
     private static boolean isWettableFluid(World world, int x, int y, int z, Block block, Fluid fluid) {
