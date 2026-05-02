@@ -1,8 +1,5 @@
 package org.fentanylsolutions.anextratouch.mixins.early.minecraft;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockLiquid;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.AxisAlignedBB;
@@ -200,17 +197,13 @@ public class MixinEntity {
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
-                    Block block = entity.worldObj.getBlock(x, y, z);
-                    if (block.getMaterial() != Material.water) {
-                        continue;
-                    }
-                    if (!WaterSplashManager.isSplashFluidAllowed(entity.worldObj, x, y, z)) {
+                    if (!WaterSplashManager.intersectsSplashFluid(box, entity.worldObj, x, y, z)) {
                         continue;
                     }
 
-                    double surface = y + 1.0D;
-                    if (block instanceof BlockLiquid) {
-                        surface -= BlockLiquid.getLiquidHeightPercent(entity.worldObj.getBlockMetadata(x, y, z));
+                    double surface = WaterSplashManager.getSplashFluidSurfaceY(entity.worldObj, x, y, z);
+                    if (surface < 0.0D) {
+                        continue;
                     }
 
                     if (box.maxY >= surface && (Double.isNaN(bestSurface) || surface > bestSurface)) {
@@ -246,9 +239,7 @@ public class MixinEntity {
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
-                    if (e.worldObj.getBlock(x, y, z)
-                        .getMaterial() == Material.water
-                        && WaterSplashManager.isSplashFluidAllowed(e.worldObj, x, y, z)) return true;
+                    if (WaterSplashManager.intersectsSplashFluid(box, e.worldObj, x, y, z)) return true;
                 }
             }
         }
@@ -264,13 +255,9 @@ public class MixinEntity {
         int startY = MathHelper.floor_double(e.boundingBox.minY) - 2;
         for (int i = 0; i < 16; i++) {
             int y = startY + i;
-            Block here = e.worldObj.getBlock(x, y, z);
-            Block above = e.worldObj.getBlock(x, y + 1, z);
-            if (here.getMaterial() == Material.water && WaterSplashManager.isSplashFluidAllowed(e.worldObj, x, y, z)
-                && above.getMaterial() != Material.water) {
-                int meta = e.worldObj.getBlockMetadata(x, y, z);
-                if (here instanceof BlockLiquid) return (y + 1) - BlockLiquid.getLiquidHeightPercent(meta);
-                return y + 1;
+            double surface = WaterSplashManager.getSplashFluidSurfaceY(e.worldObj, x, y, z);
+            if (surface >= 0.0D && !WaterSplashManager.isSplashFluidAllowed(e.worldObj, x, y + 1, z)) {
+                return surface;
             }
         }
         return Double.NaN;

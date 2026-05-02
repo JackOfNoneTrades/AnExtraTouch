@@ -170,6 +170,37 @@ public final class WetnessFluidHelper {
         return null;
     }
 
+    static double getSplashFluidSurfaceY(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof IFluidBlock) {
+            IFluidBlock fluidBlock = (IFluidBlock) block;
+            Fluid fluid = fluidBlock.getFluid();
+            if (!isSplashFluid(world, x, y, z, block, fluid)) {
+                return -1.0D;
+            }
+
+            return getForgeSplashSurfaceY(world, x, y, z, block, fluidBlock);
+        }
+
+        if (block.getMaterial() == Material.water && !isSplashIgnoredFluid(block, FluidRegistry.WATER)) {
+            return getVanillaLiquidSurfaceY(world, x, y, z);
+        }
+
+        return -1.0D;
+    }
+
+    static boolean intersectsSplashFluid(AxisAlignedBB bb, World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof IFluidBlock) {
+            IFluidBlock fluidBlock = (IFluidBlock) block;
+            Fluid fluid = fluidBlock.getFluid();
+            return isSplashFluid(world, x, y, z, block, fluid) && intersectsForgeFluid(bb, world, x, y, z, fluidBlock);
+        }
+
+        return block.getMaterial() == Material.water && !isSplashIgnoredFluid(block, FluidRegistry.WATER)
+            && intersectsVanillaLiquid(bb, world, x, y, z);
+    }
+
     static boolean isSameInteractableFluid(World world, int x, int y, int z, Fluid fluid) {
         Fluid other = getInteractableFluid(world, x, y, z);
         return other != null && other == fluid;
@@ -368,6 +399,46 @@ public final class WetnessFluidHelper {
 
         float amount = Math.min(Math.abs(filled), 1.0F);
         return filled > 0.0F ? y + amount : y + 1.0D;
+    }
+
+    private static double getForgeSplashSurfaceY(World world, int x, int y, int z, Block block,
+        IFluidBlock fluidBlock) {
+        float filled = getFilledPercentage(world, x, y, z, fluidBlock);
+        if (filled == 0.0F) {
+            return -1.0D;
+        }
+
+        if (filled < 0.0F) {
+            return y + 1.0D;
+        }
+
+        if (block instanceof BlockFluidBase) {
+            return y + getBlockFluidBaseRenderHeight(world, x, y, z, (BlockFluidBase) block);
+        }
+
+        return y + Math.min(filled, 1.0F);
+    }
+
+    private static float getBlockFluidBaseRenderHeight(World world, int x, int y, int z, BlockFluidBase block) {
+        if (world.getBlock(x, y, z) == block) {
+            Block blockAbove = world.getBlock(x, y + 1, z);
+            if (blockAbove.getMaterial()
+                .isLiquid() || blockAbove instanceof IFluidBlock) {
+                return 1.0F;
+            }
+
+            if (world.getBlockMetadata(x, y, z) == block.getMaxRenderHeightMeta()) {
+                return 0.875F;
+            }
+        }
+
+        if (!world.getBlock(x, y, z)
+            .getMaterial()
+            .isSolid() && world.getBlock(x, y + 1, z) == block) {
+            return 1.0F;
+        }
+
+        return MathHelper.clamp_float(block.getQuantaPercentage(world, x, y, z) * 0.875F, 0.0F, 1.0F);
     }
 
     private static float getFilledPercentage(World world, int x, int y, int z, IFluidBlock fluidBlock) {

@@ -9,6 +9,7 @@ import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
@@ -283,6 +284,14 @@ public class WaterSplashManager {
 
     public static boolean isSplashFluidAllowed(World world, int x, int y, int z) {
         return WetnessFluidHelper.getSplashFluid(world, x, y, z) != null;
+    }
+
+    public static double getSplashFluidSurfaceY(World world, int x, int y, int z) {
+        return WetnessFluidHelper.getSplashFluidSurfaceY(world, x, y, z);
+    }
+
+    public static boolean intersectsSplashFluid(AxisAlignedBB box, World world, int x, int y, int z) {
+        return WetnessFluidHelper.intersectsSplashFluid(box, world, x, y, z);
     }
 
     public void renderInWorldPass(float partialTicks) {
