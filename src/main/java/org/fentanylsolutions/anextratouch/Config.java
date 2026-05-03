@@ -192,6 +192,12 @@ public class Config {
     public static float cameraWalkVerticalPitch = 4.5f;
     public static float cameraWalkHorizSmoothing = 1.0f;
     public static float cameraWalkVertSmoothing = 0.75f;
+    // flying context
+    public static float cameraFlyStrafingRoll = -10.0f;
+    public static float cameraFlyForwardPitch = 7.0f;
+    public static float cameraFlyVerticalPitch = 2.5f;
+    public static float cameraFlyHorizSmoothing = 1.0f;
+    public static float cameraFlyVertSmoothing = 1.0f;
     // riding context
     public static float cameraRideStrafingRoll = 5.0f;
     public static float cameraRideForwardPitch = 3.5f;
@@ -1110,6 +1116,41 @@ public class Config {
                 0.0f,
                 100.0f,
                 "Vertical velocity smoothing factor when walking.");
+            cameraFlyStrafingRoll = config.getFloat(
+                "cameraFlyStrafingRoll",
+                Categories.camera,
+                cameraFlyStrafingRoll,
+                -100.0f,
+                100.0f,
+                "Strafing roll factor when flying with Et Futurum Requiem's Elytra. Negative matches Camera Overhaul's vanilla Elytra context.");
+            cameraFlyForwardPitch = config.getFloat(
+                "cameraFlyForwardPitch",
+                Categories.camera,
+                cameraFlyForwardPitch,
+                0.0f,
+                100.0f,
+                "Forward velocity pitch factor when flying with Et Futurum Requiem's Elytra.");
+            cameraFlyVerticalPitch = config.getFloat(
+                "cameraFlyVerticalPitch",
+                Categories.camera,
+                cameraFlyVerticalPitch,
+                0.0f,
+                100.0f,
+                "Vertical velocity pitch factor when flying with Et Futurum Requiem's Elytra.");
+            cameraFlyHorizSmoothing = config.getFloat(
+                "cameraFlyHorizSmoothing",
+                Categories.camera,
+                cameraFlyHorizSmoothing,
+                0.0f,
+                100.0f,
+                "Horizontal velocity smoothing factor when flying with Et Futurum Requiem's Elytra.");
+            cameraFlyVertSmoothing = config.getFloat(
+                "cameraFlyVertSmoothing",
+                Categories.camera,
+                cameraFlyVertSmoothing,
+                0.0f,
+                100.0f,
+                "Vertical velocity smoothing factor when flying with Et Futurum Requiem's Elytra.");
             cameraRideStrafingRoll = config.getFloat(
                 "cameraRideStrafingRoll",
                 Categories.camera,

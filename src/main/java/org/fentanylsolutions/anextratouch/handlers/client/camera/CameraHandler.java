@@ -5,6 +5,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.compat.EtFuturumElytraCompat;
 import org.joml.SimplexNoise;
 import org.joml.Vector3d;
 
@@ -109,6 +110,13 @@ public final class CameraHandler {
                     Config.cameraRideHorizSmoothing,
                     Config.cameraRideVertSmoothing);
             }
+        } else if (EtFuturumElytraCompat.isElytraFlying(entity)) {
+            ctx = new ContextConfig(
+                Config.cameraFlyStrafingRoll,
+                Config.cameraFlyForwardPitch,
+                Config.cameraFlyVerticalPitch,
+                Config.cameraFlyHorizSmoothing,
+                Config.cameraFlyVertSmoothing);
         } else {
             ctx = new ContextConfig(
                 Config.cameraWalkStrafingRoll,
