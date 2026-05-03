@@ -351,30 +351,59 @@ public class WaterCascadeManager {
         if (impactFluid == null) {
             return 0.0F;
         }
-        if (!isStillFluidSurface(world, x, y - 1, z, impactFluid)) {
-            return 0.0F;
-        }
         if (!WetnessFluidHelper.isSameCascadeFluid(world, x, y - 2, z, impactFluid)) {
             return 0.0F;
         }
 
-        if (!world.isAirBlock(x, y, z - 1) && !world.isAirBlock(x + 1, y, z)
-            && !world.isAirBlock(x, y, z + 1)
-            && !world.isAirBlock(x - 1, y, z)) {
-            return 0.0F;
+        int strength = 0;
+        if (isStillFluidSurface(world, x, y - 1, z, impactFluid) && hasOpenCardinalSide(world, x, y, z)) {
+            strength = countAdjacentCascadeFluids(world, x, y, z, impactFluid);
         }
 
-        int strength = 0;
-        if (WetnessFluidHelper.isSameCascadeFluid(world, x, y - 1, z - 1, impactFluid)) strength++;
-        if (WetnessFluidHelper.isSameCascadeFluid(world, x + 1, y - 1, z, impactFluid)) strength++;
-        if (WetnessFluidHelper.isSameCascadeFluid(world, x, y - 1, z + 1, impactFluid)) strength++;
-        if (WetnessFluidHelper.isSameCascadeFluid(world, x - 1, y - 1, z, impactFluid)) strength++;
+        if (strength <= 0) {
+            strength = countExposedStillImpactSurfaces(world, x, y, z, impactFluid);
+        }
 
         if (strength <= 0) {
             return 0.0F;
         }
 
         return (float) strength;
+    }
+
+    private boolean hasOpenCardinalSide(World world, int x, int y, int z) {
+        return world.isAirBlock(x, y, z - 1) || world.isAirBlock(x + 1, y, z)
+            || world.isAirBlock(x, y, z + 1)
+            || world.isAirBlock(x - 1, y, z);
+    }
+
+    private int countAdjacentCascadeFluids(World world, int x, int y, int z, Fluid impactFluid) {
+        int strength = 0;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x, y - 1, z - 1, impactFluid)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x + 1, y - 1, z, impactFluid)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x, y - 1, z + 1, impactFluid)) strength++;
+        if (WetnessFluidHelper.isSameCascadeFluid(world, x - 1, y - 1, z, impactFluid)) strength++;
+        return strength;
+    }
+
+    private int countExposedStillImpactSurfaces(World world, int x, int y, int z, Fluid impactFluid) {
+        int strength = 0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if ((dx == 0 && dz == 0) || !world.isAirBlock(x + dx, y, z + dz)) {
+                    continue;
+                }
+                if (!isStillImpactSurface(world, x + dx, y - 1, z + dz, impactFluid)) {
+                    continue;
+                }
+
+                strength++;
+                if (strength >= 4) {
+                    return strength;
+                }
+            }
+        }
+        return strength;
     }
 
     private boolean isFallingFluid(World world, int x, int y, int z, Fluid fluid) {
@@ -410,6 +439,19 @@ public class WaterCascadeManager {
 
         return WetnessFluidHelper.getWettableFluidHeight(world, x, y, z) >= 0.999F
             && WetnessFluidHelper.getFluidFlowDirection(world, x, y, z) <= -999.0D;
+    }
+
+    private boolean isStillImpactSurface(World world, int x, int y, int z, Fluid fluid) {
+        if (!WetnessFluidHelper.isSameCascadeFluid(world, x, y, z, fluid)) {
+            return false;
+        }
+
+        Block block = world.getBlock(x, y, z);
+        if (fluid == FluidRegistry.WATER && block instanceof BlockLiquid) {
+            return world.getBlockMetadata(x, y, z) == 0;
+        }
+
+        return isStillFluidSurface(world, x, y, z, fluid);
     }
 
     private void spawnCascade(World world, long posKey, float strength) {
