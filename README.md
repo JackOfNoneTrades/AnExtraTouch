@@ -47,6 +47,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 ## Dependencies
 * [UniMixins](https://modrinth.com/mod/unimixins) [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/unimixins)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/unimixins/versions) [![git](images/icons/git.png)](https://github.com/LegacyModdingMC/UniMixins/releases)
 * [GTNHLib](https://modrinth.com/mod/gtnhlib)   [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/gtnhlib)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/gtnhlib) [![git](images/icons/git.png)](https://github.com/GTNewHorizons/GTNHLib/releases)
+* [FentLib](https://github.com/JackOfNoneTrades/FentLib) [![git](images/icons/git.png)](https://github.com/JackOfNoneTrades/FentLib)
 
 ![breath](images/gifs/breath_pov.gif)
 ![buttons](images/gifs/drip.gif)
@@ -79,7 +80,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Particular assets and code are licensed under LGPL-3.0](https://github.com/Chailotl/particular/blob/master/LICENSE).
 * [Wakes assets and code are licensed under GPL-3.0](https://github.com/Goby56/wakes/blob/main/LICENSE).
 * [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) assets and code are copyright Verph and licensed under BSD 2-Clause. `Waves-1.21.x-1.6.1.jar` metadata contains the BSD 2 license (`license = "BSD 2"`).
-* [Loading Progress Bar](https://github.com/jbredwards/Loading-Progress-Bar/blob/1.7.10/LICENSE)
+* [Loading Progress Bar code is licensed under MIT](https://github.com/jbredwards/Loading-Progress-Bar/blob/1.7.10/LICENSE)
 
 ## Buy me some creatine
 
