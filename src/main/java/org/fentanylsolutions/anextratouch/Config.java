@@ -76,7 +76,7 @@ public class Config {
     public static String armorSoundMode = "priority";
     public static float armorSoundVolume = 0.3f;
     public static String armorDefaultCategory = "heavy";
-    public static String[] armorCategoryOverrides = {};
+    public static String[] armorCategoryOverrides = { "etfuturum:elytra;elytra" };
     public static String[] armorSoundEntityWhitelist = { "Player", "Zombie", "Skeleton", "PigZombie" };
 
     // wetness
@@ -499,12 +499,12 @@ public class Config {
                 "armorDefaultCategory",
                 Categories.armor,
                 armorDefaultCategory,
-                "Default armor sound category for unknown/modded armor items. Valid: light, medium, heavy, crystal.");
+                "Default armor sound category for unknown/modded armor items. Valid: light, medium, heavy, crystal, elytra.");
             armorCategoryOverrides = config.getStringList(
                 "armorCategoryOverrides",
                 Categories.armor,
                 armorCategoryOverrides,
-                "Per-item armor category overrides. Format: \"registry_name;category\". e.g. \"minecraft:iron_chestplate;crystal\". Valid categories: light, medium, heavy, crystal.");
+                "Per-item armor category overrides. Format: \"registry_name;category\". e.g. \"minecraft:iron_chestplate;crystal\". Valid categories: light, medium, heavy, crystal, elytra. The \"elytra\" category routes to the vanilla MC 1.20+ equip_elytra sound provided by Et Futurum Requiem's Asset Director.");
             armorSoundEntityWhitelist = config.getStringList(
                 "armorSoundEntityWhitelist",
                 Categories.armor,

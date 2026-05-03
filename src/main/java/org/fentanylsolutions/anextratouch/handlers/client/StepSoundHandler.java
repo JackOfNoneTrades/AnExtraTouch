@@ -324,6 +324,8 @@ public class StepSoundHandler {
                     return AnExtraTouch.MODID + ":armor.heavy_foot";
                 case "crystal":
                     return AnExtraTouch.MODID + ":armor.crystal_foot";
+                case "elytra":
+                    return "minecraft_1.21.10:item.armor.equip_elytra";
                 default:
                     return null;
             }
@@ -338,6 +340,8 @@ public class StepSoundHandler {
                     return AnExtraTouch.MODID + ":armor.heavy_run";
                 case "crystal":
                     return AnExtraTouch.MODID + ":armor.crystal_run";
+                case "elytra":
+                    return "minecraft_1.21.10:item.armor.equip_elytra";
                 default:
                     return null;
             }
@@ -351,6 +355,8 @@ public class StepSoundHandler {
                 return AnExtraTouch.MODID + ":armor.heavy_walk";
             case "crystal":
                 return AnExtraTouch.MODID + ":armor.crystal_walk";
+            case "elytra":
+                return "minecraft_1.21.10:item.armor.equip_elytra";
             default:
                 return null;
         }

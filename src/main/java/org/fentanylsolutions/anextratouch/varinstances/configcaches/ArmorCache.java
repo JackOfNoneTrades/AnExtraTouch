@@ -84,6 +84,8 @@ public class ArmorCache {
                 return 1;
             case "light":
                 return 0;
+            case "elytra":
+                return 0;
             default:
                 return -1;
         }
