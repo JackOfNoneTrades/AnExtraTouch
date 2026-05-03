@@ -574,15 +574,15 @@ public class WaterCascadeManager {
             soundKeysToKeep.add(target.posKey);
 
             WaterfallLoopSound sound = waterfallSounds.get(target.posKey);
-            if (sound == null) {
+            boolean newSound = sound == null;
+            if (newSound) {
                 ResourceLocation soundId = getWaterfallSoundId(target.strength);
                 sound = new WaterfallLoopSound(soundId, randomizePitch(world));
                 waterfallSounds.put(target.posKey, sound);
             }
 
             sound.setState(target.x, target.y, target.z, getWaterfallSoundVolume(target.strength));
-            if (!mc.getSoundHandler()
-                .isSoundPlaying(sound)) {
+            if (newSound) {
                 mc.getSoundHandler()
                     .playSound(sound);
             }
