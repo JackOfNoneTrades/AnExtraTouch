@@ -22,6 +22,7 @@ import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -47,6 +48,7 @@ public final class WakeTrailManager {
     private static final double TELEPORT_DISTANCE_SQ = 64.0D;
     private static final double MIN_TRAIL_DISTANCE = 0.025D;
     private static final int FULL_BRIGHT = 15728880;
+    private static final float PADDLE_STRENGTH = INITIAL_STRENGTH * 5.0F;
     private static final float[] COLOR_INTERVALS = new float[] { 0.05F, 0.15F, 0.2F, 0.35F, 0.52F, 0.6F, 0.7F, 0.9F };
     private static final int[][] WAKE_COLORS = new int[][] { { 0, 0, 0, 0 }, { 0x93, 0x99, 0xA6, 0x28 },
         { 0x9E, 0xA5, 0xB0, 0x64 }, { 0xC4, 0xCA, 0xD1, 0xB4 }, { 0, 0, 0, 0 }, { 0xC4, 0xCA, 0xD1, 0xB4 },
@@ -202,7 +204,12 @@ public final class WakeTrailManager {
             return;
         }
 
-        if (distanceSq >= MIN_TRAIL_DISTANCE * MIN_TRAIL_DISTANCE) {
+        double distance = Math.sqrt(distanceSq);
+        if (EtFuturumBoatCompat.isBoat(entity)) {
+            spawnRowingTrails(world, entity, surfaceY, distance);
+        }
+
+        if (distance >= MIN_TRAIL_DISTANCE) {
             spawnTrail(world, entity, tracker.prevX, tracker.prevZ, entity.posX, entity.posZ, surfaceY);
         }
 
@@ -216,7 +223,22 @@ public final class WakeTrailManager {
             return false;
         }
 
-        return entity instanceof EntityBoat || entity instanceof EntityLivingBase || entity instanceof EntityItem;
+        return entity instanceof EntityBoat || entity instanceof EntityLivingBase
+            || entity instanceof EntityItem
+            || EtFuturumBoatCompat.isBoat(entity);
+    }
+
+    private void spawnRowingTrails(World world, Entity entity, double surfaceY, double velocity) {
+        EtFuturumBoatCompat.RowingTrail[] trails = EtFuturumBoatCompat.getRowingTrails(entity, velocity);
+        if (trails.length == 0) {
+            return;
+        }
+
+        int y = MathHelper.floor_double(surfaceY - 1.0E-4D);
+        for (int i = 0; i < trails.length; i++) {
+            EtFuturumBoatCompat.RowingTrail trail = trails[i];
+            nodeTrail(world, trail.fromX, trail.fromZ, trail.toX, trail.toZ, y, PADDLE_STRENGTH, velocity);
+        }
     }
 
     private void spawnTrail(World world, Entity entity, double fromX, double fromZ, double toX, double toZ,
@@ -232,6 +254,18 @@ public final class WakeTrailManager {
         int y = MathHelper.floor_double(surfaceY - 1.0E-4D);
         float strength = INITIAL_STRENGTH * density;
         thickNodeTrail(world, fromX, fromZ, toX, toZ, y, strength, distance, entity.width);
+    }
+
+    private void nodeTrail(World world, double fromX, double fromZ, double toX, double toZ, int y, float waveStrength,
+        double velocity) {
+        int x1 = MathHelper.floor_double(fromX * NODE_RES);
+        int z1 = MathHelper.floor_double(fromZ * NODE_RES);
+        int x2 = MathHelper.floor_double(toX * NODE_RES);
+        int z2 = MathHelper.floor_double(toZ * NODE_RES);
+
+        ArrayList<Long> pixelsAffected = new ArrayList<Long>();
+        bresenhamLine(x1, z1, x2, z2, pixelsAffected);
+        pixelsToNodes(world, pixelsAffected, y, waveStrength, velocity);
     }
 
     private void thickNodeTrail(World world, double fromX, double fromZ, double toX, double toZ, int y,
