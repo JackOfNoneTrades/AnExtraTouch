@@ -34,13 +34,15 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.128:dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.134:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.93-GTNH:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.1.19:dev")
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
     runtimeOnlyNonPublishable(rfg.deobf("com.mikanon:cristalinewater:1.5"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:bugtorch:1.2.14"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:biomes-o-plenty:2.1.0.2308"))
+    runtimeOnlyNonPublishable("org.fentanylsolutions.wawelauth:WawelAuth:f91e9ec-snapshot:dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:ModularUI2:2.3.59-1.7.10:dev")
 
     devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.23-GTNH-pre:dev")
 
@@ -48,7 +50,7 @@ dependencies {
     implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
     //implementation (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
     compileOnly (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
-    implementation("com.github.GTNewHorizons:GTNHLib:0.9.54:dev")
+    implementation("com.github.GTNewHorizons:GTNHLib:0.9.57:dev")
     implementation("org.fentanylsolutions.fentlib:FentLib:5aec807-snapshot:dev")
 
     //implementation(rfg.deobf("curse.maven:thermal-foundation-222880:2388752"))
