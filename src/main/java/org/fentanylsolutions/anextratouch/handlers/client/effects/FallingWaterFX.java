@@ -24,12 +24,16 @@ public class FallingWaterFX extends EntityFX {
     }
 
     public FallingWaterFX(World world, double x, double y, double z, float[] rgb) {
+        this(world, x, y, z, rgb[0], rgb[1], rgb[2]);
+    }
+
+    public FallingWaterFX(World world, double x, double y, double z, float red, float green, float blue) {
         super(world, x, y, z, 0.0D, 0.0D, 0.0D);
         this.motionX = this.motionY = this.motionZ = 0.0D;
 
-        this.particleRed = rgb[0];
-        this.particleGreen = rgb[1];
-        this.particleBlue = rgb[2];
+        this.particleRed = red;
+        this.particleGreen = green;
+        this.particleBlue = blue;
 
         this.setParticleTextureIndex(112);
         this.setSize(0.01F, 0.01F);

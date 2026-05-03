@@ -7,6 +7,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
@@ -85,6 +86,7 @@ public class WaterSplashManager {
     private final List<Splash> splashes = new ArrayList<Splash>();
     private final List<Ring> rings = new ArrayList<Ring>();
     private final List<Emitter> emitters = new ArrayList<Emitter>();
+    private boolean texturesPreloaded;
 
     public void spawnEmitter(World world, double x, double y, double z, float width, float speed) {
         if (world == null || !world.isRemote) return;
@@ -186,6 +188,9 @@ public class WaterSplashManager {
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
+        if (Config.waterSplashEnabled) {
+            preloadTextures(mc);
+        }
         if (mc.theWorld == null) {
             splashes.clear();
             rings.clear();
@@ -253,6 +258,25 @@ public class WaterSplashManager {
             if (r.age >= VISUAL_MAX_AGE || !isSplashFluid(r.world, r.x, r.y, r.z)) {
                 ri.remove();
             }
+        }
+    }
+
+    private void preloadTextures(Minecraft mc) {
+        if (texturesPreloaded || mc.getTextureManager() == null) {
+            return;
+        }
+
+        TextureManager textureManager = mc.getTextureManager();
+        preloadFrames(textureManager, SPLASH_TEX);
+        preloadFrames(textureManager, FOAM_TEX);
+        preloadFrames(textureManager, RING_TEX);
+        textureManager.bindTexture(TextureMap.locationBlocksTexture);
+        texturesPreloaded = true;
+    }
+
+    private static void preloadFrames(TextureManager textureManager, ResourceLocation[] frames) {
+        for (int i = 0; i < frames.length; i++) {
+            textureManager.bindTexture(frames[i]);
         }
     }
 

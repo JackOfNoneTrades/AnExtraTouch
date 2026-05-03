@@ -34,14 +34,14 @@ public class WetParticleHandler {
         float wetBlue;
 
         void setWetColor(float[] rgb) {
-            this.wetRed = rgb[0];
-            this.wetGreen = rgb[1];
-            this.wetBlue = rgb[2];
-            this.hasWetColor = true;
+            setWetColor(rgb[0], rgb[1], rgb[2]);
         }
 
-        float[] getWetColor() {
-            return new float[] { this.wetRed, this.wetGreen, this.wetBlue };
+        void setWetColor(float red, float green, float blue) {
+            this.wetRed = red;
+            this.wetGreen = green;
+            this.wetBlue = blue;
+            this.hasWetColor = true;
         }
 
         void clearWetColor() {
@@ -93,7 +93,7 @@ public class WetParticleHandler {
             int wetnessLimit = (int) (WETNESS_LIMIT * Config.wetnessDuration);
             if (inFluid) {
                 tracker.wetness = Math.min(wetnessLimit, tracker.wetness + WETNESS_FLUID_INCREASE);
-                tracker.setWetColor(fluidSample.rgb);
+                tracker.setWetColor(fluidSample.red, fluidSample.green, fluidSample.blue);
             } else if (wetFromRain) {
                 tracker.wetness = Math.min(wetnessLimit, tracker.wetness + WETNESS_RAIN_INCREASE);
                 updateRainColor(tracker, entity);
@@ -125,8 +125,15 @@ public class WetParticleHandler {
                 double z = event.entity.boundingBox.minZ + event.entity.worldObj.rand.nextFloat()
                     * (event.entity.boundingBox.maxZ - event.entity.boundingBox.minZ);
 
-                Minecraft.getMinecraft().effectRenderer
-                    .addEffect(new FallingWaterFX(event.entity.worldObj, x, y, z, tracker.getWetColor()));
+                Minecraft.getMinecraft().effectRenderer.addEffect(
+                    new FallingWaterFX(
+                        event.entity.worldObj,
+                        x,
+                        y,
+                        z,
+                        tracker.wetRed,
+                        tracker.wetGreen,
+                        tracker.wetBlue));
             }
         }
     }

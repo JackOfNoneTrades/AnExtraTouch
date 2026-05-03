@@ -3,12 +3,8 @@ package org.fentanylsolutions.anextratouch.handlers.client.effects;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
@@ -18,7 +14,6 @@ import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
-import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -39,6 +34,13 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import it.unimi.dsi.fastutil.longs.Long2FloatMap;
+import it.unimi.dsi.fastutil.longs.Long2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 @SideOnly(Side.CLIENT)
 public class WaterCascadeManager {
@@ -52,8 +54,10 @@ public class WaterCascadeManager {
     private static final IIcon[] CASCADE_ICONS = new IIcon[CASCADE_FRAME_COUNT];
     private static IIcon sprayIcon;
 
-    private final Map<ChunkPosition, Float> cascades = new HashMap<ChunkPosition, Float>();
-    private final Map<ChunkPosition, WaterfallLoopSound> waterfallSounds = new HashMap<ChunkPosition, WaterfallLoopSound>();
+    private final Long2FloatOpenHashMap cascades = new Long2FloatOpenHashMap();
+    private final Long2ObjectOpenHashMap<WaterfallLoopSound> waterfallSounds = new Long2ObjectOpenHashMap<WaterfallLoopSound>();
+    private final List<SoundTarget> soundCandidates = new ArrayList<SoundTarget>();
+    private final LongOpenHashSet soundKeysToKeep = new LongOpenHashSet();
     private World currentWorld;
     private boolean needsNearbyRescan = true;
     private boolean wasCascadeEnabled;
@@ -167,24 +171,24 @@ public class WaterCascadeManager {
             needsNearbyRescan = !rescanNearbyChunks(mc);
         }
 
-        Iterator<Map.Entry<ChunkPosition, Float>> iterator = cascades.entrySet()
-            .iterator();
+        ObjectIterator<Long2FloatMap.Entry> iterator = cascades.long2FloatEntrySet()
+            .fastIterator();
         while (iterator.hasNext()) {
-            Map.Entry<ChunkPosition, Float> entry = iterator.next();
-            ChunkPosition pos = entry.getKey();
-            float strength = getCascadeStrength(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+            Long2FloatMap.Entry entry = iterator.next();
+            long posKey = entry.getLongKey();
+            int x = posX(posKey);
+            int y = posY(posKey);
+            int z = posZ(posKey);
+            float strength = getCascadeStrength(world, x, y, z);
             if (strength <= 0.0F) {
                 iterator.remove();
+                removeWaterfallSound(posKey);
                 continue;
             }
-            if (Float.compare(
-                strength,
-                entry.getValue()
-                    .floatValue())
-                != 0) {
-                entry.setValue(Float.valueOf(strength));
+            if (Float.compare(strength, entry.getFloatValue()) != 0) {
+                entry.setValue(strength);
             }
-            spawnCascade(world, pos, strength);
+            spawnCascade(world, posKey, strength);
         }
 
         if (hasAngelicaShaderPackStateChanged()) {
@@ -303,25 +307,25 @@ public class WaterCascadeManager {
     }
 
     private void removeChunk(int chunkX, int chunkZ) {
-        Iterator<ChunkPosition> iterator = cascades.keySet()
+        LongIterator iterator = cascades.keySet()
             .iterator();
         while (iterator.hasNext()) {
-            ChunkPosition pos = iterator.next();
-            if ((pos.chunkPosX >> 4) == chunkX && (pos.chunkPosZ >> 4) == chunkZ) {
+            long posKey = iterator.nextLong();
+            if ((posX(posKey) >> 4) == chunkX && (posZ(posKey) >> 4) == chunkZ) {
                 iterator.remove();
-                removeWaterfallSound(pos);
+                removeWaterfallSound(posKey);
             }
         }
     }
 
     private void updateCascade(World world, int x, int y, int z) {
-        ChunkPosition pos = new ChunkPosition(x, y, z);
+        long posKey = positionKey(x, y, z);
         float strength = getCascadeStrength(world, x, y, z);
         if (strength > 0.0F) {
-            cascades.put(pos, Float.valueOf(strength));
+            cascades.put(posKey, strength);
         } else {
-            cascades.remove(pos);
-            removeWaterfallSound(pos);
+            cascades.remove(posKey);
+            removeWaterfallSound(posKey);
         }
     }
 
@@ -408,16 +412,20 @@ public class WaterCascadeManager {
             && WetnessFluidHelper.getFluidFlowDirection(world, x, y, z) <= -999.0D;
     }
 
-    private void spawnCascade(World world, ChunkPosition pos, float strength) {
+    private void spawnCascade(World world, long posKey, float strength) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.effectRenderer == null || CASCADE_ICONS[0] == null) {
             return;
         }
 
+        int xPos = posX(posKey);
+        int yPos = posY(posKey);
+        int zPos = posZ(posKey);
+
         // Particular spawns one foam particle per cascade per tick along a random edge, with Y
         // sampled inside the falling water column.
-        double x = pos.chunkPosX;
-        double z = pos.chunkPosZ;
+        double x = xPos;
+        double z = zPos;
         if (world.rand.nextBoolean()) {
             x += world.rand.nextDouble();
             z += world.rand.nextInt(2);
@@ -426,29 +434,29 @@ public class WaterCascadeManager {
             z += world.rand.nextDouble();
         }
 
-        float columnHeight = getFluidHeight(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
-        double y = pos.chunkPosY + world.rand.nextDouble() * columnHeight;
+        float columnHeight = getFluidHeight(world, xPos, yPos, zPos);
+        double y = yPos + world.rand.nextDouble() * columnHeight;
 
         CascadeFX cascade = new CascadeFX(world, x, y, z);
         float size = strength / 4.0F * columnHeight;
         cascade.multipleParticleScaleBy(1.0F - (1.0F - size) / 2.0F);
         mc.effectRenderer.addEffect(cascade);
 
-        maybeSpawnForgeWaterfallSpray(world, pos);
+        maybeSpawnForgeWaterfallSpray(world, xPos, yPos, zPos);
     }
 
-    private void maybeSpawnForgeWaterfallSpray(World world, ChunkPosition pos) {
+    private void maybeSpawnForgeWaterfallSpray(World world, int xPos, int yPos, int zPos) {
         if (!Config.waterfallSprayEnabled || sprayIcon == null) {
             return;
         }
 
-        Block block = world.getBlock(pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+        Block block = world.getBlock(xPos, yPos, zPos);
         if (block instanceof BlockLiquid || !(block instanceof IFluidBlock) || world.rand.nextInt(3) != 0) {
             return;
         }
 
-        double px = pos.chunkPosX;
-        double pz = pos.chunkPosZ;
+        double px = xPos;
+        double pz = zPos;
         if (world.rand.nextBoolean()) {
             px += world.rand.nextDouble();
             pz += world.rand.nextInt(2);
@@ -457,12 +465,12 @@ public class WaterCascadeManager {
             pz += world.rand.nextDouble();
         }
 
-        double py = pos.chunkPosY + 0.05D + world.rand.nextDouble() * 0.25D;
+        double py = yPos + 0.05D + world.rand.nextDouble() * 0.25D;
         Vec3 flow = Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
         try {
-            block.velocityToAddToEntity(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ, null, flow);
+            block.velocityToAddToEntity(world, xPos, yPos, zPos, null, flow);
         } catch (Throwable ignored) {}
-        float[] rgb = WetnessFluidHelper.getWettableFluidColor(world, pos.chunkPosX, pos.chunkPosY, pos.chunkPosZ);
+        float[] rgb = WetnessFluidHelper.getWettableFluidColor(world, xPos, yPos, zPos);
         Minecraft.getMinecraft().effectRenderer
             .addEffect(new WaterfallSprayFX(world, px, py, pz, flow.xCoord * 0.075D, flow.zCoord * 0.075D, rgb));
     }
@@ -491,41 +499,43 @@ public class WaterCascadeManager {
         final double viewerY = mc.renderViewEntity.posY;
         final double viewerZ = mc.renderViewEntity.posZ;
 
-        List<SoundTarget> candidates = new ArrayList<SoundTarget>();
-        for (Map.Entry<ChunkPosition, Float> entry : cascades.entrySet()) {
-            float strength = entry.getValue()
-                .floatValue();
+        soundCandidates.clear();
+        ObjectIterator<Long2FloatMap.Entry> cascadeIterator = cascades.long2FloatEntrySet()
+            .fastIterator();
+        while (cascadeIterator.hasNext()) {
+            Long2FloatMap.Entry entry = cascadeIterator.next();
+            float strength = entry.getFloatValue();
             if (strength < Config.waterfallSoundCutoff) {
                 continue;
             }
 
-            ChunkPosition pos = entry.getKey();
-            double soundX = pos.chunkPosX + 0.5D;
-            double soundY = pos.chunkPosY + 0.35D;
-            double soundZ = pos.chunkPosZ + 0.5D;
+            long posKey = entry.getLongKey();
+            double soundX = posX(posKey) + 0.5D;
+            double soundY = posY(posKey) + 0.35D;
+            double soundZ = posZ(posKey) + 0.5D;
             double dx = viewerX - soundX;
             double dy = viewerY - soundY;
             double dz = viewerZ - soundZ;
             double distanceSq = dx * dx + dy * dy + dz * dz;
 
             if (distanceSq <= maxDistanceSq) {
-                candidates.add(new SoundTarget(pos, strength, soundX, soundY, soundZ, distanceSq));
+                soundCandidates.add(new SoundTarget(posKey, strength, soundX, soundY, soundZ, distanceSq));
             }
         }
 
-        Collections.sort(candidates, SoundTarget.BY_DISTANCE);
-        Set<ChunkPosition> keep = new HashSet<ChunkPosition>();
-        int limit = Math.min(candidates.size(), MAX_ACTIVE_WATERFALL_SOUNDS);
+        Collections.sort(soundCandidates, SoundTarget.BY_DISTANCE);
+        soundKeysToKeep.clear();
+        int limit = Math.min(soundCandidates.size(), MAX_ACTIVE_WATERFALL_SOUNDS);
 
         for (int i = 0; i < limit; i++) {
-            SoundTarget target = candidates.get(i);
-            keep.add(target.pos);
+            SoundTarget target = soundCandidates.get(i);
+            soundKeysToKeep.add(target.posKey);
 
-            WaterfallLoopSound sound = waterfallSounds.get(target.pos);
+            WaterfallLoopSound sound = waterfallSounds.get(target.posKey);
             if (sound == null) {
                 ResourceLocation soundId = getWaterfallSoundId(target.strength);
                 sound = new WaterfallLoopSound(soundId, randomizePitch(world));
-                waterfallSounds.put(target.pos, sound);
+                waterfallSounds.put(target.posKey, sound);
             }
 
             sound.setState(target.x, target.y, target.z, getWaterfallSoundVolume(target.strength));
@@ -536,11 +546,11 @@ public class WaterCascadeManager {
             }
         }
 
-        Iterator<Map.Entry<ChunkPosition, WaterfallLoopSound>> iterator = waterfallSounds.entrySet()
-            .iterator();
+        ObjectIterator<Long2ObjectMap.Entry<WaterfallLoopSound>> iterator = waterfallSounds.long2ObjectEntrySet()
+            .fastIterator();
         while (iterator.hasNext()) {
-            Map.Entry<ChunkPosition, WaterfallLoopSound> entry = iterator.next();
-            if (!keep.contains(entry.getKey())) {
+            Long2ObjectMap.Entry<WaterfallLoopSound> entry = iterator.next();
+            if (!soundKeysToKeep.contains(entry.getLongKey())) {
                 stopSound(entry.getValue());
                 iterator.remove();
             }
@@ -556,8 +566,8 @@ public class WaterCascadeManager {
         waterfallSounds.clear();
     }
 
-    private void removeWaterfallSound(ChunkPosition pos) {
-        WaterfallLoopSound sound = waterfallSounds.remove(pos);
+    private void removeWaterfallSound(long posKey) {
+        WaterfallLoopSound sound = waterfallSounds.remove(posKey);
         if (sound != null) {
             stopSound(sound);
         }
@@ -628,6 +638,22 @@ public class WaterCascadeManager {
         return 1.0F + 0.2F * (world.rand.nextFloat() - world.rand.nextFloat());
     }
 
+    private static long positionKey(int x, int y, int z) {
+        return ((long) x & 0x3FFFFFFL) << 38 | ((long) z & 0x3FFFFFFL) << 12 | (long) y & 0xFFFL;
+    }
+
+    private static int posX(long key) {
+        return (int) (key >> 38);
+    }
+
+    private static int posY(long key) {
+        return (int) (key & 0xFFFL);
+    }
+
+    private static int posZ(long key) {
+        return (int) (key << 26 >> 38);
+    }
+
     private static class SoundTarget {
 
         private static final Comparator<SoundTarget> BY_DISTANCE = new Comparator<SoundTarget>() {
@@ -638,15 +664,15 @@ public class WaterCascadeManager {
             }
         };
 
-        final ChunkPosition pos;
+        final long posKey;
         final float strength;
         final double x;
         final double y;
         final double z;
         final double distanceSq;
 
-        SoundTarget(ChunkPosition pos, float strength, double x, double y, double z, double distanceSq) {
-            this.pos = pos;
+        SoundTarget(long posKey, float strength, double x, double y, double z, double distanceSq) {
+            this.posKey = posKey;
             this.strength = strength;
             this.x = x;
             this.y = y;

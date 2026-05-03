@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -12,12 +13,14 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityHorse;
 import net.minecraft.entity.passive.EntitySheep;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.fluids.IFluidBlock;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
@@ -45,6 +48,7 @@ public class BreathHandler {
         if (!(event.entity instanceof EntityLivingBase)) {
             return;
         }
+        EntityLivingBase living = (EntityLivingBase) event.entity;
 
         // Breathing rhythm: active for 3 out of 8 cycles of 10 ticks each
         // Multiplying entity ID by a prime for better phase distribution (like DS)
@@ -57,7 +61,7 @@ public class BreathHandler {
             return;
         }
 
-        if (event.entity.isInWater()) {
+        if (isInLiquid(living)) {
             return;
         }
 
@@ -99,14 +103,14 @@ public class BreathHandler {
         }
 
         // Look vector
-        float yawRad = (float) Math.toRadians(((EntityLivingBase) event.entity).rotationYawHead);
+        float yawRad = (float) Math.toRadians(living.rotationYawHead);
         float pitchRad = (float) Math.toRadians(event.entity.rotationPitch);
         double cosYaw = MathHelper.cos(-yawRad - (float) Math.PI);
         double sinYaw = MathHelper.sin(-yawRad - (float) Math.PI);
         double cosPitch = -MathHelper.cos(-pitchRad);
         double sinPitch = MathHelper.sin(-pitchRad);
         Vec3 look = Vec3.createVectorHelper(sinYaw * cosPitch, sinPitch, cosYaw * cosPitch);
-        boolean baby = ((EntityLivingBase) event.entity).isChild();
+        boolean baby = living.isChild();
         Class<?> clazz = event.entity.getClass();
 
         double upOffset = baby ? AnExtraTouch.vic.breath.babyBreathUpOffsets.getFloat(clazz)
@@ -140,6 +144,45 @@ public class BreathHandler {
 
         FrostBreathFX particle = new FrostBreathFX(event.entity.worldObj, x, y, z, vx, vy, vz, baby);
         breathParticles.add(particle);
+    }
+
+    private static boolean isInLiquid(EntityLivingBase entity) {
+        AxisAlignedBB bb = entity.boundingBox;
+        double boxMinX = bb.minX + 0.001D;
+        double boxMinY = bb.minY + 0.4000000059604645D + 0.001D;
+        double boxMinZ = bb.minZ + 0.001D;
+        double boxMaxX = bb.maxX - 0.001D;
+        double boxMaxY = bb.maxY - 0.4000000059604645D - 0.001D;
+        double boxMaxZ = bb.maxZ - 0.001D;
+
+        if (boxMaxX < boxMinX || boxMaxY < boxMinY || boxMaxZ < boxMinZ) {
+            return false;
+        }
+
+        int minX = MathHelper.floor_double(boxMinX);
+        int maxX = MathHelper.floor_double(boxMaxX + 1.0D);
+        int minY = MathHelper.floor_double(boxMinY);
+        int maxY = MathHelper.floor_double(boxMaxY + 1.0D);
+        int minZ = MathHelper.floor_double(boxMinZ);
+        int maxZ = MathHelper.floor_double(boxMaxZ + 1.0D);
+
+        if (!entity.worldObj.checkChunksExist(minX, minY, minZ, maxX, maxY, maxZ)) {
+            return false;
+        }
+
+        for (int x = minX; x < maxX; x++) {
+            for (int y = minY; y < maxY; y++) {
+                for (int z = minZ; z < maxZ; z++) {
+                    Block block = entity.worldObj.getBlock(x, y, z);
+                    if (block.getMaterial()
+                        .isLiquid() || block instanceof IFluidBlock) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     @SubscribeEvent

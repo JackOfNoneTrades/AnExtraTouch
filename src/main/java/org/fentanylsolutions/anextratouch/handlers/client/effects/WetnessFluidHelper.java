@@ -37,24 +37,41 @@ public final class WetnessFluidHelper {
 
     static final class FluidSample {
 
-        final float[] rgb;
+        final float red;
+        final float green;
+        final float blue;
 
         FluidSample(float[] rgb) {
-            this.rgb = rgb;
+            this(rgb[0], rgb[1], rgb[2]);
+        }
+
+        FluidSample(float red, float green, float blue) {
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
         }
     }
 
     static FluidSample findWettableFluid(EntityLivingBase entity) {
         World world = entity.worldObj;
-        AxisAlignedBB bb = entity.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D)
-            .contract(0.001D, 0.001D, 0.001D);
+        AxisAlignedBB bb = entity.boundingBox;
+        double boxMinX = bb.minX + 0.001D;
+        double boxMinY = bb.minY + 0.4000000059604645D + 0.001D;
+        double boxMinZ = bb.minZ + 0.001D;
+        double boxMaxX = bb.maxX - 0.001D;
+        double boxMaxY = bb.maxY - 0.4000000059604645D - 0.001D;
+        double boxMaxZ = bb.maxZ - 0.001D;
 
-        int minX = MathHelper.floor_double(bb.minX);
-        int maxX = MathHelper.floor_double(bb.maxX + 1.0D);
-        int minY = MathHelper.floor_double(bb.minY);
-        int maxY = MathHelper.floor_double(bb.maxY + 1.0D);
-        int minZ = MathHelper.floor_double(bb.minZ);
-        int maxZ = MathHelper.floor_double(bb.maxZ + 1.0D);
+        if (boxMaxX < boxMinX || boxMaxY < boxMinY || boxMaxZ < boxMinZ) {
+            return null;
+        }
+
+        int minX = MathHelper.floor_double(boxMinX);
+        int maxX = MathHelper.floor_double(boxMaxX + 1.0D);
+        int minY = MathHelper.floor_double(boxMinY);
+        int maxY = MathHelper.floor_double(boxMaxY + 1.0D);
+        int minZ = MathHelper.floor_double(boxMinZ);
+        int maxZ = MathHelper.floor_double(boxMaxZ + 1.0D);
 
         if (!world.checkChunksExist(minX, minY, minZ, maxX, maxY, maxZ)) {
             return null;
@@ -68,11 +85,11 @@ public final class WetnessFluidHelper {
                         IFluidBlock fluidBlock = (IFluidBlock) block;
                         Fluid fluid = fluidBlock.getFluid();
                         if (isWettableFluid(world, x, y, z, block, fluid)
-                            && intersectsForgeFluid(bb, world, x, y, z, fluidBlock)) {
+                            && intersectsForgeFluid(boxMinY, boxMaxY, world, x, y, z, fluidBlock)) {
                             return new FluidSample(getFluidColor(world, x, y, z, block, fluid));
                         }
                     } else if (block.getMaterial() == Material.water && !isIgnoredFluid(block, FluidRegistry.WATER)
-                        && intersectsVanillaLiquid(bb, world, x, y, z)) {
+                        && intersectsVanillaLiquid(boxMinY, boxMaxY, world, x, y, z)) {
                             return new FluidSample(FallingWaterFX.getWaterColor(world, x + 0.5D, y + 0.5D, z + 0.5D));
                         }
                 }
@@ -369,11 +386,20 @@ public final class WetnessFluidHelper {
     }
 
     private static boolean intersectsVanillaLiquid(AxisAlignedBB bb, World world, int x, int y, int z) {
+        return intersectsVanillaLiquid(bb.minY, bb.maxY, world, x, y, z);
+    }
+
+    private static boolean intersectsVanillaLiquid(double minY, double maxY, World world, int x, int y, int z) {
         double surfaceY = getVanillaLiquidSurfaceY(world, x, y, z);
-        return bb.maxY >= surfaceY && bb.minY < (double) (y + 1);
+        return maxY >= surfaceY && minY < (double) (y + 1);
     }
 
     private static boolean intersectsForgeFluid(AxisAlignedBB bb, World world, int x, int y, int z,
+        IFluidBlock fluidBlock) {
+        return intersectsForgeFluid(bb.minY, bb.maxY, world, x, y, z, fluidBlock);
+    }
+
+    private static boolean intersectsForgeFluid(double minY, double maxY, World world, int x, int y, int z,
         IFluidBlock fluidBlock) {
         float filled = getFilledPercentage(world, x, y, z, fluidBlock);
 
@@ -384,7 +410,7 @@ public final class WetnessFluidHelper {
         float amount = Math.min(Math.abs(filled), 1.0F);
         double fluidMinY = filled > 0.0F ? y : y + 1.0D - amount;
         double fluidMaxY = filled > 0.0F ? y + amount : y + 1.0D;
-        return bb.maxY >= fluidMinY && bb.minY < fluidMaxY;
+        return maxY >= fluidMinY && minY < fluidMaxY;
     }
 
     private static double getVanillaLiquidSurfaceY(World world, int x, int y, int z) {

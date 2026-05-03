@@ -15,6 +15,7 @@ import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -65,6 +66,7 @@ public final class WaterWaveManager {
 
     private World currentWorld;
     private float spawnBudget;
+    private boolean texturesPreloaded;
 
     private WaterWaveManager() {}
 
@@ -93,6 +95,7 @@ public final class WaterWaveManager {
             spawnBudget = 0.0F;
         }
 
+        preloadTextures(mc);
         tickWaves(mc, world);
         spawnWaves(mc, world);
     }
@@ -548,6 +551,21 @@ public final class WaterWaveManager {
             frames[i] = new ResourceLocation(AnExtraTouch.MODID, "textures/particles/waves/" + size + "_" + i + ".png");
         }
         return frames;
+    }
+
+    private void preloadTextures(Minecraft mc) {
+        if (texturesPreloaded || mc.getTextureManager() == null) {
+            return;
+        }
+
+        TextureManager textureManager = mc.getTextureManager();
+        for (int size = 0; size < WAVE_TEXTURES.length; size++) {
+            for (int frame = 0; frame < WAVE_TEXTURES[size].length; frame++) {
+                textureManager.bindTexture(WAVE_TEXTURES[size][frame]);
+            }
+        }
+        textureManager.bindTexture(TextureMap.locationBlocksTexture);
+        texturesPreloaded = true;
     }
 
     private static long blockKey(int x, int y, int z) {
