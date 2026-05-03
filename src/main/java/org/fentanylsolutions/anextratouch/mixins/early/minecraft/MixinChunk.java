@@ -4,6 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.world.chunk.Chunk;
 
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterWaveManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,6 +18,7 @@ public class MixinChunk {
     private void anextratouch$refreshCascadesOnChunkFill(byte[] data, int storageMask, int msbMask, boolean fullChunk,
         CallbackInfo ci) {
         WaterCascadeManager.INSTANCE.onChunkFilled((Chunk) (Object) this);
+        WaterWaveManager.INSTANCE.onChunkFilled((Chunk) (Object) this);
     }
 
     @Inject(method = "func_150807_a", at = @At("RETURN"))
@@ -27,5 +29,6 @@ public class MixinChunk {
         }
 
         WaterCascadeManager.INSTANCE.onBlockChanged((Chunk) (Object) this, localX, y, localZ);
+        WaterWaveManager.INSTANCE.onBlockChanged((Chunk) (Object) this, localX, y, localZ);
     }
 }

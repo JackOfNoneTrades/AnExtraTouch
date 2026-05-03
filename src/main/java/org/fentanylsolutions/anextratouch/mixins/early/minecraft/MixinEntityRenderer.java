@@ -14,6 +14,7 @@ import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManag
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterWaveManager;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
@@ -446,6 +447,7 @@ public abstract class MixinEntityRenderer {
             shift = Shift.AFTER),
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderWakesAfterWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        WaterWaveManager.INSTANCE.renderInWorldPass(partialTicks);
         WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks);
     }
 

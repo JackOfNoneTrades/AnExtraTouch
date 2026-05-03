@@ -131,5 +131,21 @@
     "sounds": [
       "anextratouch:ambient/stream/waterfall5"
     ]
+  },
+  "waves.waves_breaking": {
+    "category": "ambient",
+    "sounds": [
+      "anextratouch:waves/wave_0",
+      "anextratouch:waves/wave_1",
+      "anextratouch:waves/wave_2",
+      "anextratouch:waves/wave_3",
+      "anextratouch:waves/wave_4",
+      "anextratouch:waves/wave_5",
+      "anextratouch:waves/wave_6",
+      "anextratouch:waves/wave_7",
+      "anextratouch:waves/wave_8",
+      "anextratouch:waves/wave_9",
+      "anextratouch:waves/wave_10"
+    ]
   }
 }

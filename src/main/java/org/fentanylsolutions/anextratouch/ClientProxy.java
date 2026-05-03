@@ -14,6 +14,7 @@ import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManag
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterWaveManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WetParticleHandler;
 import org.fentanylsolutions.anextratouch.varinstances.VarInstanceClient;
 
@@ -61,6 +62,10 @@ public class ClientProxy extends CommonProxy {
             .register(WakeTrailManager.INSTANCE);
         FMLCommonHandler.instance()
             .bus()
+            .register(WaterWaveManager.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(WaterWaveManager.INSTANCE);
+        FMLCommonHandler.instance()
+            .bus()
             .register(WaterCascadeManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WaterCascadeManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(FootprintManager.INSTANCE);
@@ -84,6 +89,7 @@ public class ClientProxy extends CommonProxy {
         super.onConfigReload();
         AnExtraTouch.vic.populateListsFromConfig();
         WaterCascadeManager.INSTANCE.onConfigReload();
+        WaterWaveManager.INSTANCE.onConfigReload();
     }
 
 }

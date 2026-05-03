@@ -19,6 +19,7 @@ public class Config {
         public static final String trampling = "trampling";
         public static final String rainSplash = "rain_splash";
         public static final String waterSplash = "water_splash";
+        public static final String waves = "waves";
         public static final String fluidInteractions = "fluid_interactions";
         public static final String misc = "misc";
         public static final String smoothGui = "smooth_gui";
@@ -113,6 +114,20 @@ public class Config {
     public static boolean waterWakesEnabled = true;
     public static float waterWakeAlpha = 1.0f;
     public static float waterWakeDensity = 1.0f;
+
+    // waves
+    public static boolean wavesEnabled = true;
+    public static int waveSearchDistance = 14;
+    public static float waveSpawnDistance = 64.0f;
+    public static float waveSpawnAmount = 0.7f;
+    public static int waveSpawnFrequency = 20;
+    public static float waveSpawnDistanceFromShoreMin = 4.0f;
+    public static float waveSpawnDistanceFromShoreMax = 48.0f;
+    public static float waveSpawningFOVLimit = 140.0f;
+    public static float waveVolume = 1.0f;
+    public static int waveBreakingSoundChance = 40;
+    public static float waveScale = 1.0f;
+    public static String[] waveBiomeWhitelist = { "type:OCEAN", "type:BEACH", "Coral Reef", "Kelp Forest", "Tropics" };
 
     // fluid interactions
     public static String[] fluidInteractionBlacklist = {};
@@ -676,6 +691,90 @@ public class Config {
                 "Multiplier for how densely Wakes-style surface trails are stamped behind moving entities.");
             config.getCategory(Categories.waterSplash)
                 .remove("cristalineWaterRippleAlphaMultiplier");
+
+            // waves
+            wavesEnabled = config.getBoolean(
+                "wavesEnabled",
+                Categories.waves,
+                wavesEnabled,
+                "Enable ambient coastal waves on vanilla water surfaces.");
+            waveSearchDistance = config.getInt(
+                "waveSearchDistance",
+                Categories.waves,
+                waveSearchDistance,
+                1,
+                64,
+                "Maximum block distance to search for a shoreline from a candidate water block.");
+            waveSpawnDistance = config.getFloat(
+                "waveSpawnDistance",
+                Categories.waves,
+                waveSpawnDistance,
+                8.0f,
+                256.0f,
+                "Maximum horizontal distance from the player where waves can spawn.");
+            waveSpawnAmount = config.getFloat(
+                "waveSpawnAmount",
+                Categories.waves,
+                waveSpawnAmount,
+                0.0f,
+                16.0f,
+                "Average number of waves to try spawning per spawn tick. Fractional values are accumulated over time.");
+            waveSpawnFrequency = config.getInt(
+                "waveSpawnFrequency",
+                Categories.waves,
+                waveSpawnFrequency,
+                0,
+                Integer.MAX_VALUE,
+                "Ticks between wave spawn attempts. Set to 0 to disable spawning without disabling rendering.");
+            waveSpawnDistanceFromShoreMin = config.getFloat(
+                "waveSpawnDistanceFromShoreMin",
+                Categories.waves,
+                waveSpawnDistanceFromShoreMin,
+                0.0f,
+                256.0f,
+                "Minimum water-block distance from shore for new waves.");
+            waveSpawnDistanceFromShoreMax = config.getFloat(
+                "waveSpawnDistanceFromShoreMax",
+                Categories.waves,
+                waveSpawnDistanceFromShoreMax,
+                0.0f,
+                512.0f,
+                "Maximum water-block distance from shore for new waves.");
+            waveSpawningFOVLimit = config.getFloat(
+                "waveSpawningFOVLimit",
+                Categories.waves,
+                waveSpawningFOVLimit,
+                0.0f,
+                360.0f,
+                "Maximum angle around the player's view direction where waves can spawn. 360 allows waves all around the player.");
+            waveVolume = config.getFloat(
+                "waveVolume",
+                Categories.waves,
+                waveVolume,
+                0.0f,
+                10.0f,
+                "Volume multiplier for breaking wave sounds.");
+            waveBreakingSoundChance = config.getInt(
+                "waveBreakingSoundChance",
+                Categories.waves,
+                waveBreakingSoundChance,
+                0,
+                Integer.MAX_VALUE,
+                "How often waves play a breaking sound near shore. Higher values are rarer; 0 makes every eligible wave audible. Set waveVolume to 0 to silence waves.");
+            waveScale = config.getFloat(
+                "waveScale",
+                Categories.waves,
+                waveScale,
+                0.1f,
+                8.0f,
+                "Visual size multiplier for wave sprites.");
+            waveBiomeWhitelist = config.getStringList(
+                "waveBiomeWhitelist",
+                Categories.waves,
+                waveBiomeWhitelist,
+                "Biome IDs, biome names, or Forge BiomeDictionary entries where ambient coastal waves may spawn. Use entries like \"type:OCEAN\", \"type:BEACH\", \"Ocean\", or \"Coral Reef\". Matching is case-insensitive and ignores spaces, underscores, hyphens, and namespace prefixes. Defaults mirror the original Waves biome tag with 1.7.10 and Biomes O' Plenty ocean/beach biomes.");
+            config.getCategory(Categories.waves)
+                .remove("waveBiomeBlacklist");
 
             // fluid interactions
             fluidInteractionBlacklist = config.getStringList(
