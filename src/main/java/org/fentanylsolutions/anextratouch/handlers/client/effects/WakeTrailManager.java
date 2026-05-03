@@ -1,10 +1,9 @@
 package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.WeakHashMap;
 
 import net.minecraft.block.BlockLiquid;
@@ -29,6 +28,9 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 @SideOnly(Side.CLIENT)
 public final class WakeTrailManager {
@@ -37,6 +39,9 @@ public final class WakeTrailManager {
 
     private static final int NODE_RES = 16;
     private static final int NODE_POWER = 4;
+    private static final int NODE_MASK = NODE_RES - 1;
+    private static final int NODE_GRID = NODE_RES + 2;
+    private static final int NODE_CELLS = NODE_GRID * NODE_GRID;
     private static final int MAX_AGE = 30;
     private static final int MAX_NODES = 512;
     private static final int FLOOD_FILL_DISTANCE = 2;
@@ -48,14 +53,29 @@ public final class WakeTrailManager {
     private static final double TELEPORT_DISTANCE_SQ = 64.0D;
     private static final double MIN_TRAIL_DISTANCE = 0.025D;
     private static final int FULL_BRIGHT = 15728880;
+    private static final int MAX_WAKE_RENDER_BATCH_QUADS = 1800;
     private static final float PADDLE_STRENGTH = INITIAL_STRENGTH * 5.0F;
     private static final float[] COLOR_INTERVALS = new float[] { 0.05F, 0.15F, 0.2F, 0.35F, 0.52F, 0.6F, 0.7F, 0.9F };
     private static final int[][] WAKE_COLORS = new int[][] { { 0, 0, 0, 0 }, { 0x93, 0x99, 0xA6, 0x28 },
         { 0x9E, 0xA5, 0xB0, 0x64 }, { 0xC4, 0xCA, 0xD1, 0xB4 }, { 0, 0, 0, 0 }, { 0xC4, 0xCA, 0xD1, 0xB4 },
         { 0xFF, 0xFF, 0xFF, 0xFF }, { 0xC4, 0xCA, 0xD1, 0xB4 }, { 0x9E, 0xA5, 0xB0, 0x64 } };
 
-    private final Map<NodeKey, WakeNode> nodes = new HashMap<NodeKey, WakeNode>();
+    private final Long2ObjectOpenHashMap<WakeNode> nodes = new Long2ObjectOpenHashMap<WakeNode>();
     private final WeakHashMap<Entity, Tracker> trackers = new WeakHashMap<Entity, Tracker>();
+    private final List<WakeNode> floodNodes = new ArrayList<WakeNode>();
+    private final ArrayDeque<WakeNode> nodePool = new ArrayDeque<WakeNode>(MAX_NODES);
+    private final EtFuturumBoatCompat.RowingTrailConsumer rowingTrailConsumer = new EtFuturumBoatCompat.RowingTrailConsumer() {
+
+        @Override
+        public void accept(double fromX, double fromZ, double toX, double toZ) {
+            nodeTrail(rowingTrailWorld, fromX, fromZ, toX, toZ, rowingTrailY, PADDLE_STRENGTH, rowingTrailVelocity);
+        }
+    };
+    private int stampId;
+    private int inputStamp;
+    private World rowingTrailWorld;
+    private int rowingTrailY;
+    private double rowingTrailVelocity;
 
     private WakeTrailManager() {}
 
@@ -67,12 +87,13 @@ public final class WakeTrailManager {
 
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || !Config.waterWakesEnabled) {
-            nodes.clear();
+            clearNodes();
             trackers.clear();
             return;
         }
 
         tickNodes(mc.theWorld);
+        inputStamp = nextStampId();
         spawnEntityWakes(mc);
         trimNodeCap();
     }
@@ -109,14 +130,20 @@ public final class WakeTrailManager {
             mc.entityRenderer.enableLightmap((double) partialTicks);
             GL11.glDisable(GL11.GL_TEXTURE_2D);
 
-            Tessellator tessellator = Tessellator.instance;
-            tessellator.startDrawingQuads();
-            for (WakeNode node : nodes.values()) {
-                if (node.world == mc.theWorld) {
-                    renderNode(tessellator, node, camX, camY, camZ, partialTicks);
+            WakeRenderBatch batch = new WakeRenderBatch(Tessellator.instance);
+            try {
+                ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+                    .fastIterator();
+                while (iterator.hasNext()) {
+                    WakeNode node = iterator.next()
+                        .getValue();
+                    if (node.world == mc.theWorld) {
+                        renderNode(batch, node, camX, camY, camZ, partialTicks);
+                    }
                 }
+            } finally {
+                batch.finish();
             }
-            tessellator.draw();
 
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.entityRenderer.disableLightmap((double) partialTicks);
@@ -129,14 +156,15 @@ public final class WakeTrailManager {
     }
 
     private void tickNodes(World world) {
-        List<WakeNode> floodNodes = new ArrayList<WakeNode>();
-        Iterator<Map.Entry<NodeKey, WakeNode>> iterator = nodes.entrySet()
-            .iterator();
+        floodNodes.clear();
+        ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+            .fastIterator();
         while (iterator.hasNext()) {
             WakeNode node = iterator.next()
                 .getValue();
             if (node.world != world || !isValidNodePos(world, node.x, node.y, node.z)) {
                 iterator.remove();
+                releaseNode(node);
                 continue;
             }
 
@@ -144,23 +172,23 @@ public final class WakeTrailManager {
             node.age++;
             if (node.age >= MAX_AGE) {
                 iterator.remove();
+                releaseNode(node);
                 continue;
             }
 
-            node.t = node.age / (float) MAX_AGE;
             node.tick(
-                nodes.get(new NodeKey(node.x, node.y, node.z - 1)),
-                nodes.get(new NodeKey(node.x, node.y, node.z + 1)),
-                nodes.get(new NodeKey(node.x + 1, node.y, node.z)),
-                nodes.get(new NodeKey(node.x - 1, node.y, node.z)));
+                nodes.get(nodeKey(node.x, node.y, node.z - 1)),
+                nodes.get(nodeKey(node.x, node.y, node.z + 1)),
+                nodes.get(nodeKey(node.x + 1, node.y, node.z)),
+                nodes.get(nodeKey(node.x - 1, node.y, node.z)));
 
             if (node.floodLevel > 0 && node.age > FLOOD_FILL_TICK_DELAY) {
                 floodNodes.add(node);
             }
         }
 
-        for (WakeNode node : floodNodes) {
-            floodFill(node);
+        for (int i = 0; i < floodNodes.size(); i++) {
+            floodFill(floodNodes.get(i));
         }
     }
 
@@ -229,16 +257,11 @@ public final class WakeTrailManager {
     }
 
     private void spawnRowingTrails(World world, Entity entity, double surfaceY, double velocity) {
-        EtFuturumBoatCompat.RowingTrail[] trails = EtFuturumBoatCompat.getRowingTrails(entity, velocity);
-        if (trails.length == 0) {
-            return;
-        }
-
-        int y = MathHelper.floor_double(surfaceY - 1.0E-4D);
-        for (int i = 0; i < trails.length; i++) {
-            EtFuturumBoatCompat.RowingTrail trail = trails[i];
-            nodeTrail(world, trail.fromX, trail.fromZ, trail.toX, trail.toZ, y, PADDLE_STRENGTH, velocity);
-        }
+        rowingTrailWorld = world;
+        rowingTrailY = MathHelper.floor_double(surfaceY - 1.0E-4D);
+        rowingTrailVelocity = velocity;
+        EtFuturumBoatCompat.forEachRowingTrail(entity, velocity, rowingTrailConsumer);
+        rowingTrailWorld = null;
     }
 
     private void spawnTrail(World world, Entity entity, double fromX, double fromZ, double toX, double toZ,
@@ -263,9 +286,7 @@ public final class WakeTrailManager {
         int x2 = MathHelper.floor_double(toX * NODE_RES);
         int z2 = MathHelper.floor_double(toZ * NODE_RES);
 
-        ArrayList<Long> pixelsAffected = new ArrayList<Long>();
-        bresenhamLine(x1, z1, x2, z2, pixelsAffected);
-        pixelsToNodes(world, pixelsAffected, y, waveStrength, velocity);
+        stampLine(world, x1, z1, x2, z2, y, waveStrength, velocity, inputStamp);
     }
 
     private void thickNodeTrail(World world, double fromX, double fromZ, double toX, double toZ, int y,
@@ -283,60 +304,18 @@ public final class WakeTrailManager {
 
         float nx = (z1 - z2) / len;
         float nz = (x2 - x1) / len;
-        ArrayList<Long> pixelsAffected = new ArrayList<Long>();
         for (int i = -w; i < w; i++) {
-            bresenhamLine(
+            stampLine(
+                world,
                 MathHelper.floor_float(x1 + nx * i),
                 MathHelper.floor_float(z1 + nz * i),
                 MathHelper.floor_float(x2 + nx * i),
                 MathHelper.floor_float(z2 + nz * i),
-                pixelsAffected);
-        }
-
-        pixelsToNodes(world, pixelsAffected, y, waveStrength, velocity);
-    }
-
-    private void pixelsToNodes(World world, ArrayList<Long> pixelsAffected, int y, float waveStrength,
-        double velocity) {
-        HashMap<NodeKey, WakeNode> affected = new HashMap<NodeKey, WakeNode>();
-        for (Long pixel : pixelsAffected) {
-            int pixelX = pixelX(pixel.longValue());
-            int pixelZ = pixelZ(pixel.longValue());
-            NodeKey key = new NodeKey(pixelX >> NODE_POWER, y, pixelZ >> NODE_POWER);
-            WakeNode node = affected.get(key);
-            if (node == null) {
-                node = new WakeNode(world, key.x, key.y, key.z, FLOOD_FILL_DISTANCE);
-                affected.put(key, node);
-            }
-
-            node.setInitialValue(
-                Math.floorMod(pixelX, NODE_RES),
-                Math.floorMod(pixelZ, NODE_RES),
+                y,
                 waveStrength,
-                velocity);
+                velocity,
+                inputStamp);
         }
-
-        for (WakeNode node : affected.values()) {
-            insertNode(node);
-        }
-    }
-
-    private void insertNode(WakeNode incoming) {
-        if (!isValidNodePos(incoming.world, incoming.x, incoming.y, incoming.z)) {
-            return;
-        }
-
-        NodeKey key = incoming.key();
-        WakeNode existing = nodes.get(key);
-        if (existing != null) {
-            existing.revive(incoming);
-            return;
-        }
-
-        if (nodes.size() >= MAX_NODES) {
-            removeOldestNode();
-        }
-        nodes.put(key, incoming);
     }
 
     private void floodFill(WakeNode node) {
@@ -353,15 +332,11 @@ public final class WakeTrailManager {
             return;
         }
 
-        NodeKey key = new NodeKey(x, y, z);
-        WakeNode existing = nodes.get(key);
-        if (existing != null) {
-            existing.age = 0;
-            existing.floodLevel = Math.max(existing.floodLevel, nextLevel);
-            return;
+        WakeNode node = getOrCreateNode(source.world, x, y, z, nextLevel);
+        if (node != null) {
+            node.age = 0;
+            node.floodLevel = Math.max(node.floodLevel, nextLevel);
         }
-
-        insertNode(new WakeNode(source.world, x, y, z, nextLevel));
     }
 
     private void trimNodeCap() {
@@ -371,17 +346,26 @@ public final class WakeTrailManager {
     }
 
     private void removeOldestNode() {
-        NodeKey oldestKey = null;
+        long oldestKey = 0L;
         int oldestAge = -1;
-        for (Map.Entry<NodeKey, WakeNode> entry : nodes.entrySet()) {
-            if (entry.getValue().age > oldestAge) {
-                oldestAge = entry.getValue().age;
-                oldestKey = entry.getKey();
+        boolean found = false;
+        WakeNode oldestNode = null;
+        ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+            .fastIterator();
+        while (iterator.hasNext()) {
+            Long2ObjectMap.Entry<WakeNode> entry = iterator.next();
+            WakeNode node = entry.getValue();
+            if (node.age > oldestAge) {
+                oldestAge = node.age;
+                oldestKey = entry.getLongKey();
+                oldestNode = node;
+                found = true;
             }
         }
 
-        if (oldestKey != null) {
+        if (found) {
             nodes.remove(oldestKey);
+            releaseNode(oldestNode);
         }
     }
 
@@ -447,7 +431,7 @@ public final class WakeTrailManager {
         return WetnessFluidHelper.getWettableFluidColor(world, x, y, z);
     }
 
-    private static void renderNode(Tessellator tessellator, WakeNode node, double camX, double camY, double camZ,
+    private static void renderNode(WakeRenderBatch batch, WakeNode node, double camX, double camY, double camZ,
         float partialTicks) {
         float ageDelta = node.prevAge + (node.age - node.prevAge) * partialTicks;
         float progress = clamp(ageDelta / (float) MAX_AGE, 0.0F, 1.0F);
@@ -459,28 +443,24 @@ public final class WakeTrailManager {
         double pixelSize = 1.0D / NODE_RES;
         double y = node.surfaceY + SURFACE_OFFSET - camY;
 
-        tessellator.setBrightness(FULL_BRIGHT);
         for (int pixelZ = 0; pixelZ < NODE_RES; pixelZ++) {
             double z0 = node.z + pixelZ * pixelSize - camZ;
             double z1 = z0 + pixelSize;
             for (int pixelX = 0; pixelX < NODE_RES; pixelX++) {
-                int[] color = sampleColor(node.getWave(pixelX, pixelZ), node.tint, ageFade);
-                if (color[3] <= 2) {
+                int color = sampleColor(node.getWave(pixelX, pixelZ), node.tintR, node.tintG, node.tintB, ageFade);
+                int alpha = color >>> 24;
+                if (alpha <= 2) {
                     continue;
                 }
 
                 double x0 = node.x + pixelX * pixelSize - camX;
                 double x1 = x0 + pixelSize;
-                tessellator.setColorRGBA(color[0], color[1], color[2], color[3]);
-                tessellator.addVertex(x0, y, z0);
-                tessellator.addVertex(x0, y, z1);
-                tessellator.addVertex(x1, y, z1);
-                tessellator.addVertex(x1, y, z0);
+                batch.addQuad(x0, x1, y, z0, z1, color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF, alpha);
             }
         }
     }
 
-    private static int[] sampleColor(float wave, float[] tint, float ageFade) {
+    private static int sampleColor(float wave, float tintR, float tintG, float tintB, float ageFade) {
         double clampedRange = 1.0D / (1.0D + Math.exp(-0.1D * wave));
         int index = COLOR_INTERVALS.length;
         for (int i = 0; i < COLOR_INTERVALS.length; i++) {
@@ -491,16 +471,21 @@ public final class WakeTrailManager {
         }
 
         int[] color = WAKE_COLORS[index];
+        if (color[3] == 0) {
+            return 0;
+        }
+
         double srcA = Math.pow(color[3] / 255.0D, 5.0D);
-        int r = (int) (color[0] * srcA + tint[0] * 255.0F * (1.0D - srcA));
-        int g = (int) (color[1] * srcA + tint[1] * 255.0F * (1.0D - srcA));
-        int b = (int) (color[2] * srcA + tint[2] * 255.0F * (1.0D - srcA));
+        int r = (int) (color[0] * srcA + tintR * 255.0F * (1.0D - srcA));
+        int g = (int) (color[1] * srcA + tintG * 255.0F * (1.0D - srcA));
+        int b = (int) (color[2] * srcA + tintB * 255.0F * (1.0D - srcA));
         float opacity = color[3] == 0xFF ? ageFade : ageFade * Config.waterWakeAlpha;
         int a = (int) (color[3] * opacity);
-        return new int[] { r, g, b, a };
+        return a << 24 | r << 16 | g << 8 | b;
     }
 
-    private static void bresenhamLine(int x1, int z1, int x2, int z2, ArrayList<Long> points) {
+    private void stampLine(World world, int x1, int z1, int x2, int z2, int y, float waveStrength, double velocity,
+        int stamp) {
         int dz = z2 - z1;
         int dx = x2 - x1;
         if (dx == 0) {
@@ -510,7 +495,7 @@ public final class WakeTrailManager {
                 z2 = temp;
             }
             for (int z = z1; z < z2 + 1; z++) {
-                points.add(pixelKey(x1, z));
+                stampPixel(world, x1, z, y, waveStrength, velocity, stamp);
             }
         } else {
             float k = (float) dz / dx;
@@ -528,7 +513,7 @@ public final class WakeTrailManager {
                     z = z2;
                 }
                 for (int x = x1; x < x2 + 1; x++) {
-                    points.add(pixelKey(x, z));
+                    stampPixel(world, x, z, y, waveStrength, velocity, stamp);
                     offset += delta;
                     if (offset >= threshold) {
                         z += adjust;
@@ -546,7 +531,7 @@ public final class WakeTrailManager {
                     z2 = temp;
                 }
                 for (int z = z1; z < z2 + 1; z++) {
-                    points.add(pixelKey(x, z));
+                    stampPixel(world, x, z, y, waveStrength, velocity, stamp);
                     offset += delta;
                     if (offset >= threshold) {
                         x += adjust;
@@ -557,16 +542,84 @@ public final class WakeTrailManager {
         }
     }
 
-    private static long pixelKey(int x, int z) {
-        return (long) x << 32 | z & 0xFFFFFFFFL;
+    private void stampPixel(World world, int pixelX, int pixelZ, int y, float waveStrength, double velocity,
+        int stamp) {
+        WakeNode node = getOrCreateNode(world, pixelX >> NODE_POWER, y, pixelZ >> NODE_POWER, FLOOD_FILL_DISTANCE);
+        if (node == null) {
+            return;
+        }
+
+        node.beginInputStamp(stamp);
+        node.setInitialValue(pixelX & NODE_MASK, pixelZ & NODE_MASK, waveStrength, velocity);
     }
 
-    private static int pixelX(long key) {
-        return (int) (key >> 32);
+    private WakeNode getOrCreateNode(World world, int x, int y, int z, int floodLevel) {
+        long key = nodeKey(x, y, z);
+        WakeNode node = nodes.get(key);
+        if (node != null) {
+            node.floodLevel = Math.max(node.floodLevel, floodLevel);
+            return node;
+        }
+
+        if (!isValidNodePos(world, x, y, z)) {
+            return null;
+        }
+
+        if (nodes.size() >= MAX_NODES) {
+            removeOldestNode();
+        }
+
+        node = acquireNode(world, x, y, z, floodLevel);
+        nodes.put(key, node);
+        return node;
     }
 
-    private static int pixelZ(long key) {
-        return (int) key;
+    private WakeNode acquireNode(World world, int x, int y, int z, int floodLevel) {
+        WakeNode node = nodePool.pollFirst();
+        if (node == null) {
+            node = new WakeNode();
+        }
+        node.reset(world, x, y, z, floodLevel);
+        return node;
+    }
+
+    private void releaseNode(WakeNode node) {
+        if (node == null || nodePool.size() >= MAX_NODES) {
+            return;
+        }
+
+        node.release();
+        nodePool.addLast(node);
+    }
+
+    private void clearNodes() {
+        ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+            .fastIterator();
+        while (iterator.hasNext()) {
+            releaseNode(
+                iterator.next()
+                    .getValue());
+        }
+        nodes.clear();
+        floodNodes.clear();
+    }
+
+    private int nextStampId() {
+        stampId++;
+        if (stampId == 0) {
+            ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+                .fastIterator();
+            while (iterator.hasNext()) {
+                iterator.next()
+                    .getValue().inputStamp = 0;
+            }
+            stampId = 1;
+        }
+        return stampId;
+    }
+
+    private static long nodeKey(int x, int y, int z) {
+        return ((long) x & 0x3FFFFFFL) << 38 | ((long) z & 0x3FFFFFFL) << 12 | (long) y & 0xFFFL;
     }
 
     private static float clamp(float value, float min, float max) {
@@ -586,67 +639,95 @@ public final class WakeTrailManager {
         boolean onSurface;
     }
 
-    private static class NodeKey {
+    private static class WakeRenderBatch {
 
-        final int x;
-        final int y;
-        final int z;
+        private final Tessellator tessellator;
+        private int quads;
 
-        NodeKey(int x, int y, int z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+        WakeRenderBatch(Tessellator tessellator) {
+            this.tessellator = tessellator;
+            begin();
         }
 
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            if (!(other instanceof NodeKey)) {
-                return false;
+        void addQuad(double x0, double x1, double y, double z0, double z1, int red, int green, int blue, int alpha) {
+            if (quads >= MAX_WAKE_RENDER_BATCH_QUADS) {
+                flush();
             }
 
-            NodeKey key = (NodeKey) other;
-            return x == key.x && y == key.y && z == key.z;
+            tessellator.setColorRGBA(red, green, blue, alpha);
+            tessellator.addVertex(x0, y, z0);
+            tessellator.addVertex(x0, y, z1);
+            tessellator.addVertex(x1, y, z1);
+            tessellator.addVertex(x1, y, z0);
+            quads++;
         }
 
-        @Override
-        public int hashCode() {
-            int result = x;
-            result = 31 * result + y;
-            result = 31 * result + z;
-            return result;
+        void finish() {
+            tessellator.draw();
+        }
+
+        private void flush() {
+            tessellator.draw();
+            quads = 0;
+            begin();
+        }
+
+        private void begin() {
+            tessellator.startDrawingQuads();
+            tessellator.setBrightness(FULL_BRIGHT);
         }
     }
 
     private static class WakeNode {
 
-        final World world;
-        final int x;
-        final int y;
-        final int z;
-        final double surfaceY;
-        final float[] tint;
-        final float[][][] u = new float[3][NODE_RES + 2][NODE_RES + 2];
-        final float[][] initialValues = new float[NODE_RES + 2][NODE_RES + 2];
+        final float[][] u = new float[][] { new float[NODE_CELLS], new float[NODE_CELLS], new float[NODE_CELLS] };
+        final float[] initialValues = new float[NODE_CELLS];
+        World world;
+        int x;
+        int y;
+        int z;
+        long key;
+        double surfaceY;
+        float tintR;
+        float tintG;
+        float tintB;
         int floodLevel;
         int age;
         int prevAge;
-        float t;
+        int inputStamp;
 
-        WakeNode(World world, int x, int y, int z, int floodLevel) {
+        void reset(World world, int x, int y, int z, int floodLevel) {
             this.world = world;
             this.x = x;
             this.y = y;
             this.z = z;
+            this.key = nodeKey(x, y, z);
             this.surfaceY = getWakeSurfaceY(world, x, y, z);
-            this.tint = sampleWakeFluidColor(world, x, y, z);
+            float[] tint = sampleWakeFluidColor(world, x, y, z);
+            this.tintR = tint[0];
+            this.tintG = tint[1];
+            this.tintB = tint[2];
             this.floodLevel = floodLevel;
+            this.age = 0;
+            this.prevAge = 0;
+            this.inputStamp = 0;
+            clearAll();
         }
 
-        NodeKey key() {
-            return new NodeKey(x, y, z);
+        void release() {
+            world = null;
+            inputStamp = 0;
+        }
+
+        void beginInputStamp(int stamp) {
+            if (inputStamp == stamp) {
+                return;
+            }
+
+            inputStamp = stamp;
+            age = 0;
+            floodLevel = FLOOD_FILL_DISTANCE;
+            clearInitialValues();
         }
 
         void setInitialValue(int x, int z, float waveStrength, double velocity) {
@@ -655,19 +736,23 @@ public final class WakeTrailManager {
                 for (int dx = -1; dx < 2; dx++) {
                     int px = x + dx + 1;
                     int pz = z + dz + 1;
-                    if (Math.abs(value) > Math.abs(initialValues[pz][px])) {
-                        initialValues[pz][px] = value;
+                    int index = index(px, pz);
+                    if (Math.abs(value) > Math.abs(initialValues[index])) {
+                        initialValues[index] = value;
                     }
                 }
             }
         }
 
-        void revive(WakeNode incoming) {
-            this.age = 0;
-            this.floodLevel = FLOOD_FILL_DISTANCE;
-            for (int z = 0; z < NODE_RES + 2; z++) {
-                System.arraycopy(incoming.initialValues[z], 0, this.initialValues[z], 0, NODE_RES + 2);
+        void clearAll() {
+            for (int i = 0; i < u.length; i++) {
+                Arrays.fill(u[i], 0.0F);
             }
+            clearInitialValues();
+        }
+
+        void clearInitialValues() {
+            Arrays.fill(initialValues, 0.0F);
         }
 
         void tick(WakeNode north, WakeNode south, WakeNode east, WakeNode west) {
@@ -675,54 +760,65 @@ public final class WakeTrailManager {
             float beta = (float) (Math.log(10.0D * WAVE_DECAY_FACTOR + 10.0D) / Math.log(20.0D));
 
             for (int i = 2; i >= 1; i--) {
+                float[] state = u[i];
                 if (north != null) {
-                    u[i][0] = north.u[i][NODE_RES];
+                    System.arraycopy(north.u[i], index(0, NODE_RES), state, index(0, 0), NODE_GRID);
                 }
                 if (south != null) {
-                    u[i][NODE_RES + 1] = south.u[i][1];
+                    System.arraycopy(south.u[i], index(0, 1), state, index(0, NODE_RES + 1), NODE_GRID);
                 }
                 for (int z = 0; z < NODE_RES + 2; z++) {
                     if (east == null && west == null) {
                         break;
                     }
                     if (east != null) {
-                        u[i][z][NODE_RES + 1] = east.u[i][z][1];
+                        state[index(NODE_RES + 1, z)] = east.u[i][index(1, z)];
                     }
                     if (west != null) {
-                        u[i][z][0] = west.u[i][z][NODE_RES];
+                        state[index(0, z)] = west.u[i][index(NODE_RES, z)];
                     }
                 }
             }
 
+            float[] current = u[0];
+            float[] previous = u[1];
+            float[] older = u[2];
             for (int z = 1; z < NODE_RES + 1; z++) {
                 for (int x = 1; x < NODE_RES + 1; x++) {
-                    u[0][z][x] += initialValues[z][x];
-                    initialValues[z][x] = 0.0F;
-                    u[2][z][x] = u[1][z][x];
-                    u[1][z][x] = u[0][z][x];
+                    int index = index(x, z);
+                    current[index] += initialValues[index];
+                    initialValues[index] = 0.0F;
+                    older[index] = previous[index];
+                    previous[index] = current[index];
                 }
             }
 
             for (int z = 1; z < NODE_RES + 1; z++) {
                 for (int x = 1; x < NODE_RES + 1; x++) {
-                    u[0][z][x] = (float) (alpha
-                        * (0.5F * u[1][z - 1][x] + 0.25F * u[1][z - 1][x + 1]
-                            + 0.5F * u[1][z][x + 1]
-                            + 0.25F * u[1][z + 1][x + 1]
-                            + 0.5F * u[1][z + 1][x]
-                            + 0.25F * u[1][z + 1][x - 1]
-                            + 0.5F * u[1][z][x - 1]
-                            + 0.25F * u[1][z - 1][x - 1]
-                            - 3.0F * u[1][z][x])
-                        + 2.0F * u[1][z][x]
-                        - u[2][z][x]);
-                    u[0][z][x] *= beta;
+                    int index = index(x, z);
+                    current[index] = (float) (alpha
+                        * (0.5F * previous[index(x, z - 1)] + 0.25F * previous[index(x + 1, z - 1)]
+                            + 0.5F * previous[index(x + 1, z)]
+                            + 0.25F * previous[index(x + 1, z + 1)]
+                            + 0.5F * previous[index(x, z + 1)]
+                            + 0.25F * previous[index(x - 1, z + 1)]
+                            + 0.5F * previous[index(x - 1, z)]
+                            + 0.25F * previous[index(x - 1, z - 1)]
+                            - 3.0F * previous[index])
+                        + 2.0F * previous[index]
+                        - older[index]);
+                    current[index] *= beta;
                 }
             }
         }
 
         float getWave(int x, int z) {
-            return (u[0][z + 1][x + 1] + u[1][z + 1][x + 1] + u[2][z + 1][x + 1]) / 3.0F;
+            int index = index(x + 1, z + 1);
+            return (u[0][index] + u[1][index] + u[2][index]) / 3.0F;
+        }
+
+        private static int index(int x, int z) {
+            return z * NODE_GRID + x;
         }
     }
 }

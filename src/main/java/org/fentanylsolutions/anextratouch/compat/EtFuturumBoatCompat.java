@@ -12,7 +12,6 @@ import ganymedes01.etfuturum.entities.EntityNewBoat;
 public final class EtFuturumBoatCompat {
 
     private static final String MOD_ID = "etfuturum";
-    private static final RowingTrail[] NO_TRAILS = new RowingTrail[0];
 
     private static Boolean available;
 
@@ -22,12 +21,12 @@ public final class EtFuturumBoatCompat {
         return isAvailable() && Bridge.isBoat(entity);
     }
 
-    public static RowingTrail[] getRowingTrails(Entity entity, double velocity) {
-        if (!isAvailable() || velocity <= 0.0D) {
-            return NO_TRAILS;
+    public static void forEachRowingTrail(Entity entity, double velocity, RowingTrailConsumer consumer) {
+        if (!isAvailable() || velocity <= 0.0D || consumer == null) {
+            return;
         }
 
-        return Bridge.getRowingTrails(entity, velocity);
+        Bridge.forEachRowingTrail(entity, velocity, consumer);
     }
 
     private static boolean isAvailable() {
@@ -37,19 +36,9 @@ public final class EtFuturumBoatCompat {
         return available;
     }
 
-    public static final class RowingTrail {
+    public interface RowingTrailConsumer {
 
-        public final double fromX;
-        public final double fromZ;
-        public final double toX;
-        public final double toZ;
-
-        private RowingTrail(double fromX, double fromZ, double toX, double toZ) {
-            this.fromX = fromX;
-            this.fromZ = fromZ;
-            this.toX = toX;
-            this.toZ = toZ;
-        }
+        void accept(double fromX, double fromZ, double toX, double toZ);
     }
 
     private static final class Bridge {
@@ -66,15 +55,12 @@ public final class EtFuturumBoatCompat {
             return entity instanceof EntityNewBoat;
         }
 
-        private static RowingTrail[] getRowingTrails(Entity entity, double velocity) {
+        private static void forEachRowingTrail(Entity entity, double velocity, RowingTrailConsumer consumer) {
             if (!(entity instanceof EntityNewBoat)) {
-                return NO_TRAILS;
+                return;
             }
 
             EntityNewBoat boat = (EntityNewBoat) entity;
-            RowingTrail[] trails = new RowingTrail[2];
-            int count = 0;
-
             float yaw = boat.rotationYaw * 0.017453292F;
             double forwardX = MathHelper.sin(-yaw);
             double forwardZ = MathHelper.cos(yaw);
@@ -92,17 +78,8 @@ public final class EtFuturumBoatCompat {
 
                 double x = boat.posX + (side == 1 ? -forwardZ : forwardZ);
                 double z = boat.posZ + (side == 1 ? forwardX : -forwardX);
-                trails[count++] = new RowingTrail(x, z, x + forwardX * trailLength, z + forwardZ * trailLength);
+                consumer.accept(x, z, x + forwardX * trailLength, z + forwardZ * trailLength);
             }
-
-            if (count == 0) {
-                return NO_TRAILS;
-            }
-            if (count == trails.length) {
-                return trails;
-            }
-
-            return new RowingTrail[] { trails[0] };
         }
 
         private static double positiveModulo(double value, double modulo) {
