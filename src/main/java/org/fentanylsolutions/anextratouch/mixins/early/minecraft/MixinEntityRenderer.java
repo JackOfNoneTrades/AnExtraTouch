@@ -416,6 +416,29 @@ public abstract class MixinEntityRenderer {
     }
 
     /**
+     * Keep renderViewEntity aligned to the decoupled camera while terrain renderers build their view state.
+     * Vanilla mostly uses the GL frustum here, but renderer replacements may read entity yaw/pitch directly.
+     */
+    @Inject(
+        method = "renderWorld",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;getInstance()Lnet/minecraft/client/renderer/culling/ClippingHelper;"))
+    private void anextratouch$beforeTerrainFrustumSetup(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        anextratouch$swapRotation();
+    }
+
+    @Inject(
+        method = "renderWorld",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/RenderGlobal;clipRenderersByFrustum(Lnet/minecraft/client/renderer/culling/ICamera;F)V",
+            shift = Shift.AFTER))
+    private void anextratouch$afterTerrainFrustumSetup(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        anextratouch$restoreRotation();
+    }
+
+    /**
      * Render surface overlays in the main world translucent phase (before water),
      * so water properly overlays submerged footprints and distant ripples.
      *
