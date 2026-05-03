@@ -28,6 +28,7 @@ import net.minecraftforge.event.world.ChunkEvent;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.fentlib.util.sound.SoundUtil;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -50,7 +51,9 @@ public final class WaterWaveManager {
     private static final int CACHE_TTL = 20 * 30;
     private static final float SURFACE_OFFSET = 0.018F;
     private static final int FULL_BRIGHT = 15728880;
-    private static final String BREAKING_SOUND = AnExtraTouch.MODID + ":waves.waves_breaking";
+    private static final ResourceLocation BREAKING_SOUND = new ResourceLocation(
+        AnExtraTouch.MODID,
+        "waves.waves_breaking");
 
     private static final ResourceLocation[][] WAVE_TEXTURES = new ResourceLocation[][] { makeFrames("small"),
         makeFrames("medium"), makeFrames("large") };
@@ -857,8 +860,12 @@ public final class WaterWaveManager {
                 * (2.5F + size * 0.5F)
                 * (0.75F + world.rand.nextFloat() * 0.5F);
             float pitch = 0.7F + world.rand.nextFloat() * 0.8F;
-            world.playSound(x, y, z, BREAKING_SOUND, volume, pitch, false);
+            SoundUtil.playAt(BREAKING_SOUND, x, y, z, volume, pitch, getWaveSoundRange(volume));
             playedSound = true;
+        }
+
+        float getWaveSoundRange(float volume) {
+            return Config.waveSoundRange > 0.0F ? Config.waveSoundRange : SoundUtil.getVanillaMaxDistance(volume);
         }
 
         int getFrame(float partialTicks) {

@@ -3,11 +3,14 @@ package org.fentanylsolutions.anextratouch.handlers.client.effects;
 import net.minecraft.client.audio.MovingSound;
 import net.minecraft.util.ResourceLocation;
 
+import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.fentlib.util.sound.ICustomMaxDistanceSound;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class WaterfallLoopSound extends MovingSound {
+public class WaterfallLoopSound extends MovingSound implements ICustomMaxDistanceSound {
 
     private final ResourceLocation soundId;
     private boolean stopped;
@@ -57,5 +60,10 @@ public class WaterfallLoopSound extends MovingSound {
         this.yPosF = this.nextY;
         this.zPosF = this.nextZ;
         this.volume = this.nextVolume;
+    }
+
+    @Override
+    public float getMaxSoundDistance() {
+        return Config.waterfallSoundRange;
     }
 }

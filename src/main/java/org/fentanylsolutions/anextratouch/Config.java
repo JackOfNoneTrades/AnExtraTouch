@@ -104,6 +104,7 @@ public class Config {
     public static boolean waterfallSprayEnabled = true;
     public static boolean waterfallSoundEnabled = true;
     public static float waterfallSoundVolume = 1.0f;
+    public static float waterfallSoundRange = 64.0f;
     public static float waterfallSoundCutoff = 0.0f;
     public static boolean chestBubblesEnabled = true;
     public static boolean soulSandChestBubblesEnabled = true;
@@ -125,6 +126,7 @@ public class Config {
     public static float waveSpawnDistanceFromShoreMax = 48.0f;
     public static float waveSpawningFOVLimit = 140.0f;
     public static float waveVolume = 1.0f;
+    public static float waveSoundRange = 128.0f;
     public static int waveBreakingSoundChance = 40;
     public static float waveScale = 1.0f;
     public static String[] waveBiomeWhitelist = { "type:OCEAN", "type:BEACH", "Coral Reef", "Kelp Forest", "Tropics" };
@@ -628,7 +630,14 @@ public class Config {
                 waterfallSoundVolume,
                 0.0f,
                 2.0f,
-                "Volume multiplier for waterfall ambience. Values above 1 also extend the audible radius a bit in 1.7.10.");
+                "Volume multiplier for waterfall ambience.");
+            waterfallSoundRange = config.getFloat(
+                "waterfallSoundRange",
+                Categories.waterSplash,
+                waterfallSoundRange,
+                0.0f,
+                256.0f,
+                "Maximum attenuation distance in blocks for waterfall ambience. Vanilla range at the default maximum waterfall volume is 21.6 blocks; the default custom range is 64. Set to 0 to use vanilla sound range.");
             waterfallSoundCutoff = config.getFloat(
                 "waterfallSoundCutoff",
                 Categories.waterSplash,
@@ -754,6 +763,13 @@ public class Config {
                 0.0f,
                 10.0f,
                 "Volume multiplier for breaking wave sounds.");
+            waveSoundRange = config.getFloat(
+                "waveSoundRange",
+                Categories.waves,
+                waveSoundRange,
+                0.0f,
+                512.0f,
+                "Maximum attenuation distance in blocks for breaking wave sounds. Vanilla range at the default worst-case wave volume is about 105 blocks; the default custom range is 128. Set to 0 to use vanilla sound range.");
             waveBreakingSoundChance = config.getInt(
                 "waveBreakingSoundChance",
                 Categories.waves,

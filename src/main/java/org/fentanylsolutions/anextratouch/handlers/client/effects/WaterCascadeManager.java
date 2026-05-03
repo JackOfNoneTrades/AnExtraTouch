@@ -33,6 +33,7 @@ import net.minecraftforge.fluids.IFluidBlock;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.fentlib.util.sound.SoundUtil;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -230,6 +231,7 @@ public class WaterCascadeManager {
 
     public void onConfigReload() {
         needsNearbyRescan = true;
+        requestWaterfallSoundRefresh();
     }
 
     public void onSoundSystemResumed() {
@@ -483,7 +485,8 @@ public class WaterCascadeManager {
             waterfallSoundsNeedRefresh = false;
         }
 
-        final double maxDistanceSq = 48.0D * 48.0D;
+        final double maxDistance = getWaterfallSoundRange();
+        final double maxDistanceSq = maxDistance * maxDistance;
         final double viewerX = mc.renderViewEntity.posX;
         final double viewerY = mc.renderViewEntity.posY;
         final double viewerZ = mc.renderViewEntity.posZ;
@@ -611,6 +614,14 @@ public class WaterCascadeManager {
     private float getWaterfallSoundVolume(float strength) {
         float normalizedStrength = MathHelper.clamp_float(strength, 0.0F, 2.0F);
         return Config.waterfallSoundVolume * (0.45F + normalizedStrength * 0.45F);
+    }
+
+    private float getWaterfallSoundRange() {
+        if (Config.waterfallSoundRange > 0.0F) {
+            return Config.waterfallSoundRange;
+        }
+
+        return SoundUtil.getVanillaMaxDistance(Config.waterfallSoundVolume * 1.35F);
     }
 
     private float randomizePitch(World world) {
