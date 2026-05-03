@@ -94,11 +94,8 @@ public class BreathHandler {
             int by = MathHelper.floor_double(event.entity.boundingBox.minY);
             int bz = MathHelper.floor_double(event.entity.posZ);
             BiomeGenBase biome = event.entity.worldObj.getBiomeGenForCoords(bx, bz);
-            if (!AnExtraTouch.vic.breath.isColdBiome(biome)) {
-                float temp = biome.getFloatTemperature(bx, by, bz);
-                if (temp >= Config.breathTemperatureThreshold && by < Config.breathAltitudeThreshold) {
-                    return;
-                }
+            if (!shouldShowBreathForClimate(biome, bx, by, bz)) {
+                return;
             }
         }
 
@@ -144,6 +141,18 @@ public class BreathHandler {
 
         FrostBreathFX particle = new FrostBreathFX(event.entity.worldObj, x, y, z, vx, vy, vz, baby);
         breathParticles.add(particle);
+    }
+
+    private static boolean shouldShowBreathForClimate(BiomeGenBase biome, int x, int y, int z) {
+        if (AnExtraTouch.vic.breath.isColdBiome(biome)) {
+            return true;
+        }
+
+        if (y >= Config.breathAltitudeThreshold) {
+            return true;
+        }
+
+        return biome != null && biome.getFloatTemperature(x, 64, z) < Config.breathTemperatureThreshold;
     }
 
     private static boolean isInLiquid(EntityLivingBase entity) {

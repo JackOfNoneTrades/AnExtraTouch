@@ -65,7 +65,7 @@ public class Config {
         "MushroomCow;-0.15;0.85", "EntityHorse;-0.3;1.2", "Wolf;-0.2;0.3", "Ozelot;-0.15;0.2", "Villager;-0.4;0.25" };
     public static String[] breathBabyEntityOverrides = {};
     public static float breathTemperatureThreshold = 0.5f;
-    public static int breathAltitudeThreshold = 150;
+    public static int breathAltitudeThreshold = 130;
     public static String[] breathDimensionRules = { "-1;never", "1;never" };
     public static String breathDefaultDimensionMode = "normal";
     public static String[] breathColdBiomes = {};
