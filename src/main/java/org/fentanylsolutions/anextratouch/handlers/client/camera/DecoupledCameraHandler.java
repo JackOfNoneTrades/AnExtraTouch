@@ -5,7 +5,9 @@ import java.nio.FloatBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
@@ -15,6 +17,7 @@ import net.minecraft.util.Vec3;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.DbcAimingCompat;
+import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
@@ -337,6 +340,17 @@ public final class DecoupledCameraHandler {
         }
         if (wasAiming && !aiming) {
             turningLockTicks = Config.decoupledCameraTurningLockTicks;
+        }
+
+        // Boats consume mount input directly; camera-relative rotation turns W into paddle steering.
+        if (isRidingBoat(player)) {
+            if (aiming) {
+                float[] aim = computeAimRotation(player);
+                player.rotationYaw = aim[0];
+                player.rotationPitch = aim[1];
+            }
+            applyDecoupledSprint(player, false, directionalDoubleTap);
+            return;
         }
 
         // When in full first-person aim mode, vanilla handles everything
@@ -825,6 +839,11 @@ public final class DecoupledCameraHandler {
      */
     private static float degreesDifference(float from, float to) {
         return MathHelper.wrapAngleTo180_float(to - from);
+    }
+
+    private static boolean isRidingBoat(EntityPlayerSP player) {
+        Entity vehicle = player.ridingEntity;
+        return vehicle instanceof EntityBoat || EtFuturumBoatCompat.isBoat(vehicle);
     }
 
     private static void applyDecoupledSprint(EntityPlayerSP player, boolean hasMovementInput, boolean doubleTapped) {
