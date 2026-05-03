@@ -17,7 +17,16 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 * Armor walk and equip sounds. Backported from modern Dynamic Surroundings.
 * Cold breath particles. Backported from modern Dynamic Surroundings.
 * Water splash sound effects when walking in rain. Backported from modern Dynamic Surroundings.
+* Ambient waterfall sounds. Backported from modern Dynamic Surroundings.
 * Wet entities shed water particles. Backported from Legendary Survival Overhaul.
+* Water splashes for entities, dropped items, and arrows entering water. Backported from Particular.
+* Waterfall cascade foam particles. Backported from Particular.
+* Bubbles released from underwater chests when opened. Backported from Particular.
+* Water ripples from rain and water drips. Backported from Particular.
+* Cake eating particles and sound. Backported from Particular.
+* Boat and entity water trails. Backported from Wakes. Et Futurum boats support.
+* Shore waves with breaking sounds. Backported from Coastal Waves.
+* Biome water color tint applied to vanilla rain, splash, drip, and bubble particles when using [Cristaline Water](https://github.com/kanmikan/cristalinewatermod). Supports Forge fluids.
 * Grass trampling. Entities can trample grass when repeatedly walking over it. Entirely server-side, off by default, players only by default.
 * Thermal Foundation Blizz snow trail, similar to the Snow Golem.
 * Smooth Gui backport.
@@ -53,6 +62,9 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Smooth Gui](https://github.com/Ezzenix/SmoothGui)
 * [Minecraft-CameraOverhaul](https://github.com/Mirsario/Minecraft-CameraOverhaul)
 * [Shoulder Surfing](https://github.com/Exopandora/shouldersurfing)
+* [Particular](https://github.com/Chailotl/particular). Source of cascade, splash, ripple, chest bubble, and cake particle effects and textures.
+* [Wakes](https://github.com/Goby56/wakes). Source of the water trail effect and textures.
+* [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) by Verph. Source of the shore wave effect, textures, and sounds.
 * [GT:NH buildscript](https://github.com/GTNewHorizons/ExampleMod1.7.10).
 
 ## License
@@ -64,6 +76,9 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Smooth Gui code is licensed under CC0-1.0](https://github.com/Ezzenix/SmoothGui/blob/main/LICENSE).
 * [Minecraft-CameraOverhaul code is licensed under GPL-3.0](https://github.com/Mirsario/Minecraft-CameraOverhaul/blob/dev/LICENSE.md)
 * [Shoulder Surfing code is licensed under MIT](https://github.com/Exopandora/ShoulderSurfing/blob/master/LICENSE)
+* [Particular assets and code are licensed under LGPL-3.0](https://github.com/Chailotl/particular/blob/master/LICENSE).
+* [Wakes assets and code are licensed under GPL-3.0](https://github.com/Goby56/wakes/blob/main/LICENSE).
+* [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) assets and code are copyright Verph and licensed under BSD 2-Clause. `Waves-1.21.x-1.6.1.jar` metadata contains the BSD 2 license (`license = "BSD 2"`).
 * [Loading Progress Bar](https://github.com/jbredwards/Loading-Progress-Bar/blob/1.7.10/LICENSE)
 
 ## Buy me some creatine
