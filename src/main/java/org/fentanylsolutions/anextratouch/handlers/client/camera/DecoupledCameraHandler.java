@@ -18,6 +18,7 @@ import net.minecraft.util.Vec3;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.DbcAimingCompat;
 import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
+import org.fentanylsolutions.anextratouch.compat.EtFuturumElytraCompat;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
@@ -186,9 +187,15 @@ public final class DecoupledCameraHandler {
         prevCameraPitch = cameraPitch;
         prevYawOffset = yawOffset;
         prevPitchOffset = pitchOffset;
+        boolean elytraFlying = isElytraFlying(entity);
 
         // Update free look state
         freeLooking = FREE_LOOK_KEY.getKeyCode() != 0 && Keyboard.isKeyDown(FREE_LOOK_KEY.getKeyCode());
+
+        if (elytraFlying) {
+            aiming = false;
+            turningLockTicks = 0;
+        }
 
         // Disable free look while aiming (matches modern: isFreeLooking = FREE_LOOK.isDown() && !isAiming)
         if (aiming) {
@@ -209,7 +216,7 @@ public final class DecoupledCameraHandler {
             turningLockTicks--;
         }
 
-        if (!freeLooking && !aiming && !aimFirstPersonActive && entity instanceof EntityPlayerSP) {
+        if (!freeLooking && !aiming && !aimFirstPersonActive && !elytraFlying && entity instanceof EntityPlayerSP) {
             EntityPlayerSP player = (EntityPlayerSP) entity;
             boolean acting = mc.gameSettings.keyBindAttack.getIsKeyPressed()
                 || mc.gameSettings.keyBindUseItem.getIsKeyPressed();
@@ -261,6 +268,10 @@ public final class DecoupledCameraHandler {
             prevCameraPitch = cameraPitch;
         }
 
+        if (!freeLooking && !aimFirstPersonActive && elytraFlying) {
+            syncElytraPlayerToEffectiveCamera(entity);
+        }
+
     }
 
     /**
@@ -282,6 +293,8 @@ public final class DecoupledCameraHandler {
         // Match vanilla Entity.setAngles scaling
         float scaledYaw = yaw * 0.15f;
         float scaledPitch = pitch * 0.15f;
+        float oldEffectiveYaw = getEffectiveYaw();
+        float oldEffectivePitch = getEffectivePitch();
 
         if (freeLooking) {
             // Free look: accumulate into offsets, set prev=current for no interpolation lag
@@ -298,12 +311,18 @@ public final class DecoupledCameraHandler {
         cameraYaw += scaledYaw;
         cameraPitch = MathHelper.clamp_float(cameraPitch - scaledPitch, -90f, 90f);
 
+        EntityLivingBase entity = Minecraft.getMinecraft().renderViewEntity;
+
+        if (isElytraFlying(entity)) {
+            syncElytraPlayerToEffectiveCamera(entity, oldEffectiveYaw, oldEffectivePitch);
+            return true;
+        }
+
         // When aiming, immediately sync player rotation toward crosshair target.
         // Matches modern turn() lines 429-434 + lookAtCrosshairTargetInternal().
         // Uses parallax-corrected direction (player→hitVec) so arrows hit where the
         // crosshair points despite the camera's shoulder offset.
         if (aiming) {
-            EntityLivingBase entity = Minecraft.getMinecraft().renderViewEntity;
             if (entity != null) {
                 float[] aim = computeAimRotation(entity);
                 entity.prevRotationYaw += MathHelper.wrapAngleTo180_float(aim[0] - entity.rotationYaw);
@@ -327,6 +346,16 @@ public final class DecoupledCameraHandler {
             return;
         }
         boolean directionalDoubleTap = detectDirectionalDoubleTap();
+
+        if (isElytraFlying(player)) {
+            aiming = false;
+            turningLockTicks = 0;
+            if (!freeLooking) {
+                syncElytraPlayerToEffectiveCamera(player);
+            }
+            applyDecoupledSprint(player, false, directionalDoubleTap);
+            return;
+        }
 
         // Aiming detection - when using a bow etc., sync player rotation to camera
         // so projectiles fire where the crosshair points.
@@ -844,6 +873,27 @@ public final class DecoupledCameraHandler {
     private static boolean isRidingBoat(EntityPlayerSP player) {
         Entity vehicle = player.ridingEntity;
         return vehicle instanceof EntityBoat || EtFuturumBoatCompat.isBoat(vehicle);
+    }
+
+    private static boolean isElytraFlying(Entity entity) {
+        return EtFuturumElytraCompat.isElytraFlying(entity);
+    }
+
+    private static void syncElytraPlayerToEffectiveCamera(EntityLivingBase entity) {
+        if (entity == null) return;
+        entity.rotationYaw = getEffectiveYaw();
+        entity.rotationPitch = getEffectivePitch();
+    }
+
+    private static void syncElytraPlayerToEffectiveCamera(EntityLivingBase entity, float oldEffectiveYaw,
+        float oldEffectivePitch) {
+        if (entity == null) return;
+        float newEffectiveYaw = getEffectiveYaw();
+        float newEffectivePitch = getEffectivePitch();
+        entity.prevRotationYaw += degreesDifference(oldEffectiveYaw, newEffectiveYaw);
+        entity.prevRotationPitch += newEffectivePitch - oldEffectivePitch;
+        entity.rotationYaw = newEffectiveYaw;
+        entity.rotationPitch = newEffectivePitch;
     }
 
     private static void applyDecoupledSprint(EntityPlayerSP player, boolean hasMovementInput, boolean doubleTapped) {
