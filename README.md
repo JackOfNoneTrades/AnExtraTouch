@@ -7,6 +7,8 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 [![hub](images/badges/github.png)](https://github.com/JackOfNoneTrades/AnExtraTouch/releases)
 [![curse](images/badges/curse.png)](https://www.curseforge.com/minecraft/mc-mods/an-extra-touch)
 [![modrinth](images/badges/modrinth.png)](https://modrinth.com/mod/an-extra-touch)
+[![mcmodcn](images/badges/mcmodcn.png)](https://www.mcmod.cn/class/26935.html)
+[![67](images/badges/67.png)](https://67.fentanylsolutions.org/mod/an-extra-touch)
 [![maven](images/badges/maven.png)](https://maven.fentanylsolutions.org/#/releases/org/fentanylsolutions/anextratouch)
 ![forge](images/badges/forge.png)
 
@@ -47,7 +49,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 ## Dependencies
 * [UniMixins](https://modrinth.com/mod/unimixins) [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/unimixins)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/unimixins/versions) [![git](images/icons/git.png)](https://github.com/LegacyModdingMC/UniMixins/releases)
 * [GTNHLib](https://modrinth.com/mod/gtnhlib)   [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/gtnhlib)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/gtnhlib) [![git](images/icons/git.png)](https://github.com/GTNewHorizons/GTNHLib/releases)
-* [FentLib](https://github.com/JackOfNoneTrades/FentLib) [![git](images/icons/git.png)](https://github.com/JackOfNoneTrades/FentLib)
+* [FentLib](https://www.curseforge.com/minecraft/mc-mods/fentlib) [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/fentlib) [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/fentlib) [![67](images/icons/67.png)](https://67.fentanylsolutions.org/mod/fentlib) [![git](images/icons/git.png)](https://github.com/JackOfNoneTrades/FentLib)
 
 ![breath](images/gifs/breath_pov.gif)
 ![buttons](images/gifs/drip.gif)
