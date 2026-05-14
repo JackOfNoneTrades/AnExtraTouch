@@ -1,6 +1,8 @@
 package org.fentanylsolutions.anextratouch.handlers.client.camera;
 
 import java.nio.FloatBuffer;
+import java.util.List;
+import java.util.Locale;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -8,13 +10,16 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityBoat;
+import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 
+import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.DbcAimingCompat;
 import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
@@ -83,6 +88,10 @@ public final class DecoupledCameraHandler {
     private static final FloatBuffer MODELVIEW_BUFFER = BufferUtils.createFloatBuffer(16);
     private static double cameraWorldX, cameraWorldY, cameraWorldZ;
     private static boolean cameraPositionValid;
+    private static double finalCameraWorldX, finalCameraWorldY, finalCameraWorldZ;
+    private static double finalCameraOffsetX, finalCameraOffsetY, finalCameraOffsetZ;
+    private static double finalCameraDirX, finalCameraDirY, finalCameraDirZ;
+    private static boolean finalCameraStateValid;
 
     // Camera-to-entity distance for player fade
     private static float cameraEntityDistance = Float.MAX_VALUE;
@@ -94,6 +103,8 @@ public final class DecoupledCameraHandler {
 
     // Entity tracking for reset
     private static int lastEntityId = Integer.MIN_VALUE;
+    private static int lastDebugTick = Integer.MIN_VALUE;
+    private static String lastDebugHitKey = "";
 
     private DecoupledCameraHandler() {}
 
@@ -130,6 +141,47 @@ public final class DecoupledCameraHandler {
         cameraWorldY = relY + entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks;
         cameraWorldZ = relZ + entity.prevPosZ + (entity.posZ - entity.prevPosZ) * partialTicks;
         cameraPositionValid = true;
+    }
+
+    /**
+     * Stores the final visual camera state after all GL camera transforms have run.
+     * This lets debug logging compare the actual center-screen ray against mc.objectMouseOver.
+     */
+    public static void updateFinalCameraState(float partialTicks, EntityLivingBase entity) {
+        finalCameraStateValid = false;
+        if (entity == null) return;
+
+        MODELVIEW_BUFFER.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MODELVIEW_BUFFER);
+
+        float m0 = MODELVIEW_BUFFER.get(0), m1 = MODELVIEW_BUFFER.get(1), m2 = MODELVIEW_BUFFER.get(2);
+        float m4 = MODELVIEW_BUFFER.get(4), m5 = MODELVIEW_BUFFER.get(5), m6 = MODELVIEW_BUFFER.get(6);
+        float m8 = MODELVIEW_BUFFER.get(8), m9 = MODELVIEW_BUFFER.get(9), m10 = MODELVIEW_BUFFER.get(10);
+        float m12 = MODELVIEW_BUFFER.get(12), m13 = MODELVIEW_BUFFER.get(13), m14 = MODELVIEW_BUFFER.get(14);
+
+        double relX = -(m0 * m12 + m1 * m13 + m2 * m14);
+        double relY = -(m4 * m12 + m5 * m13 + m6 * m14);
+        double relZ = -(m8 * m12 + m9 * m13 + m10 * m14);
+
+        finalCameraOffsetX = relX;
+        finalCameraOffsetY = relY;
+        finalCameraOffsetZ = relZ;
+        finalCameraWorldX = finalCameraOffsetX + entity.prevPosX + (entity.posX - entity.prevPosX) * partialTicks;
+        finalCameraWorldY = finalCameraOffsetY + entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks;
+        finalCameraWorldZ = finalCameraOffsetZ + entity.prevPosZ + (entity.posZ - entity.prevPosZ) * partialTicks;
+
+        // In OpenGL view space the center ray points down -Z. Convert that vector to world space.
+        finalCameraDirX = -m2;
+        finalCameraDirY = -m6;
+        finalCameraDirZ = -m10;
+        double len = Math.sqrt(
+            finalCameraDirX * finalCameraDirX + finalCameraDirY * finalCameraDirY + finalCameraDirZ * finalCameraDirZ);
+        if (len > 1.0E-6D) {
+            finalCameraDirX /= len;
+            finalCameraDirY /= len;
+            finalCameraDirZ /= len;
+            finalCameraStateValid = true;
+        }
     }
 
     /**
@@ -505,6 +557,212 @@ public final class DecoupledCameraHandler {
         return aimFirstPersonActive;
     }
 
+    public static void correctMouseOverFromVisualCamera(float partialTicks) {
+        if (!active || aimFirstPersonActive || !finalCameraStateValid) return;
+        if (!ShoulderSurfingCompat.shouldUseStaticShoulderRay()) return;
+
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityLivingBase entity = mc.renderViewEntity;
+        if (entity == null || mc.theWorld == null || mc.playerController == null) return;
+
+        double reach = mc.playerController.getBlockReachDistance();
+        VisualReachRay ray = buildVisualReachRay(entity, partialTicks, reach, ShoulderSurfingCompat.limitPlayerReach());
+        if (ray == null) return;
+
+        MovingObjectPosition blockHit = mc.theWorld
+            .func_147447_a(copyVec(ray.start), copyVec(ray.end), false, false, true);
+        MovingObjectPosition entityHit = traceVisualEntities(entity, ray.start, ray.end, blockHit);
+
+        mc.pointedEntity = null;
+        if (entityHit != null) {
+            mc.objectMouseOver = entityHit;
+            if (entityHit.entityHit instanceof EntityLivingBase || entityHit.entityHit instanceof EntityItemFrame) {
+                mc.pointedEntity = entityHit.entityHit;
+            }
+        } else {
+            mc.objectMouseOver = blockHit;
+        }
+    }
+
+    public static void debugLogMouseOver(float partialTicks, MovingObjectPosition objectMouseOver) {
+        if (!AnExtraTouch.isDebug() || !active) return;
+
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityLivingBase entity = mc.renderViewEntity;
+        if (entity == null || mc.theWorld == null) return;
+
+        String hitKey = hitKey(objectMouseOver);
+        int tick = entity.ticksExisted;
+        if (tick == lastDebugTick && hitKey.equals(lastDebugHitKey)) return;
+        if (tick == lastDebugTick || (tick % 10 != 0 && hitKey.equals(lastDebugHitKey))) return;
+
+        lastDebugTick = tick;
+        lastDebugHitKey = hitKey;
+
+        Vec3 eye = entity.getPosition(partialTicks);
+        Vec3 entityLook = entity.getLook(partialTicks);
+        double reach = 64.0D;
+        Vec3 entityLookStart = copyVec(eye);
+        MovingObjectPosition entityLookBlock = mc.theWorld.rayTraceBlocks(
+            entityLookStart,
+            entityLookStart.addVector(entityLook.xCoord * reach, entityLook.yCoord * reach, entityLook.zCoord * reach));
+
+        MovingObjectPosition finalCameraBlock = null;
+        if (finalCameraStateValid) {
+            Vec3 finalStart = Vec3.createVectorHelper(finalCameraWorldX, finalCameraWorldY, finalCameraWorldZ);
+            finalCameraBlock = mc.theWorld.rayTraceBlocks(
+                finalStart,
+                finalStart.addVector(finalCameraDirX * reach, finalCameraDirY * reach, finalCameraDirZ * reach));
+        }
+        double blockReach = mc.playerController != null ? mc.playerController.getBlockReachDistance() : 5.0D;
+        String shoulderDebug = ShoulderSurfingCompat.describeRayDebug(
+            entity,
+            partialTicks,
+            blockReach,
+            finalCameraStateValid,
+            finalCameraWorldX,
+            finalCameraWorldY,
+            finalCameraWorldZ);
+
+        double finalVsStoredCamera = cameraPositionValid && finalCameraStateValid
+            ? distance(
+                cameraWorldX,
+                cameraWorldY,
+                cameraWorldZ,
+                finalCameraWorldX,
+                finalCameraWorldY,
+                finalCameraWorldZ)
+            : Double.NaN;
+        double dirAngle = finalCameraStateValid
+            ? angleDegrees(
+                entityLook.xCoord,
+                entityLook.yCoord,
+                entityLook.zCoord,
+                finalCameraDirX,
+                finalCameraDirY,
+                finalCameraDirZ)
+            : Double.NaN;
+
+        AnExtraTouch.debug(
+            String.format(
+                Locale.ROOT,
+                "RayDebug tick=%d pt=%.3f active=%s freeLook=%s aiming=%s aimFP=%s thirdPerson=%d obj=%s eyeRayBlock=%s finalCamBlock=%s",
+                tick,
+                partialTicks,
+                active,
+                freeLooking,
+                aiming,
+                aimFirstPersonActive,
+                mc.gameSettings.thirdPersonView,
+                hitSummary(objectMouseOver),
+                hitSummary(entityLookBlock),
+                hitSummary(finalCameraBlock)));
+        AnExtraTouch.debug(
+            String.format(
+                Locale.ROOT,
+                "RayDebug camera eye=%s look=%s storedCam=%s finalCam=%s finalDir=%s finalMinusStored=%.4f finalDirMinusEntityLookDeg=%.3f co[p=%.3f y=%.3f r=%.3f] cfg[clip=%.2f follow=%.2f vOff=%.2f overhaul=%s thirdOverhaul=%s]",
+                vecSummary(eye),
+                vecSummary(entityLook),
+                cameraPositionValid ? pointSummary(cameraWorldX, cameraWorldY, cameraWorldZ) : "invalid",
+                finalCameraStateValid ? pointSummary(finalCameraWorldX, finalCameraWorldY, finalCameraWorldZ)
+                    : "invalid",
+                finalCameraStateValid ? pointSummary(finalCameraDirX, finalCameraDirY, finalCameraDirZ) : "invalid",
+                finalVsStoredCamera,
+                dirAngle,
+                CameraHandler.getPitchOffset(),
+                CameraHandler.getYawOffset(),
+                CameraHandler.getRollOffset(),
+                Config.cameraClippingSmoothing,
+                Config.cameraFollowSmoothing,
+                Config.cameraVerticalOffset,
+                Config.cameraOverhaulEnabled,
+                Config.cameraOverhaulThirdPerson));
+        AnExtraTouch.debug("RayDebug " + shoulderDebug);
+    }
+
+    private static VisualReachRay buildVisualReachRay(EntityLivingBase entity, float partialTicks, double reach,
+        boolean limitPlayerReach) {
+        if (reach <= 0.0D) return null;
+
+        Vec3 eye = entity.getPosition(partialTicks);
+        Vec3 cameraOffset = Vec3.createVectorHelper(finalCameraOffsetX, finalCameraOffsetY, finalCameraOffsetZ);
+        Vec3 look = Vec3.createVectorHelper(finalCameraDirX, finalCameraDirY, finalCameraDirZ);
+
+        double alongLook = cameraOffset.dotProduct(look);
+        Vec3 headOffset = cameraOffset
+            .addVector(-look.xCoord * alongLook, -look.yCoord * alongLook, -look.zCoord * alongLook);
+        Vec3 start = eye.addVector(headOffset.xCoord, headOffset.yCoord, headOffset.zCoord);
+
+        double forwardReach = reach;
+        double headOffsetSq = lengthSquared(headOffset);
+        double reachSq = reach * reach;
+        if (limitPlayerReach && headOffsetSq < reachSq) {
+            forwardReach = Math.sqrt(reachSq - headOffsetSq);
+        }
+
+        Vec3 end = start.addVector(look.xCoord * forwardReach, look.yCoord * forwardReach, look.zCoord * forwardReach);
+        return new VisualReachRay(start, end);
+    }
+
+    private static MovingObjectPosition traceVisualEntities(EntityLivingBase renderViewEntity, Vec3 start, Vec3 end,
+        MovingObjectPosition blockHit) {
+        Minecraft mc = Minecraft.getMinecraft();
+        double closestDistanceSq = start.squareDistanceTo(end);
+        if (blockHit != null && blockHit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK
+            && blockHit.hitVec != null) {
+            closestDistanceSq = start.squareDistanceTo(blockHit.hitVec);
+        }
+
+        AxisAlignedBB searchBox = AxisAlignedBB
+            .getBoundingBox(
+                Math.min(start.xCoord, end.xCoord),
+                Math.min(start.yCoord, end.yCoord),
+                Math.min(start.zCoord, end.zCoord),
+                Math.max(start.xCoord, end.xCoord),
+                Math.max(start.yCoord, end.yCoord),
+                Math.max(start.zCoord, end.zCoord))
+            .expand(1.0D, 1.0D, 1.0D);
+        List<?> candidates = mc.theWorld.getEntitiesWithinAABBExcludingEntity(renderViewEntity, searchBox);
+
+        Entity closestEntity = null;
+        Vec3 closestHit = null;
+        for (Object candidateObject : candidates) {
+            if (!(candidateObject instanceof Entity)) continue;
+            Entity candidate = (Entity) candidateObject;
+            if (!candidate.canBeCollidedWith()) continue;
+
+            float border = candidate.getCollisionBorderSize();
+            AxisAlignedBB candidateBox = candidate.boundingBox.expand(border, border, border);
+            MovingObjectPosition intercept = candidateBox.calculateIntercept(start, end);
+
+            if (candidateBox.isVecInside(start)) {
+                if (closestDistanceSq >= 0.0D) {
+                    closestEntity = candidate;
+                    closestHit = intercept == null ? start : intercept.hitVec;
+                    closestDistanceSq = 0.0D;
+                }
+                continue;
+            }
+
+            if (intercept == null) continue;
+            double distanceSq = start.squareDistanceTo(intercept.hitVec);
+            if (distanceSq < closestDistanceSq || closestDistanceSq == 0.0D) {
+                if (candidate == renderViewEntity.ridingEntity && !candidate.canRiderInteract()) {
+                    if (closestDistanceSq == 0.0D) {
+                        closestEntity = candidate;
+                        closestHit = intercept.hitVec;
+                    }
+                } else {
+                    closestEntity = candidate;
+                    closestHit = intercept.hitVec;
+                    closestDistanceSq = distanceSq;
+                }
+            }
+        }
+
+        return closestEntity != null ? new MovingObjectPosition(closestEntity, closestHit) : null;
+    }
+
     /**
      * Called from MixinEntityRenderer after all GL camera manipulations to store
      * the current camera-to-entity distance for player fade calculations.
@@ -841,6 +1099,7 @@ public final class DecoupledCameraHandler {
         forwardTapTimer = backTapTimer = leftTapTimer = rightTapTimer = 0;
         wasForwardDown = wasBackDown = wasLeftDown = wasRightDown = false;
         cameraPositionValid = false;
+        finalCameraStateValid = false;
         cameraEntityDistance = Float.MAX_VALUE;
         aimTransition = 0f;
         prevAimTransition = 0f;
@@ -868,6 +1127,78 @@ public final class DecoupledCameraHandler {
      */
     private static float degreesDifference(float from, float to) {
         return MathHelper.wrapAngleTo180_float(to - from);
+    }
+
+    private static String hitKey(MovingObjectPosition hit) {
+        if (hit == null) return "null";
+        if (hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+            return "B:" + hit.blockX + "," + hit.blockY + "," + hit.blockZ;
+        }
+        if (hit.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY && hit.entityHit != null) {
+            return "E:" + hit.entityHit.getEntityId();
+        }
+        return String.valueOf(hit.typeOfHit);
+    }
+
+    private static String hitSummary(MovingObjectPosition hit) {
+        if (hit == null) return "null";
+        String hitVec = hit.hitVec != null ? vecSummary(hit.hitVec) : "null";
+        if (hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+            return String.format(Locale.ROOT, "BLOCK[%d,%d,%d]@%s", hit.blockX, hit.blockY, hit.blockZ, hitVec);
+        }
+        if (hit.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY && hit.entityHit != null) {
+            return String.format(
+                Locale.ROOT,
+                "ENTITY[id=%d,%s]@%s",
+                hit.entityHit.getEntityId(),
+                hit.entityHit.getClass()
+                    .getSimpleName(),
+                hitVec);
+        }
+        return String.format(Locale.ROOT, "%s@%s", hit.typeOfHit, hitVec);
+    }
+
+    private static String vecSummary(Vec3 vec) {
+        return pointSummary(vec.xCoord, vec.yCoord, vec.zCoord);
+    }
+
+    private static Vec3 copyVec(Vec3 vec) {
+        return Vec3.createVectorHelper(vec.xCoord, vec.yCoord, vec.zCoord);
+    }
+
+    private static double lengthSquared(Vec3 vec) {
+        return vec.xCoord * vec.xCoord + vec.yCoord * vec.yCoord + vec.zCoord * vec.zCoord;
+    }
+
+    private static String pointSummary(double x, double y, double z) {
+        return String.format(Locale.ROOT, "(%.4f,%.4f,%.4f)", x, y, z);
+    }
+
+    private static double distance(double ax, double ay, double az, double bx, double by, double bz) {
+        double dx = ax - bx;
+        double dy = ay - by;
+        double dz = az - bz;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    private static double angleDegrees(double ax, double ay, double az, double bx, double by, double bz) {
+        double lenA = Math.sqrt(ax * ax + ay * ay + az * az);
+        double lenB = Math.sqrt(bx * bx + by * by + bz * bz);
+        if (lenA <= 1.0E-6D || lenB <= 1.0E-6D) return Double.NaN;
+        double dot = (ax * bx + ay * by + az * bz) / (lenA * lenB);
+        dot = Math.max(-1.0D, Math.min(1.0D, dot));
+        return Math.toDegrees(Math.acos(dot));
+    }
+
+    private static final class VisualReachRay {
+
+        private final Vec3 start;
+        private final Vec3 end;
+
+        private VisualReachRay(Vec3 start, Vec3 end) {
+            this.start = start;
+            this.end = end;
+        }
     }
 
     private static boolean isRidingBoat(EntityPlayerSP player) {

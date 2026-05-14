@@ -135,6 +135,9 @@ public abstract class MixinEntityRenderer {
         if (DecoupledCameraHandler.isActive() && mc.renderViewEntity != null) {
             DecoupledCameraHandler.applyAimTransition(partialTicks, mc.renderViewEntity);
         }
+        if (DecoupledCameraHandler.isActive()) {
+            DecoupledCameraHandler.updateFinalCameraState(partialTicks, mc.renderViewEntity);
+        }
         // Compute final camera-to-entity distance for player fade
         anextratouch$updateFadeDistance();
         // Store camera world position + orientation for sound centering (before rotation restore)
@@ -153,6 +156,8 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "getMouseOver", at = @At("RETURN"))
     private void anextratouch$afterGetMouseOver(float partialTicks, CallbackInfo ci) {
+        DecoupledCameraHandler.correctMouseOverFromVisualCamera(partialTicks);
+        DecoupledCameraHandler.debugLogMouseOver(partialTicks, mc.objectMouseOver);
         anextratouch$restoreRotation();
     }
 
