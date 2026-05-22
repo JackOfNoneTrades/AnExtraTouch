@@ -22,6 +22,7 @@ import net.minecraftforge.fluids.FluidRegistry;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
+import org.fentanylsolutions.anextratouch.compat.ThaumicHorizonsBoatCompat;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -251,7 +252,8 @@ public final class WakeTrailManager {
             return false;
         }
 
-        return entity instanceof EntityBoat || entity instanceof EntityLivingBase
+        return ThaumicHorizonsBoatCompat.isBoat(entity) || entity instanceof EntityBoat
+            || entity instanceof EntityLivingBase
             || entity instanceof EntityItem
             || EtFuturumBoatCompat.isBoat(entity);
     }

@@ -25,6 +25,7 @@ import org.fentanylsolutions.anextratouch.compat.DbcAimingCompat;
 import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
 import org.fentanylsolutions.anextratouch.compat.EtFuturumElytraCompat;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
+import org.fentanylsolutions.anextratouch.compat.ThaumicHorizonsBoatCompat;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -1203,7 +1204,8 @@ public final class DecoupledCameraHandler {
 
     private static boolean isRidingBoat(EntityPlayerSP player) {
         Entity vehicle = player.ridingEntity;
-        return vehicle instanceof EntityBoat || EtFuturumBoatCompat.isBoat(vehicle);
+        return ThaumicHorizonsBoatCompat.isBoat(vehicle) || vehicle instanceof EntityBoat
+            || EtFuturumBoatCompat.isBoat(vehicle);
     }
 
     private static boolean isElytraFlying(Entity entity) {

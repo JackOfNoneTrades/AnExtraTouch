@@ -46,6 +46,7 @@ dependencies {
 
     devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.24-GTNH:dev")
     devOnlyNonPublishable("com.hfstudio:doabarrelroll:1.1.0:dev")
+    devOnlyNonPublishable("com.github.GTNewHorizons:ThaumicHorizons:1.8.19:dev")
 
     //compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
     implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
