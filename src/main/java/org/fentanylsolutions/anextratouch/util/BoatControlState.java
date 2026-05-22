@@ -86,6 +86,7 @@ public final class BoatControlState {
         }
 
         boat.rotationYaw += deltaRotation;
+        normalizeControlledYaw(boat);
 
         if (forwardInputDown) {
             thrust += 0.04F;
@@ -98,5 +99,17 @@ public final class BoatControlState {
         float thrustYaw = boat.rotationYaw + VANILLA_BOAT_MODEL_YAW_OFFSET;
         boat.motionX += MathHelper.sin(-thrustYaw * 0.017453292F) * thrust;
         boat.motionZ += MathHelper.cos(thrustYaw * 0.017453292F) * thrust;
+    }
+
+    private static void normalizeControlledYaw(EntityBoat boat) {
+        boat.rotationYaw = MathHelper.wrapAngleTo180_float(boat.rotationYaw);
+
+        while (boat.rotationYaw - boat.prevRotationYaw < -180.0F) {
+            boat.prevRotationYaw -= 360.0F;
+        }
+
+        while (boat.rotationYaw - boat.prevRotationYaw >= 180.0F) {
+            boat.prevRotationYaw += 360.0F;
+        }
     }
 }
