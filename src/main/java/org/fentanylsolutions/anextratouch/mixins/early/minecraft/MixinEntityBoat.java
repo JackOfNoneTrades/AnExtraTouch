@@ -5,6 +5,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.util.MathHelper;
 
+import org.fentanylsolutions.anextratouch.Config;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -33,7 +34,7 @@ public class MixinEntityBoat {
     @Inject(method = "onUpdate", at = @At("HEAD"))
     private void anextratouch$resetBoatInputs(CallbackInfo ci) {
         EntityBoat boat = (EntityBoat) (Object) this;
-        if (!(boat.riddenByEntity instanceof EntityLivingBase)) {
+        if (!Config.boatControlsEnabled || !(boat.riddenByEntity instanceof EntityLivingBase)) {
             anextratouch$deltaRotation = 0.0F;
             anextratouch$updateInputs(false, false, false, false);
         }
@@ -43,11 +44,19 @@ public class MixinEntityBoat {
         method = "onUpdate",
         at = @At(value = "FIELD", target = "Lnet/minecraft/entity/EntityLivingBase;moveForward:F"))
     private float anextratouch$skipVanillaPassengerThrottle(EntityLivingBase passenger) {
+        if (!Config.boatControlsEnabled) {
+            return passenger.moveForward;
+        }
+
         return 0.0F;
     }
 
     @Inject(method = "onUpdate", at = @At(value = "INVOKE", target = "Ljava/lang/Math;sqrt(D)D", ordinal = 1))
     private void anextratouch$controlBoatLikeEtFuturum(CallbackInfo ci) {
+        if (!Config.boatControlsEnabled) {
+            return;
+        }
+
         EntityBoat boat = (EntityBoat) (Object) this;
         Entity passenger = boat.riddenByEntity;
         if (!(passenger instanceof EntityLivingBase)) {
@@ -67,7 +76,7 @@ public class MixinEntityBoat {
     @Redirect(method = "onUpdate", at = @At(value = "INVOKE", target = "Ljava/lang/Math;atan2(DD)D"))
     private double anextratouch$keepControlledBoatYaw(double y, double x) {
         EntityBoat boat = (EntityBoat) (Object) this;
-        if (boat.riddenByEntity instanceof EntityLivingBase) {
+        if (Config.boatControlsEnabled && boat.riddenByEntity instanceof EntityLivingBase) {
             return boat.rotationYaw * 0.017453292F;
         }
 

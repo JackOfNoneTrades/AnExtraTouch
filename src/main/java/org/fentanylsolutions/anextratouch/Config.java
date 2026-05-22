@@ -27,6 +27,7 @@ public class Config {
     }
 
     // general
+    public static boolean boatControlsEnabled = true;
 
     // footprints
     public static String[] entityClassList = { "Blaze" };
@@ -256,6 +257,11 @@ public class Config {
 
         try {
             // general
+            boatControlsEnabled = config.getBoolean(
+                "boatControlsEnabled",
+                Categories.general,
+                boatControlsEnabled,
+                "Enable modern directional controls for vanilla boats. Disable to restore vanilla boat movement.");
 
             // footprints
             entityClassList = config.getStringList(
