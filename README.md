@@ -73,7 +73,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 
 ## License
 
-`LgplV3 + SNEED`.
+`LGPLv3`.
 
 * [Dynamic Surroundings assets and code are licensed under MIT](https://github.com/OreCruncher/DynamicSurroundingsFabric/blob/main/LICENSE).
 * [Legendary Survival Overhaul assets and code are licensed under LGPL 2.1](https://github.com/Alex-Hashtag/LegendarySurvivalOverhaul/blob/1.21.1/LICENSE.txt).
@@ -93,4 +93,4 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 
 <br>
 
-![license](images/lgplsneed_small.png)
+![license](images/license_small.png)
