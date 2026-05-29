@@ -510,7 +510,13 @@ public final class WetnessFluidHelper {
         }
 
         TextureAtlasSprite sprite = (TextureAtlasSprite) icon;
-        int[][] frameData = sprite.getFrameTextureData(0);
+        int[][] frameData;
+        try {
+            frameData = sprite.getFrameTextureData(0);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+
         if (frameData == null || frameData.length == 0 || frameData[0] == null) {
             return null;
         }
