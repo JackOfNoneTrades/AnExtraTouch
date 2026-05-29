@@ -4,4 +4,12 @@ repositories {
     maven {
         url "https://maven.fentanylsolutions.org/releases"
     }
+    maven {
+        name = "FalsePattern Maven"
+        url = "https://mvn.falsepattern.com/releases/"
+    }
+    maven {
+        name = "Ventooth Maven"
+        url = "https://mvn.ventooth.com/releases/"
+    }
 }
