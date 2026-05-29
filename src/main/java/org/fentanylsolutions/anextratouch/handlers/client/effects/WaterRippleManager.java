@@ -145,13 +145,12 @@ public final class WaterRippleManager {
             GL11.glDepthMask(false);
 
             mc.entityRenderer.enableLightmap((double) partialTicks);
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            WaterSurfaceRenderCompat.bindWhiteTexture(mc);
             for (Ripple ripple : ripples) {
                 if (ripple.world == mc.theWorld) {
                     renderRipple(mc, ripple, camX, camY, camZ, partialTicks);
                 }
             }
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
             GL11.glDepthMask(true);
@@ -276,10 +275,10 @@ public final class WaterRippleManager {
             double z0 = z - HALF_SIZE + pixel.z * pixelDepth;
             double z1 = z0 + pixelDepth;
             tessellator.setColorRGBA(pixel.red, pixel.green, pixel.blue, alpha);
-            tessellator.addVertex(x0, y, z0);
-            tessellator.addVertex(x0, y, z1);
-            tessellator.addVertex(x1, y, z1);
-            tessellator.addVertex(x1, y, z0);
+            tessellator.addVertexWithUV(x0, y, z0, 0.0D, 0.0D);
+            tessellator.addVertexWithUV(x0, y, z1, 0.0D, 0.0D);
+            tessellator.addVertexWithUV(x1, y, z1, 0.0D, 0.0D);
+            tessellator.addVertexWithUV(x1, y, z0, 0.0D, 0.0D);
         }
         tessellator.draw();
     }
