@@ -129,7 +129,7 @@ public final class WakeTrailManager {
             GL11.glDepthMask(false);
 
             mc.entityRenderer.enableLightmap((double) partialTicks);
-            WaterSurfaceRenderCompat.bindWhiteTexture(mc);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
 
             WakeRenderBatch batch = new WakeRenderBatch(Tessellator.instance);
             try {
@@ -146,6 +146,7 @@ public final class WakeTrailManager {
                 batch.finish();
             }
 
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
             GL11.glDepthMask(true);
@@ -656,10 +657,10 @@ public final class WakeTrailManager {
             }
 
             tessellator.setColorRGBA(red, green, blue, alpha);
-            tessellator.addVertexWithUV(x0, y, z0, 0.0D, 0.0D);
-            tessellator.addVertexWithUV(x0, y, z1, 0.0D, 0.0D);
-            tessellator.addVertexWithUV(x1, y, z1, 0.0D, 0.0D);
-            tessellator.addVertexWithUV(x1, y, z0, 0.0D, 0.0D);
+            tessellator.addVertex(x0, y, z0);
+            tessellator.addVertex(x0, y, z1);
+            tessellator.addVertex(x1, y, z1);
+            tessellator.addVertex(x1, y, z0);
             quads++;
         }
 

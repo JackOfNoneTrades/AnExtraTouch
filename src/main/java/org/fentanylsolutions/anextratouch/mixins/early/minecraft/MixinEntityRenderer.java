@@ -14,7 +14,6 @@ import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManag
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSurfaceRenderCompat;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterWaveManager;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -464,9 +463,6 @@ public abstract class MixinEntityRenderer {
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderFootprintsBeforeWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
-        if (WaterSurfaceRenderCompat.shouldUseLateSwanSongPass()) {
-            return;
-        }
         WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterRippleManager.INSTANCE.renderInWorldPass(partialTicks);
     }
@@ -479,9 +475,6 @@ public abstract class MixinEntityRenderer {
             shift = Shift.AFTER),
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderWakesAfterWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        if (WaterSurfaceRenderCompat.shouldUseLateSwanSongPass()) {
-            return;
-        }
         WaterWaveManager.INSTANCE.renderInWorldPass(partialTicks);
         WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks);
     }

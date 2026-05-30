@@ -13,11 +13,6 @@ import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSurfaceRenderCompat;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterWaveManager;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
@@ -217,17 +212,5 @@ public class ClientHandler {
         entity.prevRotationYaw = savedPrevYaw;
         entity.prevRotationPitch = savedPrevPitch;
         rotationSwapped = false;
-    }
-
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onRenderWorldLastWaterSurfaceEffects(RenderWorldLastEvent event) {
-        if (!WaterSurfaceRenderCompat.shouldUseLateSwanSongPass()) {
-            return;
-        }
-
-        WaterSplashManager.INSTANCE.renderInWorldPass(event.partialTicks);
-        WaterRippleManager.INSTANCE.renderInWorldPass(event.partialTicks);
-        WaterWaveManager.INSTANCE.renderInWorldPass(event.partialTicks);
-        WakeTrailManager.INSTANCE.renderInWorldPass(event.partialTicks);
     }
 }
