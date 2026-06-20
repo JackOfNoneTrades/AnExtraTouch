@@ -41,6 +41,7 @@ dependencies {
     runtimeOnlyNonPublishable(rfg.deobf("com.mikanon:cristalinewater:1.5"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:bugtorch:1.2.14"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:biomes-o-plenty:2.1.0.2308"))
+    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:natures-compass:1.17.10-1.3.1-forge"))
     runtimeOnlyNonPublishable("org.fentanylsolutions.wawelauth:WawelAuth:f91e9ec-snapshot:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:ModularUI2:2.3.68-1.7.10:dev")
     runtimeOnlyNonPublishable("com.falsepattern:forgelin-mc1.7.10:2.4.1-2.3.10")

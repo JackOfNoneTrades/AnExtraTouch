@@ -62,6 +62,7 @@ public final class WaterWaveManager {
     private final List<Wave> waves = new ArrayList<Wave>();
     private final Map<Long, CachedShore> shoreCache = new HashMap<Long, CachedShore>();
     private final BiomeWhitelist biomeWhitelist = new BiomeWhitelist();
+    private final BiomeWhitelist biomeBlacklist = new BiomeWhitelist();
     private final java.util.Random random = new java.util.Random();
 
     private World currentWorld;
@@ -82,6 +83,7 @@ public final class WaterWaveManager {
             waves.clear();
             shoreCache.clear();
             biomeWhitelist.clearCache();
+            biomeBlacklist.clearCache();
             currentWorld = null;
             spawnBudget = 0.0F;
             return;
@@ -91,6 +93,7 @@ public final class WaterWaveManager {
             waves.clear();
             shoreCache.clear();
             biomeWhitelist.clearCache();
+            biomeBlacklist.clearCache();
             currentWorld = world;
             spawnBudget = 0.0F;
         }
@@ -122,6 +125,7 @@ public final class WaterWaveManager {
     public void onConfigReload() {
         shoreCache.clear();
         biomeWhitelist.clear();
+        biomeBlacklist.clear();
     }
 
     private void tickWaves(Minecraft mc, World world) {
@@ -223,7 +227,9 @@ public final class WaterWaveManager {
     }
 
     private boolean isWaveBiomeAllowed(World world, int x, int z) {
-        return biomeWhitelist.isAllowed(world.getBiomeGenForCoords(x, z), Config.waveBiomeWhitelist);
+        BiomeGenBase biome = world.getBiomeGenForCoords(x, z);
+        return biomeWhitelist.isAllowed(biome, Config.waveBiomeWhitelist)
+            && !biomeBlacklist.isAllowed(biome, Config.waveBiomeBlacklist);
     }
 
     private boolean isWithinSpawnFov(EntityPlayer player, double x, double z) {

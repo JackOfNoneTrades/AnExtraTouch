@@ -131,6 +131,7 @@ public class Config {
     public static int waveBreakingSoundChance = 40;
     public static float waveScale = 1.0f;
     public static String[] waveBiomeWhitelist = { "type:OCEAN", "type:BEACH", "Coral Reef", "Kelp Forest", "Tropics" };
+    public static String[] waveBiomeBlacklist = { "Shield" };
 
     // fluid interactions
     public static String[] fluidInteractionBlacklist = {};
@@ -801,8 +802,11 @@ public class Config {
                 Categories.waves,
                 waveBiomeWhitelist,
                 "Biome IDs, biome names, or Forge BiomeDictionary entries where ambient coastal waves may spawn. Use entries like \"type:OCEAN\", \"type:BEACH\", \"Ocean\", or \"Coral Reef\". Matching is case-insensitive and ignores spaces, underscores, hyphens, and namespace prefixes. Defaults mirror the original Waves biome tag with 1.7.10 and Biomes O' Plenty ocean/beach biomes.");
-            config.getCategory(Categories.waves)
-                .remove("waveBiomeBlacklist");
+            waveBiomeBlacklist = config.getStringList(
+                "waveBiomeBlacklist",
+                Categories.waves,
+                waveBiomeBlacklist,
+                "Biomes to exclude from wave spawning even if they match the whitelist. Accepts the same format as waveBiomeWhitelist: biome IDs, names, or \"type:\" dictionary entries. Blacklisted biomes always take priority over whitelisted entries.");
 
             // fluid interactions
             fluidInteractionBlacklist = config.getStringList(
