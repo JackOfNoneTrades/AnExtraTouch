@@ -5,12 +5,15 @@ import net.minecraft.util.ResourceLocation;
 
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.fentlib.util.sound.ICustomMaxDistanceSound;
+import org.fentanylsolutions.fentlib.util.sound.ICustomSourceRadiusSound;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class WaterfallLoopSound extends MovingSound implements ICustomMaxDistanceSound {
+public class WaterfallLoopSound extends MovingSound implements ICustomMaxDistanceSound, ICustomSourceRadiusSound {
+
+    private static final float SOURCE_RADIUS = 50.0F;
 
     private final ResourceLocation soundId;
     private boolean stopped;
@@ -65,5 +68,10 @@ public class WaterfallLoopSound extends MovingSound implements ICustomMaxDistanc
     @Override
     public float getMaxSoundDistance() {
         return Config.waterfallSoundRange;
+    }
+
+    @Override
+    public float getSoundSourceRadius() {
+        return SOURCE_RADIUS;
     }
 }
