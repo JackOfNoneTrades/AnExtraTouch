@@ -3,6 +3,7 @@ package org.fentanylsolutions.anextratouch.mixins.early.minecraft;
 import net.minecraft.client.Minecraft;
 
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
@@ -25,6 +26,6 @@ public class MixinMinecraft {
                 value = "FIELD",
                 target = "Lnet/minecraft/client/settings/GameSettings;keyBindTogglePerspective:Lnet/minecraft/client/settings/KeyBinding;")))
     private int anextratouch$capPerspectiveCycle(int constant) {
-        return Config.simplePerspectiveToggle ? 1 : constant;
+        return Config.simplePerspectiveToggle && !ShoulderSurfingCompat.isAvailable() ? 1 : constant;
     }
 }

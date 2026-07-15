@@ -18,7 +18,7 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
 
     @Override
     public List<String> getMixins(Set<String> loadedCoreMods) {
-        return new MixinBuilder()
+        List<String> mixins = new MixinBuilder()
             // Accessors
 
             // Rest
@@ -50,5 +50,11 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
             .addMixin("MixinMinecraft", MixinBuilder.Side.CLIENT)
             .addMixin("MixinMinecraftServer", MixinBuilder.Side.CLIENT)
             .build();
+
+        if (!MixinBuilder.isServer() && loadedCoreMods.contains("com.teamderpy.shouldersurfing.asm.ShoulderPlugin")) {
+            mixins.add("shouldersurfing.MixinKeyHandler");
+        }
+
+        return mixins;
     }
 }
