@@ -191,7 +191,7 @@ public class StepSoundHandler {
         }
     }
 
-    // equip sound detection (basically check if armor itemstacks changed between previous and current tick)
+    // Detect equipment changes, not updates to the state of armor that is already worn.
 
     private void checkEquipSound(EntityLivingBase living, ArmorTracker tracker) {
         String bestCategory = null;
@@ -219,11 +219,14 @@ public class StepSoundHandler {
         }
     }
 
-    private static boolean isSameArmorItem(ItemStack a, ItemStack b) {
+    static boolean isSameArmorItem(ItemStack a, ItemStack b) {
         if (a == b) return true;
         if (a == null || b == null) return false;
-        return a.getItem() == b.getItem() && a.getItemDamage() == b.getItemDamage()
-            && ItemStack.areItemStackTagsEqual(a, b);
+        if (a.getItem() != b.getItem()) return false;
+
+        // Charge, modes and other NBT can change every tick without re-equipping the item.
+        // Damage is only part of the identity when the item declares metadata subtypes.
+        return !a.getHasSubtypes() || a.getItemDamage() == b.getItemDamage();
     }
 
     // sound playback methods
