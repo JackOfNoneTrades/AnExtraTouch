@@ -40,7 +40,9 @@ public class MixinEntityArrow {
 
         WaterSplashManager.INSTANCE
             .spawnEmitter(self.worldObj, hit[0], hit[1], hit[2], self.width, (float) Math.abs(self.motionY));
-        anextratouch$spawnVanillaSplashParticles(self, hit[0], hit[1], hit[2]);
+        if (!WaterSplashManager.isLavaSplash(self.worldObj, hit[0], hit[1], hit[2])) {
+            anextratouch$spawnVanillaSplashParticles(self, hit[0], hit[1], hit[2]);
+        }
         anextratouch$playClientSplashSound(self, hit[0], hit[1], hit[2]);
         anextratouch$splashCooldown = 10;
     }
@@ -167,6 +169,8 @@ public class MixinEntityArrow {
             .sqrt_double(e.motionX * e.motionX * 0.2D + e.motionY * e.motionY + e.motionZ * e.motionZ * 0.2D) * 0.2F;
         volume = Math.max(0.2F, Math.min(1.0F, volume));
         float pitch = 1.0F + (e.worldObj.rand.nextFloat() - e.worldObj.rand.nextFloat()) * 0.4F;
-        e.worldObj.playSound(x, y, z, "game.neutral.swim.splash", volume, pitch, false);
+        String sound = WaterSplashManager.isLavaSplash(e.worldObj, x, y, z) ? "liquid.lavapop"
+            : "game.neutral.swim.splash";
+        e.worldObj.playSound(x, y, z, sound, volume, pitch, false);
     }
 }

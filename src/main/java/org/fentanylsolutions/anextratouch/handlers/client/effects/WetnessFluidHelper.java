@@ -180,8 +180,8 @@ public final class WetnessFluidHelper {
             return isSplashFluid(world, x, y, z, block, fluid) ? fluid : null;
         }
 
-        if (block.getMaterial() == Material.water && !isSplashIgnoredFluid(block, FluidRegistry.WATER)) {
-            return FluidRegistry.WATER;
+        if (getVanillaSplashFluid(block) != null && !isSplashIgnoredFluid(block, getVanillaSplashFluid(block))) {
+            return getVanillaSplashFluid(block);
         }
 
         return null;
@@ -199,7 +199,7 @@ public final class WetnessFluidHelper {
             return getForgeSplashSurfaceY(world, x, y, z, block, fluidBlock);
         }
 
-        if (block.getMaterial() == Material.water && !isSplashIgnoredFluid(block, FluidRegistry.WATER)) {
+        if (getVanillaSplashFluid(block) != null && !isSplashIgnoredFluid(block, getVanillaSplashFluid(block))) {
             return getVanillaLiquidSurfaceY(world, x, y, z);
         }
 
@@ -214,8 +214,21 @@ public final class WetnessFluidHelper {
             return isSplashFluid(world, x, y, z, block, fluid) && intersectsForgeFluid(bb, world, x, y, z, fluidBlock);
         }
 
-        return block.getMaterial() == Material.water && !isSplashIgnoredFluid(block, FluidRegistry.WATER)
-            && intersectsVanillaLiquid(bb, world, x, y, z);
+        return getVanillaSplashFluid(block) != null && !isSplashIgnoredFluid(block, getVanillaSplashFluid(block))
+            && bb.maxY > y
+            && bb.minY < getVanillaLiquidSurfaceY(world, x, y, z);
+    }
+
+    private static Fluid getVanillaSplashFluid(Block block) {
+        if (block.getMaterial() == Material.water) return FluidRegistry.WATER;
+        if (block.getMaterial() == Material.lava) return FluidRegistry.LAVA;
+        return null;
+    }
+
+    static float[] getSplashFluidColor(World world, int x, int y, int z) {
+        Fluid fluid = getSplashFluid(world, x, y, z);
+        return fluid == null ? FallingWaterFX.getWaterColor(world, x, y, z)
+            : getFluidColor(world, x, y, z, world.getBlock(x, y, z), fluid);
     }
 
     static boolean isSameInteractableFluid(World world, int x, int y, int z, Fluid fluid) {
@@ -357,7 +370,7 @@ public final class WetnessFluidHelper {
     }
 
     private static boolean isSplashFluid(World world, int x, int y, int z, Block block, Fluid fluid) {
-        return isWettableFluid(world, x, y, z, block, fluid) && !isSplashIgnoredFluid(block, fluid);
+        return fluid != null && !fluid.isGaseous(world, x, y, z) && !isSplashIgnoredFluid(block, fluid);
     }
 
     private static Fluid getInteractableFluid(World world, int x, int y, int z, Block block, IFluidBlock fluidBlock) {

@@ -17,6 +17,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class FallingWaterFX extends EntityFX {
 
+    private boolean lava;
+
     private static float cachedR = -1f, cachedG, cachedB;
 
     public FallingWaterFX(World world, double x, double y, double z) {
@@ -25,6 +27,21 @@ public class FallingWaterFX extends EntityFX {
 
     public FallingWaterFX(World world, double x, double y, double z, float[] rgb) {
         this(world, x, y, z, rgb[0], rgb[1], rgb[2]);
+    }
+
+    public FallingWaterFX(World world, double x, double y, double z, float[] rgb, boolean lava) {
+        this(world, x, y, z, rgb);
+        this.lava = lava;
+    }
+
+    @Override
+    public int getBrightnessForRender(float partialTicks) {
+        return lava ? 0xF000F0 : super.getBrightnessForRender(partialTicks);
+    }
+
+    @Override
+    public float getBrightness(float partialTicks) {
+        return lava ? 1.0F : super.getBrightness(partialTicks);
     }
 
     public FallingWaterFX(World world, double x, double y, double z, float red, float green, float blue) {
@@ -148,6 +165,7 @@ public class FallingWaterFX extends EntityFX {
 
         if (this.onGround) {
             this.setDead();
+            if (lava) return;
             NeutralParticleTexture.ensureApplied();
             EntitySplashFX splash = new EntitySplashFX(
                 this.worldObj,
@@ -170,12 +188,13 @@ public class FallingWaterFX extends EntityFX {
             .isLiquid()
             || block.getMaterial()
                 .isSolid()) {
-            double fluidSurfaceY = WetnessFluidHelper.getWettableFluidSurfaceY(this.worldObj, bx, by, bz);
+            double fluidSurfaceY = lava ? WetnessFluidHelper.getSplashFluidSurfaceY(this.worldObj, bx, by, bz)
+                : WetnessFluidHelper.getWettableFluidSurfaceY(this.worldObj, bx, by, bz);
             double collisionY = fluidSurfaceY >= 0.0D ? fluidSurfaceY
                 : (float) (by + 1) - BlockLiquid.getLiquidHeightPercent(this.worldObj.getBlockMetadata(bx, by, bz));
 
             if (this.posY < collisionY) {
-                if (fluidSurfaceY >= 0.0D && this.prevPosY >= fluidSurfaceY) {
+                if (!lava && fluidSurfaceY >= 0.0D && this.prevPosY >= fluidSurfaceY) {
                     WaterRippleManager.INSTANCE.trySpawnDripRipple(this.worldObj, this.posX, this.posY, this.posZ);
                 }
                 this.setDead();

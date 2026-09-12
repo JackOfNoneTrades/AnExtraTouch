@@ -23,6 +23,7 @@ import net.minecraftforge.fluids.FluidRegistry;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.EtFuturumBoatCompat;
 import org.fentanylsolutions.anextratouch.compat.ThaumicHorizonsBoatCompat;
+import org.fentanylsolutions.anextratouch.util.SwimBobTracker;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -53,6 +54,9 @@ public final class WakeTrailManager {
     private static final float WAVE_DECAY_FACTOR = 0.5F;
     private static final double TELEPORT_DISTANCE_SQ = 64.0D;
     private static final double MIN_TRAIL_DISTANCE = 0.025D;
+    private static final float SWIM_BOB_WAKE_SOURCE_SCALE = 0.6F;
+    private static final double MIN_SWIM_BOB_WAKE_VELOCITY = 0.28D; // 0.24D;
+    private static final float SWIM_BOB_WAKE_STRENGTH = INITIAL_STRENGTH * 3F; // by default no multiplier
     private static final int FULL_BRIGHT = 15728880;
     private static final int MAX_WAKE_RENDER_BATCH_QUADS = 1800;
     private static final float PADDLE_STRENGTH = INITIAL_STRENGTH * 5.0F;
@@ -90,6 +94,9 @@ public final class WakeTrailManager {
         if (mc.theWorld == null || !Config.waterWakesEnabled) {
             clearNodes();
             trackers.clear();
+            return;
+        }
+        if (mc.isGamePaused()) {
             return;
         }
 
@@ -218,17 +225,22 @@ public final class WakeTrailManager {
 
         if (surfaceY < 0.0D || !isEntityOnSurface(entity, surfaceY)) {
             tracker.onSurface = false;
+            tracker.swimBob.reset();
             tracker.prevX = entity.posX;
+            tracker.prevY = entity.posY;
             tracker.prevZ = entity.posZ;
             return;
         }
 
         double dx = entity.posX - tracker.prevX;
+        double dy = entity.posY - tracker.prevY;
         double dz = entity.posZ - tracker.prevZ;
         double distanceSq = dx * dx + dz * dz;
-        if (!tracker.onSurface || distanceSq > TELEPORT_DISTANCE_SQ) {
+        if (!tracker.onSurface || distanceSq + dy * dy > TELEPORT_DISTANCE_SQ) {
             tracker.onSurface = true;
+            tracker.swimBob.reset();
             tracker.prevX = entity.posX;
+            tracker.prevY = entity.posY;
             tracker.prevZ = entity.posZ;
             return;
         }
@@ -238,17 +250,30 @@ public final class WakeTrailManager {
             spawnRowingTrails(world, entity, surfaceY, distance);
         }
 
+        boolean swimming = entity instanceof EntityLivingBase && !entity.onGround && entity.boundingBox.minY < surfaceY;
+        // Horizontal motion creates a trail; swimming strokes add independent outgoing ripples.
         if (distance >= MIN_TRAIL_DISTANCE) {
             spawnTrail(world, entity, tracker.prevX, tracker.prevZ, entity.posX, entity.posZ, surfaceY);
         }
 
+        double bobVelocity = 0.0D;
+        if (swimming) {
+            bobVelocity = tracker.swimBob.update(dy);
+        } else {
+            tracker.swimBob.reset();
+        }
+        if (bobVelocity != 0.0D) {
+            spawnSwimBobWake(world, entity, surfaceY, bobVelocity);
+        }
+
         tracker.onSurface = true;
         tracker.prevX = entity.posX;
+        tracker.prevY = entity.posY;
         tracker.prevZ = entity.posZ;
     }
 
     private static boolean shouldTrack(Entity entity) {
-        if (entity.isDead || entity.worldObj == null || !entity.worldObj.isRemote) {
+        if (entity.isDead || entity.ridingEntity != null || entity.worldObj == null || !entity.worldObj.isRemote) {
             return false;
         }
 
@@ -279,6 +304,40 @@ public final class WakeTrailManager {
         int y = MathHelper.floor_double(surfaceY - 1.0E-4D);
         float strength = INITIAL_STRENGTH * density;
         thickNodeTrail(world, fromX, fromZ, toX, toZ, y, strength, distance, entity.width);
+    }
+
+    private void spawnSwimBobWake(World world, Entity entity, double surfaceY, double bobVelocity) {
+        float density = Math.max(0.0F, Config.waterWakeDensity);
+        if (density <= 0.0F) {
+            return;
+        }
+
+        double velocity = Math.max(MIN_SWIM_BOB_WAKE_VELOCITY, Math.min(0.4D, bobVelocity * 6.0D));
+        int centerX = MathHelper.floor_double(entity.posX * NODE_RES);
+        int centerZ = MathHelper.floor_double(entity.posZ * NODE_RES);
+        int bodyRadius = Math.max(1, MathHelper.ceiling_float_int(entity.width * NODE_RES * 0.5F));
+        int sourceRadius = Math.max(1, MathHelper.ceiling_float_int(bodyRadius * SWIM_BOB_WAKE_SOURCE_SCALE));
+        int sourceRadiusSq = sourceRadius * sourceRadius;
+        int y = MathHelper.floor_double(surfaceY - 1.0E-4D);
+        float strength = SWIM_BOB_WAKE_STRENGTH * density;
+
+        for (int dx = -sourceRadius; dx <= sourceRadius; dx++) {
+            for (int dz = -sourceRadius; dz <= sourceRadius; dz++) {
+                int distanceSq = dx * dx + dz * dz;
+                if (distanceSq <= sourceRadiusSq) {
+                    double radialDistance = Math.sqrt(distanceSq);
+                    double radialFade = 1.0D - radialDistance / (sourceRadius + 0.5D);
+                    stampPixel(
+                        world,
+                        centerX + dx,
+                        centerZ + dz,
+                        y,
+                        strength,
+                        velocity * Math.max(0.0D, radialFade),
+                        inputStamp);
+                }
+            }
+        }
     }
 
     private void nodeTrail(World world, double fromX, double fromZ, double toX, double toZ, int y, float waveStrength,
@@ -637,8 +696,10 @@ public final class WakeTrailManager {
     private static class Tracker {
 
         double prevX;
+        double prevY;
         double prevZ;
         boolean onSurface;
+        final SwimBobTracker swimBob = new SwimBobTracker();
     }
 
     private static class WakeRenderBatch {

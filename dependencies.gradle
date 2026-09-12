@@ -71,4 +71,7 @@ dependencies {
 
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:ivtoolkit-224535:2294442"))
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:psychedelicraft-legacy-1256222:6547962"))
+
+    // Test
+    testImplementation("junit:junit:4.13.2")
 }

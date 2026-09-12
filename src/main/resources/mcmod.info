@@ -9,7 +9,7 @@
 		"url": "https://github.com/JackOfNoneTrades/AnExtraTouch",
 		"updateUrl": "",
 		"authorList": ["jack"],
-		"credits": "OreCruncher for Dynamic Surroundings, Alex-Hashtag for Legendary Survival Overhaul",
+		"credits": "OreCruncher for Dynamic Surroundings; see README for other upstream credits",
 		"logoFile": "assets/${modId}/logo.png",
 		"screenshots": [],
 		"parent": "",

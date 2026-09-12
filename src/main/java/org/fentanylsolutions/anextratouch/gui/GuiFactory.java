@@ -6,12 +6,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.common.config.ConfigElement;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
-
-import com.google.common.collect.Lists;
 
 import cpw.mods.fml.client.IModGuiFactory;
 import cpw.mods.fml.client.config.GuiConfig;
@@ -42,50 +39,7 @@ public class GuiFactory implements IModGuiFactory {
         public ConfigGui(GuiScreen parentScreen) {
             super(
                 parentScreen,
-                Lists.newArrayList(
-                    // Construct directly here to prevent stale references
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.general)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.footprints)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.breath)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.armor)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.rainSplash)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.waterSplash)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.waves)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.fluidInteractions)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.misc)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.wetness)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.trampling)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.smoothGui)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.camera)),
-                    new ConfigElement(
-                        Config.getRawConfig()
-                            .getCategory(Config.Categories.debug))),
+                ConfigGuiLayout.create(Config.getRawConfig()),
                 AnExtraTouch.MODID,
                 AnExtraTouch.MODID,
                 false,

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
@@ -14,6 +15,7 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraftforge.fluids.FluidRegistry;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
@@ -59,6 +61,7 @@ public class WaterSplashManager {
         int prevAge;
         boolean foam;
         float r, g, b;
+        boolean lava;
     }
 
     private static class Ring {
@@ -69,6 +72,7 @@ public class WaterSplashManager {
         int age;
         int prevAge;
         float r, g, b;
+        boolean lava;
     }
 
     private static class Emitter {
@@ -79,6 +83,7 @@ public class WaterSplashManager {
         float height;
         float speed;
         float r, g, b;
+        boolean lava;
         int age;
         boolean spawnedSecondWave;
     }
@@ -94,14 +99,15 @@ public class WaterSplashManager {
         speed = Math.min(SPEED_CAP, speed);
         float height = (speed / 2f + width / 3f);
         float[] rgb = sampleSplashFluidColor(world, x, y, z);
+        boolean lava = isLavaSplash(world, x, y, z);
 
-        spawnSplash(world, x, y, z, width, height, false, rgb);
-        spawnSplash(world, x, y, z, width, height, true);
-        spawnRing(world, x, y, z, width);
+        spawnSplash(world, x, y, z, width, height, false, rgb, lava);
+        spawnSplash(world, x, y, z, width, height, true, rgb, lava);
+        spawnRing(world, x, y, z, width, rgb, lava);
 
         if (speed > 0.5f) {
             float dropletSpeed = (1.5f / 8f + speed * 1f / 8f) + (width / 6f);
-            spawnDroplets(world, x, y, z, width, dropletSpeed, 0.15f, rgb);
+            spawnDroplets(world, x, y, z, width, dropletSpeed, 0.15f, rgb, lava);
         }
 
         Emitter e = new Emitter();
@@ -112,18 +118,15 @@ public class WaterSplashManager {
         e.width = width;
         e.height = height;
         e.speed = speed;
+        e.lava = lava;
         e.r = rgb[0];
         e.g = rgb[1];
         e.b = rgb[2];
         emitters.add(e);
     }
 
-    private void spawnSplash(World world, double x, double y, double z, float width, float height, boolean foam) {
-        spawnSplash(world, x, y, z, width, height, foam, null);
-    }
-
     private void spawnSplash(World world, double x, double y, double z, float width, float height, boolean foam,
-        float[] rgb) {
+        float[] rgb, boolean lava) {
         Splash s = new Splash();
         s.world = world;
         s.x = x;
@@ -132,7 +135,8 @@ public class WaterSplashManager {
         s.width = width;
         s.height = height;
         s.foam = foam;
-        if (foam) {
+        s.lava = lava;
+        if (foam && !lava) {
             s.r = s.g = s.b = 1.0f;
         } else {
             if (rgb == null) {
@@ -145,20 +149,22 @@ public class WaterSplashManager {
         splashes.add(s);
     }
 
-    private void spawnRing(World world, double x, double y, double z, float width) {
+    private void spawnRing(World world, double x, double y, double z, float width, float[] rgb, boolean lava) {
         Ring r = new Ring();
         r.world = world;
         r.x = x;
         r.y = y;
         r.z = z;
         r.width = width;
-        // ring uses default tinted color (white) like vanilla; particular uses red/green/blue from default sprite
-        r.r = r.g = r.b = 1.0f;
+        r.lava = lava;
+        r.r = lava ? rgb[0] : 1.0f;
+        r.g = lava ? rgb[1] : 1.0f;
+        r.b = lava ? rgb[2] : 1.0f;
         rings.add(r);
     }
 
     private void spawnDroplets(World world, double x, double y, double z, float width, float speed, float spread,
-        float[] rgb) {
+        float[] rgb, boolean lava) {
         java.util.Random rand = world.rand;
         int count = (int) (width * 20f);
         for (int i = 0; i < count; i++) {
@@ -170,7 +176,7 @@ public class WaterSplashManager {
             double py = y + 1.0 / 16.0;
             double pz = z + zVel / spread * width;
 
-            EntityFX drop = new FallingWaterFX(world, px, py, pz, rgb);
+            EntityFX drop = new FallingWaterFX(world, px, py, pz, rgb, lava);
             drop.motionX = xVel;
             drop.motionY = yVel;
             drop.motionZ = zVel;
@@ -218,12 +224,12 @@ public class WaterSplashManager {
                 float w2 = e.width * 0.66f;
                 float h2 = e.height * 2f;
                 float[] rgb = new float[] { e.r, e.g, e.b };
-                spawnSplash(e.world, e.x, e.y, e.z, w2, h2, false, rgb);
-                spawnSplash(e.world, e.x, e.y, e.z, w2, h2, true);
-                spawnRing(e.world, e.x, e.y, e.z, w2);
+                spawnSplash(e.world, e.x, e.y, e.z, w2, h2, false, rgb, e.lava);
+                spawnSplash(e.world, e.x, e.y, e.z, w2, h2, true, rgb, e.lava);
+                spawnRing(e.world, e.x, e.y, e.z, w2, rgb, e.lava);
                 if (e.speed > 0.5f) {
                     float dropletSpeed = (3f / 8f + e.speed * 1f / 8f) + (e.width / 6f);
-                    spawnDroplets(e.world, e.x, e.y, e.z, w2, dropletSpeed, 0.05f, rgb);
+                    spawnDroplets(e.world, e.x, e.y, e.z, w2, dropletSpeed, 0.05f, rgb, e.lava);
                 }
             }
             // emitter dies if no longer in water or aged out
@@ -297,13 +303,23 @@ public class WaterSplashManager {
         int blockZ = MathHelper.floor_double(z);
 
         if (isSplashFluid(world, blockX, blockY, blockZ)) {
-            return WetnessFluidHelper.getWettableFluidColor(world, blockX, blockY, blockZ);
+            return WetnessFluidHelper.getSplashFluidColor(world, blockX, blockY, blockZ);
         }
         if (isSplashFluid(world, blockX, blockY - 1, blockZ)) {
-            return WetnessFluidHelper.getWettableFluidColor(world, blockX, blockY - 1, blockZ);
+            return WetnessFluidHelper.getSplashFluidColor(world, blockX, blockY - 1, blockZ);
         }
 
         return FallingWaterFX.getWaterColor(world, x, y, z);
+    }
+
+    public static boolean isLavaSplash(World world, double x, double y, double z) {
+        int bx = MathHelper.floor_double(x);
+        int by = MathHelper.floor_double(y);
+        int bz = MathHelper.floor_double(z);
+        if (!isSplashFluidAllowed(world, bx, by, bz)) by--;
+        return world.getBlock(bx, by, bz)
+            .getMaterial() == Material.lava
+            || WetnessFluidHelper.getSplashFluid(world, bx, by, bz) == FluidRegistry.LAVA;
     }
 
     public static boolean isSplashFluidAllowed(World world, int x, int y, int z) {
@@ -392,7 +408,7 @@ public class WaterSplashManager {
         int bx = MathHelper.floor_double(s.x);
         int by = MathHelper.floor_double(s.y);
         int bz = MathHelper.floor_double(s.z);
-        int brightness = s.world.getLightBrightnessForSkyBlocks(bx, by, bz, 0);
+        int brightness = s.world.getLightBrightnessForSkyBlocks(bx, by, bz, s.lava ? 15 : 0);
 
         // 4 corners of a square in XZ around (fx, fy, fz), scaled by scale
         float[][] c = new float[][] { { -scale, -scale }, { -scale, scale }, { scale, scale }, { scale, -scale } };
@@ -446,7 +462,7 @@ public class WaterSplashManager {
         int bx = MathHelper.floor_double(ring.x);
         int by = MathHelper.floor_double(ring.y);
         int bz = MathHelper.floor_double(ring.z);
-        int brightness = ring.world.getLightBrightnessForSkyBlocks(bx, by, bz, 0);
+        int brightness = ring.world.getLightBrightnessForSkyBlocks(bx, by, bz, ring.lava ? 15 : 0);
 
         Tessellator t = Tessellator.instance;
         t.startDrawingQuads();

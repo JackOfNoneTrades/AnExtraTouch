@@ -608,7 +608,7 @@ public class Config {
                 "waterSplashEnabled",
                 Categories.waterSplash,
                 waterSplashEnabled,
-                "Enable enhanced water splash particles when entities enter water.");
+                "Enable enhanced splashes when entities enter water, lava or other liquids. Swimming entities produce wakes instead.");
             waterSplashEntityBlacklist = config.getStringList(
                 "waterSplashEntityBlacklist",
                 Categories.waterSplash,
@@ -696,7 +696,7 @@ public class Config {
                 "waterWakesEnabled",
                 Categories.waterSplash,
                 waterWakesEnabled,
-                "Enable Wakes-style trails behind boats, players, mobs, and items moving on the water surface.");
+                "Enable surface trails behind moving entities, with additional outgoing ripples on each swimming stroke.");
             waterWakeAlpha = config.getFloat(
                 "waterWakeAlpha",
                 Categories.waterSplash,

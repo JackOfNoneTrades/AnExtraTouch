@@ -14,45 +14,30 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 
 ![footsteps](images/gifs/footsteps.gif)
 
-### Features:
-* Entity footprints. Backported from modern Dynamic Surroundings.
-* Armor walk and equip sounds. Backported from modern Dynamic Surroundings.
-* Cold breath particles. Backported from modern Dynamic Surroundings.
-* Water splash sound effects when walking in rain. Backported from modern Dynamic Surroundings.
-* Ambient waterfall sounds. Backported from modern Dynamic Surroundings.
-* Wet entities shed water particles. Backported from Legendary Survival Overhaul.
-* Water splashes for entities, dropped items, and arrows entering water. Backported from Particular.
-* Waterfall cascade foam particles. Backported from Particular.
-* Bubbles released from underwater chests when opened. Backported from Particular.
-* Water ripples from rain and water drips. Backported from Particular.
-* Cake eating particles and sound. Backported from Particular.
-* Boat and entity water trails. Backported from Wakes. Et Futurum boats support.
-* Shore waves with breaking sounds. Backported from Coastal Waves.
-* Biome water color tint applied to vanilla rain, splash, drip, and bubble particles when using [Cristaline Water](https://github.com/kanmikan/cristalinewatermod). Supports Forge fluids.
-* Grass trampling. Entities can trample grass when repeatedly walking over it. Entirely server-side, off by default, players only by default.
-* Thermal Foundation Blizz snow trail, similar to the Snow Golem.
-* Smooth Gui backport.
-* Minecraft-CameraOverhaul backport.
-* Config system to add camera shakes to sounds.
-* Some features backported from modern Shoulder Surfing (meant to be used along the `1.7.10` Shoulder Surfing, but should also work on their own):
-  * Decoupled camera
-  * Switch to first person when certain items are held, or some actions made (like bow shooting), configurable
-  * Player model fading if the camera gets too close
-  * Omnidirectional sprinting
-* Camera follow lag in Shoulder Surfing mode
-* Mixin-based Loading Progress Bar (green world load bar) port thanks to @kotmatross28729
+## Features
 
-The entire mod is heavily configurable.
+* [Footprints](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Footprints): tracks left by players and mobs, with per-entity sizing and surface rules.
+* [Entity effects](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Entity-effects): cold breath, dripping wet entities, and cake crumbs.
+* [Sounds](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Sounds): armor walking and equip sounds, plus wet footsteps in rain.
+* [Water effects](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Water-effects): water and lava splashes, waterfall foam and ambience, chest bubbles, rain ripples, and Wakes trails with swimming ripples.
+* [Coastal Waves](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Coastal-Waves): shore waves and breaking sounds.
+* [Camera Overhaul](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Camera-Overhaul): movement tilt, idle sway, and configurable camera shakes, including sound triggers.
+* [Shoulder Surfing additions](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Shoulder-Surfing): decoupled camera, aiming transitions, player fading, smooth follow, and omnidirectional sprinting.
+* [Smooth GUI and loading screen](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Smooth-GUI): animated menus and the Loading Progress Bar port.
+* [Gameplay](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Gameplay): modern boat controls, optional grass trampling, and Thermal Foundation Blizz snow trails.
+
+See the [configuration guide](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Configuration) and category pages for all settings.
 
 This mod can be installed on client, server, or both. Armor walking sounds are more precise when the mod is installed on the server.
 
 ## Dependencies
+
 * [UniMixins](https://modrinth.com/mod/unimixins) [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/unimixins)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/unimixins/versions) [![git](images/icons/git.png)](https://github.com/LegacyModdingMC/UniMixins/releases)
 * [GTNHLib](https://modrinth.com/mod/gtnhlib)   [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/gtnhlib)  [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/gtnhlib) [![git](images/icons/git.png)](https://github.com/GTNewHorizons/GTNHLib/releases)
 * [FentLib](https://www.curseforge.com/minecraft/mc-mods/fentlib) [![curse](images/icons/curse.png)](https://www.curseforge.com/minecraft/mc-mods/fentlib) [![modrinth](images/icons/modrinth.png)](https://modrinth.com/mod/fentlib) [![67](images/icons/67.png)](https://67.fentanylsolutions.org/mod/fentlib) [![git](images/icons/git.png)](https://github.com/JackOfNoneTrades/FentLib)
 
 ![breath](images/gifs/breath_pov.gif)
-![buttons](images/gifs/drip.gif)
+![dripping](images/gifs/drip.gif)
 ![footprints](images/screenshots/footprints.png)
 
 ## Building
@@ -60,6 +45,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 `./gradlew build`.
 
 ## Credits
+
 * [Dynamic Surroundings](https://github.com/OreCruncher/DynamicSurroundingsFabric). Armor sound assets and footprint texture come from this mod.
 * [LegendarySurvivalOverhaul](https://github.com/Alex-Hashtag/LegendarySurvivalOverhaul).
 * [Smooth Gui](https://github.com/Ezzenix/SmoothGui)
@@ -69,6 +55,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Wakes](https://github.com/Goby56/wakes). Source of the water trail effect and textures.
 * [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) by Verph. Source of the shore wave effect, textures, and sounds.
 * [Et Futurum Requiem](https://github.com/Roadhog360/Et-Futurum-Requiem).
+* [Loading Progress Bar](https://github.com/jbredwards/Loading-Progress-Bar). Mixin port thanks to [kotmatross28729](https://github.com/kotmatross28729).
 * [GT:NH buildscript](https://github.com/GTNewHorizons/ExampleMod1.7.10).
 
 ## License
@@ -85,6 +72,8 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) assets and code are copyright Verph and licensed under BSD 2-Clause. `Waves-1.21.x-1.6.1.jar` metadata contains the BSD 2 license (`license = "BSD 2"`).
 * [Et Futurum Requiem code is licensed under LGPL-3.0](https://github.com/Roadhog360/Et-Futurum-Requiem/blob/master/LICENSE).
 * [Loading Progress Bar code is licensed under MIT](https://github.com/jbredwards/Loading-Progress-Bar/blob/1.7.10/LICENSE)
+
+Waterfall recording credits and licenses are listed in [WATERFALL_SOUND_CREDITS.txt](src/main/resources/assets/anextratouch/WATERFALL_SOUND_CREDITS.txt).
 
 ## Buy me some creatine
 

@@ -14,6 +14,7 @@ import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintUtil;
 import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
+import org.fentanylsolutions.anextratouch.util.SplashEntryTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,13 +22,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
 public class MixinEntityClient {
-
-    @Shadow
-    protected Random rand;
 
     // Track position for actual distance calculation
     @Unique
@@ -41,22 +38,6 @@ public class MixinEntityClient {
 
     @Unique
     private boolean anextratouch$isRightFoot = true;
-
-    // Track last 4 abs(motionY) values, peak is used as splash speed
-    @Unique
-    private final double[] anextratouch$velY = new double[4];
-    @Unique
-    private int anextratouch$velYCount;
-
-    // Cooldown to suppress repeat splashes from rapidly bouncing entities (e.g. slimes in shallow water)
-    @Unique
-    private int anextratouch$splashCooldown;
-
-    // Tracks whether this entity was in water on the previous tick, for the generic
-    // transition-detection trigger that catches entities (items, XP orbs, ...) whose
-    // handleWaterMovement override skips the vanilla playSound path.
-    @Unique
-    private boolean anextratouch$wasInWater;
 
     // Hook into call site of func_145780_a (step sound method) inside moveEntity, because we'd be missing overrides
     // that are noops
@@ -136,6 +117,22 @@ public class MixinEntityClient {
         }
     }
 
+    @Shadow
+    protected Random rand;
+
+    // Track last 4 abs(motionY) values, peak is used as splash speed
+    @Unique
+    private final double[] anextratouch$velY = new double[4];
+    @Unique
+    private int anextratouch$velYCount;
+
+    // Cooldown to suppress repeat splashes from rapidly bouncing entities (e.g. slimes in shallow water)
+    @Unique
+    private int anextratouch$splashCooldown;
+
+    @Unique
+    private final SplashEntryTracker anextratouch$splashEntry = new SplashEntryTracker();
+
     // Track Y velocity history for splash speed calculation
     @Inject(method = "onUpdate", at = @At("HEAD"))
     private void anextratouch$trackVelocityY(CallbackInfo ci) {
@@ -145,35 +142,6 @@ public class MixinEntityClient {
         anextratouch$velY[anextratouch$velYCount % 4] = Math.abs(self.motionY);
         anextratouch$velYCount++;
         if (anextratouch$splashCooldown > 0) anextratouch$splashCooldown--;
-    }
-
-    // Spawn splash emitter when an entity first enters water. Piggybacks on the
-    // exact spot vanilla plays the splash sound so timing matches the vanilla splash.
-    @Inject(
-        method = "handleWaterMovement",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;playSound(Ljava/lang/String;FF)V"))
-    private void anextratouch$onWaterEntry(CallbackInfoReturnable<Boolean> cir) {
-        Entity self = (Entity) (Object) this;
-        if (!self.worldObj.isRemote) return;
-        if (!Config.waterSplashEnabled) return;
-        if (self instanceof EntityArrow) return;
-        if (anextratouch$splashCooldown > 0) return;
-        if (anextratouch$isSplashBlacklisted(self)) return;
-
-        double surfaceLevel = anextratouch$resolveSplashY(self);
-        if (anextratouch$isSplashInsideFluid(self.worldObj, self.posX, surfaceLevel, self.posZ)) {
-            anextratouch$splashCooldown = 10;
-            return;
-        }
-
-        WaterSplashManager.INSTANCE.spawnEmitter(
-            self.worldObj,
-            self.posX,
-            surfaceLevel,
-            self.posZ,
-            self.width,
-            anextratouch$getMaxSplashSpeed());
-        anextratouch$splashCooldown = 10;
     }
 
     @Unique
@@ -223,7 +191,7 @@ public class MixinEntityClient {
                 .getSimpleName());
     }
 
-    // Mirrors vanilla's handleMaterialAcceleration block scan, but against splash-capable Forge fluids too.
+    // Test the entity bounds against the actual volume of splash-capable liquids.
     @Unique
     private static boolean anextratouch$isInWater(Entity e) {
         AxisAlignedBB box = anextratouch$getWaterProbeBox(e);
@@ -236,8 +204,7 @@ public class MixinEntityClient {
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
-                    double surface = WaterSplashManager.getSplashFluidSurfaceY(e.worldObj, x, y, z);
-                    if (surface >= 0.0D && (double) maxY >= surface) return true;
+                    if (WaterSplashManager.intersectsSplashFluid(box, e.worldObj, x, y, z)) return true;
                 }
             }
         }
@@ -259,8 +226,9 @@ public class MixinEntityClient {
 
     @Unique
     private static AxisAlignedBB anextratouch$getWaterProbeBox(Entity e) {
-        return e.boundingBox.expand(0.0D, -0.4000000059604645D, 0.0D)
-            .contract(0.001D, 0.001D, 0.001D);
+        // Keep the feet in the probe while swimmers bob at the surface, including small entities.
+        return e.boundingBox.contract(0.001D, 0.0D, 0.001D)
+            .expand(0.0D, 0.05D, 0.0D);
     }
 
     @Unique
@@ -322,7 +290,9 @@ public class MixinEntityClient {
         // World.playSoundAtEntity routes through worldAccesses.playSound which is a no-op on
         // RenderGlobal. Vanilla client sounds normally arrive via S29PacketSoundEffect ->
         // WorldClient.playSound(...). We're already on the client, so call that directly.
-        e.worldObj.playSound(x, y, z, "game.neutral.swim.splash", volume, pitch, false);
+        String sound = WaterSplashManager.isLavaSplash(e.worldObj, x, y, z) ? "liquid.lavapop"
+            : "game.neutral.swim.splash";
+        e.worldObj.playSound(x, y, z, sound, volume, pitch, false);
     }
 
     @Redirect(
@@ -332,7 +302,8 @@ public class MixinEntityClient {
         double motionX, double motionY, double motionZ) {
         if (Config.waterSplashEnabled && "splash".equals(particleName)) {
             Entity self = (Entity) (Object) this;
-            if (self instanceof EntityArrow || anextratouch$isSplashInsideFluid(world, self.posX, y, self.posZ)
+            if (self instanceof EntityArrow || !anextratouch$splashEntry.isArmed()
+                || anextratouch$isSplashInsideFluid(world, self.posX, y, self.posZ)
                 || anextratouch$isSplashInsideFluid(world, x, y, z)) {
                 return;
             }
@@ -341,10 +312,7 @@ public class MixinEntityClient {
         world.spawnParticle(particleName, x, y, z, motionX, motionY, motionZ);
     }
 
-    // Generic water-entry detector for entities whose handleWaterMovement override skips the
-    // vanilla playSound path (notably EntityItem, EntityXPOrb). Compares this tick's water-presence
-    // against last tick and fires a splash on false->true. The shared cooldown prevents
-    // double-fires when the playSound injection above already handled the entry.
+    // One entry detector for water, lava and Forge fluids. Continuous contact leaves swimming to wakes.
     @Inject(method = "onUpdate", at = @At("TAIL"))
     private void anextratouch$detectWaterEntry(CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
@@ -354,8 +322,7 @@ public class MixinEntityClient {
 
         boolean inWaterNow = anextratouch$isInWater(self);
 
-        if (inWaterNow && !anextratouch$wasInWater
-            && anextratouch$splashCooldown == 0
+        if (anextratouch$splashEntry.update(inWaterNow) && anextratouch$splashCooldown == 0
             && !anextratouch$isSplashBlacklisted(self)) {
             double splashY = anextratouch$resolveSplashY(self);
             boolean centerInsideFluid = anextratouch$isSplashInsideFluid(self.worldObj, self.posX, splashY, self.posZ);
@@ -369,10 +336,10 @@ public class MixinEntityClient {
                     anextratouch$getMaxSplashSpeed());
                 anextratouch$playClientSplashSound(self, self.posX, splashY, self.posZ);
             }
-            anextratouch$spawnVanillaSplashParticles(self, anextratouch$getVanillaSplashY(self));
+            if (!WaterSplashManager.isLavaSplash(self.worldObj, self.posX, splashY, self.posZ)) {
+                anextratouch$spawnVanillaSplashParticles(self, anextratouch$getVanillaSplashY(self));
+            }
             anextratouch$splashCooldown = 10;
         }
-
-        anextratouch$wasInWater = inWaterNow;
     }
 }
