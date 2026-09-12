@@ -136,7 +136,7 @@ public class Config {
     // fluid interactions
     public static String[] fluidInteractionBlacklist = {};
     public static String[] splashFluidBlacklist = { "honey" };
-    public static String[] cascadeFluidBlacklist = { "honey" };
+    public static String[] cascadeFluidBlacklist = { "honey", "oil" };
 
     // rain splash
     public static boolean rainSplashEnabled = true;
@@ -823,7 +823,7 @@ public class Config {
                 "cascadeFluidBlacklist",
                 Categories.fluidInteractions,
                 cascadeFluidBlacklist,
-                "Forge fluids this mod should ignore only for cascade foam, waterfall spray, and waterfall sounds. This is additive with fluidInteractionBlacklist. Defaults include Biomes O' Plenty honey because it reads poorly as waterfall foam.");
+                "Forge fluids this mod should ignore only for cascade foam, waterfall spray, and waterfall sounds. This is additive with fluidInteractionBlacklist. Defaults exclude Biomes O' Plenty honey and BuildCraft oil.");
 
             // rain splash
             rainSplashEnabled = config.getBoolean(
