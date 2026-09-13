@@ -94,6 +94,7 @@ final class ConfigGuiLayout {
                 property(config, "misc", "cakeEatingParticlesEnabled")),
             menu(
                 "sounds",
+                section(config, "sounds.thunder", "thunder", "thunderSoundsEnabled", "thunderSoundVolume"),
                 section(
                     config,
                     "sounds.armor",

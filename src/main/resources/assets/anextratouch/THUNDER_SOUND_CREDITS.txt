@@ -1,0 +1,34 @@
+Thunder assets copied unchanged from Dynamic Surroundings Fabric commit 0d352c7e57bbd39786defdba355156a5bdb850f4.
+https://github.com/OreCruncher/DynamicSurroundingsFabric/tree/0d352c7e57bbd39786defdba355156a5bdb850f4/common/src/main/resources/assets/dsurround
+
+Source event: dsurround:thunder
+AET event: anextratouch:weather.thunder
+
+Original credits and terms:
+- "Thunder 1" by Yoyodaman234
+  https://www.freesound.org/people/Yoyodaman234/sounds/253953/
+  License: Creative Commons 0
+- "Donner1.wav" by swuing
+  https://www.freesound.org/people/swuing/sounds/37774/
+  License: Creative Commons Attribution 3.0
+  https://creativecommons.org/licenses/by/3.0/
+- "Thunder - 1" by bone666138
+  https://www.freesound.org/people/bone666138/sounds/198857/
+  License: Creative Commons Attribution 4.0
+  https://creativecommons.org/licenses/by/4.0/
+- "Thunder - 2" by bone666138
+  https://www.freesound.org/people/bone666138/sounds/198858/
+  License: Creative Commons Attribution 4.0
+  https://creativecommons.org/licenses/by/4.0/
+- "Distant Thunder.wav" by sarson
+  https://www.freesound.org/people/sarson/sounds/195522/
+  License: Creative Commons 0
+- "NM-Mejor-Lado-Thunder-01.wav" by aaronstar
+  https://www.freesound.org/people/aaronstar/sounds/194849/
+  License: Creative Commons 0
+
+The upstream credits report these sound transformations: conversion to OGG, conversion to mono when needed, and sampling to select sounds from original tracks. The AET copies are unchanged from the audited upstream OGG files.
+
+Creative Commons 0 terms: https://creativecommons.org/publicdomain/zero/1.0/
+
+The sound files retain the individual terms listed above, independently of AET's code license.

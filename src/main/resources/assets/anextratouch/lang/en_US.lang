@@ -10,6 +10,7 @@ anextratouch.configgui.menu.entity_effects.cold_breath_entities_and_position=Col
 anextratouch.configgui.menu.entity_effects.cold_breath_climate=Cold breath: climate
 anextratouch.configgui.menu.entity_effects.wetness=Wetness
 anextratouch.configgui.menu.sounds=Sounds
+anextratouch.configgui.menu.sounds.thunder=Thunder
 anextratouch.configgui.menu.sounds.armor=Armor
 anextratouch.configgui.menu.sounds.rain_footsteps=Rain footsteps
 anextratouch.configgui.menu.sounds.dynamic_surroundings=Dynamic Surroundings

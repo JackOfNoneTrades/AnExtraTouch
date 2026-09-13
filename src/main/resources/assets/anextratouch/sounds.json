@@ -147,5 +147,34 @@
       "anextratouch:waves/wave_9",
       "anextratouch:waves/wave_10"
     ]
+  },
+  "weather.thunder": {
+    "category": "weather",
+    "sounds": [
+      {
+        "name": "anextratouch:weather/thunder1",
+        "stream": true
+      },
+      {
+        "name": "anextratouch:weather/thunder2",
+        "stream": true
+      },
+      {
+        "name": "anextratouch:weather/thunder3",
+        "stream": true
+      },
+      {
+        "name": "anextratouch:weather/thunder4",
+        "stream": true
+      },
+      {
+        "name": "anextratouch:weather/thunder5",
+        "stream": true
+      },
+      {
+        "name": "anextratouch:weather/thunder6",
+        "stream": true
+      }
+    ]
   }
 }

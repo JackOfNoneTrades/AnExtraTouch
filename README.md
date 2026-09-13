@@ -18,7 +18,7 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 
 * [Footprints](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Footprints): tracks left by players and mobs, with per-entity sizing and surface rules.
 * [Entity effects](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Entity-effects): cold breath, dripping wet entities, and cake crumbs.
-* [Sounds](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Sounds): armor walking and equip sounds, wet footsteps in rain, and optional muting of Dynamic Surroundings animal ambience.
+* [Sounds](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Sounds): enhanced thunder, armor walking and equip sounds, wet footsteps in rain, and optional muting of Dynamic Surroundings animal ambience.
 * [Water effects](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Water-effects): water and lava splashes, waterfall foam and ambience, chest bubbles, rain ripples, and Wakes trails with swimming ripples.
 * [Coastal Waves](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Coastal-Waves): shore waves and breaking sounds.
 * [Camera Overhaul](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Camera-Overhaul): movement tilt, idle sway, and configurable camera shakes, including sound triggers.
