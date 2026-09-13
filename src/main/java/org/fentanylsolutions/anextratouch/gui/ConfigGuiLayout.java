@@ -168,6 +168,7 @@ final class ConfigGuiLayout {
                     "coastal_waves.spawning_and_size",
                     "waves",
                     "wavesEnabled",
+                    "waveShaderWater",
                     "waveSearchDistance",
                     "waveSpawnDistance",
                     "waveSpawnAmount",

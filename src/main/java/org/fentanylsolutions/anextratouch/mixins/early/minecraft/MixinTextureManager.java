@@ -3,6 +3,7 @@ package org.fentanylsolutions.anextratouch.mixins.early.minecraft;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResourceManager;
 
+import org.fentanylsolutions.anextratouch.handlers.client.effects.CoastalWaveShaderMesh;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.NeutralParticleTexture;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.SplashShaderMesh;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,5 +18,6 @@ public class MixinTextureManager {
     private void anextratouch$reloadNeutralWaterParticles(IResourceManager resourceManager, CallbackInfo ci) {
         NeutralParticleTexture.invalidate();
         SplashShaderMesh.invalidate();
+        CoastalWaveShaderMesh.invalidate();
     }
 }

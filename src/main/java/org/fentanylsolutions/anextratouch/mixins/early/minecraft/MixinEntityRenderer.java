@@ -10,6 +10,7 @@ import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.AngelicaShaderHelper;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
@@ -465,6 +466,7 @@ public abstract class MixinEntityRenderer {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterRippleManager.INSTANCE.renderInWorldPass(partialTicks);
+        AngelicaShaderHelper.captureSurfaceDepth();
     }
 
     @Inject(
@@ -475,8 +477,13 @@ public abstract class MixinEntityRenderer {
             shift = Shift.AFTER),
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderWakesAfterWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        WaterWaveManager.INSTANCE.renderInWorldPass(partialTicks);
-        WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks);
+        AngelicaShaderHelper.WaterRenderScope depth = AngelicaShaderHelper.beginSurfaceDepth();
+        try {
+            WaterWaveManager.INSTANCE.renderInWorldPass(partialTicks);
+            WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks);
+        } finally {
+            if (depth != null) depth.close();
+        }
     }
 
     /**

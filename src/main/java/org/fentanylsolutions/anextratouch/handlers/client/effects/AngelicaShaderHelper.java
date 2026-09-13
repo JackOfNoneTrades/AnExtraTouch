@@ -3,25 +3,59 @@ package org.fentanylsolutions.anextratouch.handlers.client.effects;
 import java.lang.reflect.Method;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
+import org.fentanylsolutions.anextratouch.Config;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-final class AngelicaShaderHelper {
+public final class AngelicaShaderHelper {
 
     private static Boolean angelicaLoaded;
     private static boolean irisApiLookupComplete;
     private static Object irisApi;
     private static Method isShaderPackInUseMethod;
     private static boolean waterRenderingUnavailable;
+    private static boolean surfaceDepthUnavailable;
+    private static boolean surfaceDepthCaptured;
 
     private AngelicaShaderHelper() {}
 
-    interface WaterRenderScope {
+    public interface WaterRenderScope {
 
         void close();
+    }
+
+    public static void captureSurfaceDepth() {
+        surfaceDepthCaptured = false;
+        if (surfaceDepthUnavailable || !isShaderPackInUse()) return;
+        boolean waves = Config.wavesEnabled && Config.waveShaderWater && WaterWaveManager.INSTANCE.hasActiveWaves();
+        boolean wakes = Config.waterWakesEnabled && Config.waterWakeShaderWater
+            && WakeTrailManager.INSTANCE.hasActiveWakes();
+        if (!waves && !wakes) return;
+        try {
+            surfaceDepthCaptured = AngelicaSurfaceDepth.capture();
+        } catch (RuntimeException | LinkageError failure) {
+            disableSurfaceDepth(failure);
+        }
+    }
+
+    public static WaterRenderScope beginSurfaceDepth() {
+        if (!surfaceDepthCaptured || surfaceDepthUnavailable) return null;
+        surfaceDepthCaptured = false;
+        try {
+            return AngelicaSurfaceDepth.begin();
+        } catch (RuntimeException | LinkageError failure) {
+            disableSurfaceDepth(failure);
+            return null;
+        }
+    }
+
+    private static void disableSurfaceDepth(Throwable failure) {
+        surfaceDepthUnavailable = true;
+        AnExtraTouch.LOG
+            .warn("Angelica surface depth correction is unavailable; retaining normal depth testing", failure);
     }
 
     static WaterRenderScope beginWaterRendering() {

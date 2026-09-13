@@ -1,0 +1,35 @@
+Crest Ocean System foam adaptation
+Upstream: https://github.com/wave-harmonic/crest
+Revision: db0658ff0b2e93e4a9e28cc2867509658b0ecc00
+
+CrestFoamSimulation.java adapts UpdateFoam.compute (flow advection, decay,
+compression-driven deposition) and OceanFoam.hlsl (WhiteFoamTexture black-point
+fade). CrestFoamAppearance.java shares the foam appearance and texture sampling
+between coastal waves and wakes. AET supplies the local crest displacement and carries the foam material
+coordinates with the density. Unity rendering, ocean LODs, and shader-pack wave
+sampling are not included.
+
+textures/particle/crest_foam.png is an unmodified copy of
+crest/Assets/Crest/Crest/Textures/Foam2.png.
+
+MIT License
+
+Copyright (c) 2019 Wave Harmonic and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

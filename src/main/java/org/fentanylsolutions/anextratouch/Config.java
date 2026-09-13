@@ -121,6 +121,7 @@ public class Config {
 
     // waves
     public static boolean wavesEnabled = true;
+    public static boolean waveShaderWater = true;
     public static int waveSearchDistance = 14;
     public static float waveSpawnDistance = 64.0f;
     public static float waveSpawnAmount = 0.7f;
@@ -708,14 +709,14 @@ public class Config {
                 "waterWakeShaderWater",
                 Categories.waterSplash,
                 waterWakeShaderWater,
-                "Experimental: use the active Angelica shader's water shading for water wakes. Disable to keep regular AET rendering. Appearance and opacity depend on the shader pack. Other fluids keep regular rendering.");
+                "Experimental: use Angelica shader water under Crest foam on the original wake trails, including boats and paddles. Disable to keep regular AET rendering. Appearance depends on the shader pack. Other fluids keep regular rendering.");
             waterWakeAlpha = config.getFloat(
                 "waterWakeAlpha",
                 Categories.waterSplash,
                 waterWakeAlpha,
                 0.0f,
                 1.0f,
-                "Opacity for Wakes-style surface trails. With shader water rendering, scales ripple shading strength instead; the shader controls final opacity.");
+                "Opacity for Wakes-style surface trails. With shader water rendering, scales ripple shading strength and foam opacity; the shader controls water opacity.");
             waterWakeDensity = config.getFloat(
                 "waterWakeDensity",
                 Categories.waterSplash,
@@ -732,6 +733,11 @@ public class Config {
                 Categories.waves,
                 wavesEnabled,
                 "Enable ambient coastal waves on vanilla water surfaces.");
+            waveShaderWater = config.getBoolean(
+                "waveShaderWater",
+                Categories.waves,
+                waveShaderWater,
+                "Use procedural coastal breaking foam over the water of an active Angelica shader pack. Disable to use the original animated sprites. Falls back automatically when the Angelica rendering integration is unavailable.");
             waveSearchDistance = config.getInt(
                 "waveSearchDistance",
                 Categories.waves,

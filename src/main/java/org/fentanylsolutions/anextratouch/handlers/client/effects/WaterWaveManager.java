@@ -71,6 +71,10 @@ public final class WaterWaveManager {
 
     private WaterWaveManager() {}
 
+    boolean hasActiveWaves() {
+        return !waves.isEmpty();
+    }
+
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -503,13 +507,40 @@ public final class WaterWaveManager {
             GL11.glDepthMask(false);
 
             mc.entityRenderer.enableLightmap((double) partialTicks);
-            for (Wave wave : waves) {
-                if (wave.world == mc.theWorld) {
-                    renderWave(mc, wave, camX, camY, camZ, partialTicks);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            AngelicaShaderHelper.WaterRenderScope overlayScope = Config.waveShaderWater
+                ? AngelicaShaderHelper.beginOverlayRendering()
+                : null;
+            try {
+                if (overlayScope != null) {
+                    CoastalWaveShaderMesh.beginFrame(mc);
+                    for (Wave wave : waves) {
+                        if (wave.world != mc.theWorld) continue;
+                        if (wave.shaderMesh == null) wave.shaderMesh = new CoastalWaveShaderMesh(
+                            (float) ((wave.x * 13.0D + wave.z * 7.0D) % 64.0D));
+                        wave.shaderMesh.prepare(
+                            wave.prevAge + (wave.age - wave.prevAge) * partialTicks,
+                            wave.reachedShore ? wave.prevShoreAge + (wave.shoreAge - wave.prevShoreAge) * partialTicks
+                                : 0.0F,
+                            wave.getAlpha(partialTicks),
+                            wave.width,
+                            wave.depth);
+                    }
+                    CoastalWaveShaderMesh.uploadFoam(mc);
                 }
+                for (Wave wave : waves) {
+                    if (wave.world != mc.theWorld) continue;
+                    if (overlayScope != null) {
+                        renderProceduralWave(wave, camX, camY, camZ, partialTicks);
+                    } else {
+                        renderWave(mc, wave, camX, camY, camZ, partialTicks);
+                    }
+                }
+            } finally {
+                if (overlayScope != null) overlayScope.close();
             }
-            mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
+            mc.entityRenderer.disableLightmap((double) partialTicks);
             GL11.glDepthMask(true);
             GL11.glPopAttrib();
             mc.getTextureManager()
@@ -517,10 +548,29 @@ public final class WaterWaveManager {
         }
     }
 
+    private void renderProceduralWave(Wave wave, double camX, double camY, double camZ, float partialTicks) {
+        Tessellator t = Tessellator.instance;
+        t.startDrawingQuads();
+        t.setBrightness(
+            wave.world.getLightBrightnessForSkyBlocks(
+                MathHelper.floor_double(wave.x),
+                MathHelper.floor_double(wave.y),
+                MathHelper.floor_double(wave.z),
+                0));
+        t.setColorOpaque_I(0xFFFFFF);
+        wave.shaderMesh.render(
+            t,
+            wave.prevX + (wave.x - wave.prevX) * partialTicks - camX,
+            wave.prevY + (wave.y - wave.prevY) * partialTicks - camY,
+            wave.prevZ + (wave.z - wave.prevZ) * partialTicks - camZ,
+            wave.dirX,
+            wave.dirZ);
+        t.draw();
+    }
+
     private void renderWave(Minecraft mc, Wave wave, double camX, double camY, double camZ, float partialTicks) {
-        int frame = wave.getFrame(partialTicks);
         mc.getTextureManager()
-            .bindTexture(WAVE_TEXTURES[wave.size][frame]);
+            .bindTexture(WAVE_TEXTURES[wave.size][wave.getFrame(partialTicks)]);
 
         double x = wave.prevX + (wave.x - wave.prevX) * partialTicks - camX;
         double y = wave.prevY + (wave.y - wave.prevY) * partialTicks - camY;
@@ -543,6 +593,7 @@ public final class WaterWaveManager {
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawingQuads();
         tessellator.setBrightness(wave.getBrightness());
+        tessellator.setNormal(0.0F, 1.0F, 0.0F);
         tessellator.setColorRGBA_F(wave.r, wave.g, wave.b, wave.getAlpha(partialTicks));
         tessellator.addVertexWithUV(x0, y, z0, 0.0D, 1.0D);
         tessellator.addVertexWithUV(x1, y, z1, 0.0D, 0.0D);
@@ -816,6 +867,7 @@ public final class WaterWaveManager {
         boolean reachedShore;
         boolean playedSound;
         boolean dead;
+        CoastalWaveShaderMesh shaderMesh;
 
         void tick() {
             prevAge = age;

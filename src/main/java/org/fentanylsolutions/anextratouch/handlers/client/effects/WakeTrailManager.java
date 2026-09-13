@@ -52,11 +52,9 @@ public final class WakeTrailManager {
     private static final int FLOOD_FILL_TICK_DELAY = 2;
     private static final float SURFACE_OFFSET = 0.014F;
     private static final float SHADER_WAKE_NORMAL_SCALE = 0.08F;
-    private static final float SHADER_FOAM_START = 2.0F;
-    private static final float SHADER_FOAM_FULL = 9.0F;
-    private static final float SHADER_FOAM_ALPHA = 0.6F;
+    private static final float SHADER_FOAM_DENSITY = 0.45F;
     private static final int RENDER_GRID = NODE_RES + 1;
-    private static final int RENDER_VERTEX_STRIDE = 5; // normal XYZ, foam alpha, wave activity
+    private static final int RENDER_VERTEX_STRIDE = 5; // normal XYZ, foam density, wave activity
     private static final float INITIAL_STRENGTH = 20.0F;
     private static final float WAVE_PROPAGATION_FACTOR = 0.95F;
     private static final float WAVE_DECAY_FACTOR = 0.5F;
@@ -79,6 +77,7 @@ public final class WakeTrailManager {
     private final ArrayDeque<WakeNode> nodePool = new ArrayDeque<WakeNode>(MAX_NODES);
     // Reused for each node, including samples from neighboring nodes at shared edges.
     private final float[] renderSamples = new float[NODE_CELLS];
+    private final float[] renderFades = new float[NODE_CELLS];
     private final float[] renderVertices = new float[RENDER_GRID * RENDER_GRID * RENDER_VERTEX_STRIDE];
 
     private enum WakeRenderPass {
@@ -122,6 +121,10 @@ public final class WakeTrailManager {
         inputStamp = nextStampId();
         spawnEntityWakes(mc);
         trimNodeCap();
+    }
+
+    boolean hasActiveWakes() {
+        return !nodes.isEmpty();
     }
 
     public void renderInWorldPass(float partialTicks) {
@@ -263,11 +266,25 @@ public final class WakeTrailManager {
                 continue;
             }
 
+            node.prepareTick();
+        }
+
+        // Stage every node before reading neighbor history. Updating tiles one at a time made
+        // a border read either this tick or last tick depending on hash-map iteration order.
+        iterator = nodes.long2ObjectEntrySet()
+            .fastIterator();
+        while (iterator.hasNext()) {
+            WakeNode node = iterator.next()
+                .getValue();
             node.tick(
                 nodes.get(nodeKey(node.x, node.y, node.z - 1)),
                 nodes.get(nodeKey(node.x, node.y, node.z + 1)),
                 nodes.get(nodeKey(node.x + 1, node.y, node.z)),
-                nodes.get(nodeKey(node.x - 1, node.y, node.z)));
+                nodes.get(nodeKey(node.x - 1, node.y, node.z)),
+                nodes.get(nodeKey(node.x - 1, node.y, node.z - 1)),
+                nodes.get(nodeKey(node.x + 1, node.y, node.z - 1)),
+                nodes.get(nodeKey(node.x - 1, node.y, node.z + 1)),
+                nodes.get(nodeKey(node.x + 1, node.y, node.z + 1)));
 
             if (node.floodLevel > 0 && node.age > FLOOD_FILL_TICK_DELAY) {
                 floodNodes.add(node);
@@ -425,7 +442,6 @@ public final class WakeTrailManager {
         int z1 = MathHelper.floor_double(fromZ * NODE_RES);
         int x2 = MathHelper.floor_double(toX * NODE_RES);
         int z2 = MathHelper.floor_double(toZ * NODE_RES);
-
         stampLine(world, x1, z1, x2, z2, y, waveStrength, velocity, inputStamp);
     }
 
@@ -631,9 +647,28 @@ public final class WakeTrailManager {
     private void prepareRenderVertices(WakeNode node, float partialTicks) {
         for (int z = -1; z <= NODE_RES; z++) {
             for (int x = -1; x <= NODE_RES; x++) {
-                renderSamples[(z + 1) * NODE_GRID + x + 1] = sampleRenderWave(node, x, z, partialTicks);
+                WakeNode source = node;
+                int sx = x, sz = z;
+                if (x < 0 || x >= NODE_RES || z < 0 || z >= NODE_RES) {
+                    source = nodes.get(nodeKey(node.x + (x >> NODE_POWER), node.y, node.z + (z >> NODE_POWER)));
+                    if (source == null || source.world != node.world) {
+                        source = node;
+                        // Missing simulation coverage is not a sudden drop in water height.
+                        sx = MathHelper.clamp_int(x, 0, NODE_RES - 1);
+                        sz = MathHelper.clamp_int(z, 0, NODE_RES - 1);
+                    }
+                }
+                int sample = (z + 1) * NODE_GRID + x + 1;
+                renderSamples[sample] = source.getRenderWave(sx & NODE_MASK, sz & NODE_MASK, partialTicks);
+                float age = source.prevAge + (source.age - source.prevAge) * partialTicks;
+                float progress = clamp(age / MAX_AGE, 0.0F, 1.0F);
+                renderFades[sample] = 1.0F - progress * progress;
             }
         }
+        boolean west = nodes.containsKey(nodeKey(node.x - 1, node.y, node.z));
+        boolean east = nodes.containsKey(nodeKey(node.x + 1, node.y, node.z));
+        boolean north = nodes.containsKey(nodeKey(node.x, node.y, node.z - 1));
+        boolean south = nodes.containsKey(nodeKey(node.x, node.y, node.z + 1));
         for (int z = 0; z < RENDER_GRID; z++) {
             for (int x = 0; x < RENDER_GRID; x++) {
                 int sample = z * NODE_GRID + x;
@@ -641,8 +676,18 @@ public final class WakeTrailManager {
                 float b = renderSamples[sample + 1];
                 float c = renderSamples[sample + NODE_GRID];
                 float d = renderSamples[sample + NODE_GRID + 1];
+                float fade = (renderFades[sample] + renderFades[sample + 1]
+                    + renderFades[sample + NODE_GRID]
+                    + renderFades[sample + NODE_GRID + 1]) * 0.25F;
+                float coverage = (west ? 1.0F : edgeFade(x)) * (east ? 1.0F : edgeFade(NODE_RES - x))
+                    * (north ? 1.0F : edgeFade(z))
+                    * (south ? 1.0F : edgeFade(NODE_RES - z));
                 float activity = Math.max(Math.max(Math.abs(a), Math.abs(b)), Math.max(Math.abs(c), Math.abs(d)));
-                float strength = SHADER_WAKE_NORMAL_SCALE * activity / (activity + 2.0F) * Config.waterWakeAlpha;
+                float strength = SHADER_WAKE_NORMAL_SCALE * activity
+                    / (activity + 2.0F)
+                    * Config.waterWakeAlpha
+                    * fade
+                    * coverage;
                 float nx = clamp((a + c - b - d) * strength, -0.45F, 0.45F);
                 float nz = clamp((a + b - c - d) * strength, -0.45F, 0.45F);
                 float inverseLength = 1.0F / (float) Math.sqrt(nx * nx + 1.0F + nz * nz);
@@ -650,33 +695,28 @@ public final class WakeTrailManager {
                 renderVertices[vertex] = nx * inverseLength;
                 renderVertices[vertex + 1] = inverseLength;
                 renderVertices[vertex + 2] = nz * inverseLength;
-                float dx = (a + c - b - d) * 0.5F;
-                float dz = (a + b - c - d) * 0.5F;
-                renderVertices[vertex + 3] = sampleFoamAlpha(
-                    (a + b + c + d) * 0.25F,
-                    (float) Math.sqrt(dx * dx + dz * dz));
-                renderVertices[vertex + 4] = activity;
+                // Match the stock wake's white band, not every steep or high part of the water.
+                // Apply each sample's age before averaging so foam also joins across tile boundaries.
+                renderVertices[vertex
+                    + 3] = (sampleFoamDensity(a) * renderFades[sample] + sampleFoamDensity(b) * renderFades[sample + 1]
+                        + sampleFoamDensity(c) * renderFades[sample + NODE_GRID]
+                        + sampleFoamDensity(d) * renderFades[sample + NODE_GRID + 1]) * 0.25F * coverage;
+                renderVertices[vertex + 4] = activity * fade;
             }
         }
     }
 
-    private float sampleRenderWave(WakeNode origin, int x, int z, float partialTicks) {
-        WakeNode node = origin;
-        if (x < 0 || x >= NODE_RES || z < 0 || z >= NODE_RES) {
-            node = nodes.get(nodeKey(origin.x + (x >> NODE_POWER), origin.y, origin.z + (z >> NODE_POWER)));
-            if (node == null || node.world != origin.world) return 0.0F;
-        }
-        float progress = clamp((node.prevAge + (node.age - node.prevAge) * partialTicks) / MAX_AGE, 0.0F, 1.0F);
-        return node.getRenderWave(x & NODE_MASK, z & NODE_MASK, partialTicks) * (1.0F - progress * progress);
+    private static float edgeFade(int distance) {
+        float t = clamp(distance * 0.5F, 0.0F, 1.0F);
+        return t * t * (3.0F - 2.0F * t);
     }
 
-    private static float sampleFoamAlpha(float wave, float slope) {
-        float crest = clamp((wave - SHADER_FOAM_START) / (SHADER_FOAM_FULL - SHADER_FOAM_START), 0.0F, 1.0F);
-        crest = crest * crest * (3.0F - 2.0F * crest);
-        // A strong but flat part of the trail is still water, not a carpet of white foam.
-        float steepness = clamp((slope - 0.5F) / 3.5F, 0.0F, 1.0F);
-        steepness = steepness * steepness * (3.0F - 2.0F * steepness);
-        return SHADER_FOAM_ALPHA * crest * steepness * Config.waterWakeAlpha;
+    private static float sampleFoamDensity(float wave) {
+        // The stock color table is white between sigmoid values 0.6 and 0.7, or heights
+        // 4.05 and 8.47. Soften those edges while keeping the higher blue band as water.
+        float enter = clamp((wave - 2.8F) / 2.5F, 0.0F, 1.0F);
+        float leave = clamp((9.72F - wave) / 2.5F, 0.0F, 1.0F);
+        return SHADER_FOAM_DENSITY * enter * enter * (3.0F - 2.0F * enter) * leave * leave * (3.0F - 2.0F * leave);
     }
 
     private static int sampleColor(float wave, float tintR, float tintG, float tintB, float ageFade) {
@@ -1025,35 +1065,11 @@ public final class WakeTrailManager {
             Arrays.fill(initialValues, 0.0F);
         }
 
-        void tick(WakeNode north, WakeNode south, WakeNode east, WakeNode west) {
-            // Snapshot only the displayed field; the simulation and entity impulses stay unchanged.
+        void prepareTick() {
+            // Snapshot the display before staging this tick's impulses for all nodes.
             for (int i = 0; i < NODE_CELLS; i++) {
                 previousRenderWave[i] = (u[0][i] + u[1][i] + u[2][i]) / 3.0F;
             }
-            float alpha = (float) Math.pow(WAVE_PROPAGATION_FACTOR * 16.0F / 20.0F, 2.0D);
-            float beta = (float) (Math.log(10.0D * WAVE_DECAY_FACTOR + 10.0D) / Math.log(20.0D));
-
-            for (int i = 2; i >= 1; i--) {
-                float[] state = u[i];
-                if (north != null) {
-                    System.arraycopy(north.u[i], index(0, NODE_RES), state, index(0, 0), NODE_GRID);
-                }
-                if (south != null) {
-                    System.arraycopy(south.u[i], index(0, 1), state, index(0, NODE_RES + 1), NODE_GRID);
-                }
-                for (int z = 0; z < NODE_RES + 2; z++) {
-                    if (east == null && west == null) {
-                        break;
-                    }
-                    if (east != null) {
-                        state[index(NODE_RES + 1, z)] = east.u[i][index(1, z)];
-                    }
-                    if (west != null) {
-                        state[index(0, z)] = west.u[i][index(NODE_RES, z)];
-                    }
-                }
-            }
-
             float[] current = u[0];
             float[] previous = u[1];
             float[] older = u[2];
@@ -1066,6 +1082,25 @@ public final class WakeTrailManager {
                     previous[index] = current[index];
                 }
             }
+        }
+
+        void tick(WakeNode north, WakeNode south, WakeNode east, WakeNode west, WakeNode northwest, WakeNode northeast,
+            WakeNode southwest, WakeNode southeast) {
+            float alpha = (float) Math.pow(WAVE_PROPAGATION_FACTOR * 16.0F / 20.0F, 2.0D);
+            float beta = (float) (Math.log(10.0D * WAVE_DECAY_FACTOR + 10.0D) / Math.log(20.0D));
+            float[] current = u[0];
+            float[] previous = u[1];
+            float[] older = u[2];
+            for (int i = 1; i <= NODE_RES; i++) {
+                previous[index(i, 0)] = neighborValue(north, i, NODE_RES);
+                previous[index(i, NODE_RES + 1)] = neighborValue(south, i, 1);
+                previous[index(0, i)] = neighborValue(west, NODE_RES, i);
+                previous[index(NODE_RES + 1, i)] = neighborValue(east, 1, i);
+            }
+            previous[index(0, 0)] = neighborValue(northwest, NODE_RES, NODE_RES);
+            previous[index(NODE_RES + 1, 0)] = neighborValue(northeast, 1, NODE_RES);
+            previous[index(0, NODE_RES + 1)] = neighborValue(southwest, NODE_RES, 1);
+            previous[index(NODE_RES + 1, NODE_RES + 1)] = neighborValue(southeast, 1, 1);
 
             for (int z = 1; z < NODE_RES + 1; z++) {
                 for (int x = 1; x < NODE_RES + 1; x++) {
@@ -1084,6 +1119,10 @@ public final class WakeTrailManager {
                     current[index] *= beta;
                 }
             }
+        }
+
+        private static float neighborValue(WakeNode node, int x, int z) {
+            return node == null ? 0.0F : node.u[1][index(x, z)];
         }
 
         float getWave(int x, int z) {

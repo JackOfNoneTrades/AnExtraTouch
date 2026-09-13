@@ -54,6 +54,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Particular](https://github.com/Chailotl/particular). Source of cascade, splash, ripple, chest bubble, and cake particle effects and textures.
 * [Wakes](https://github.com/Goby56/wakes). Source of the water trail effect and textures.
 * [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) by Verph. Source of the shore wave effect, textures, and sounds.
+* [Crest Ocean System](https://github.com/wave-harmonic/crest). Coastal foam simulation and shared coastal/wake foam appearance and texture.
 * [Et Futurum Requiem](https://github.com/Roadhog360/Et-Futurum-Requiem).
 * [Loading Progress Bar](https://github.com/jbredwards/Loading-Progress-Bar). Mixin port thanks to [kotmatross28729](https://github.com/kotmatross28729).
 * [GT:NH buildscript](https://github.com/GTNewHorizons/ExampleMod1.7.10).
@@ -69,6 +70,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 * [Shoulder Surfing code is licensed under MIT](https://github.com/Exopandora/ShoulderSurfing/blob/master/LICENSE)
 * [Particular assets and code are licensed under LGPL-3.0](https://github.com/Chailotl/particular/blob/master/LICENSE).
 * [Wakes assets and code are licensed under GPL-3.0](https://github.com/Goby56/wakes/blob/main/LICENSE).
+* [Crest foam code and texture are licensed under MIT](https://github.com/wave-harmonic/crest/blob/db0658ff0b2e93e4a9e28cc2867509658b0ecc00/LICENSE).
 * [Coastal Waves](https://www.curseforge.com/minecraft/mc-mods/coastal-waves) assets and code are copyright Verph and licensed under BSD 2-Clause. `Waves-1.21.x-1.6.1.jar` metadata contains the BSD 2 license (`license = "BSD 2"`).
 * [Et Futurum Requiem code is licensed under LGPL-3.0](https://github.com/Roadhog360/Et-Futurum-Requiem/blob/master/LICENSE).
 * [Loading Progress Bar code is licensed under MIT](https://github.com/jbredwards/Loading-Progress-Bar/blob/1.7.10/LICENSE)
