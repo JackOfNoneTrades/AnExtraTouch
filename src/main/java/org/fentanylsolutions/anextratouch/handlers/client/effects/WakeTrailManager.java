@@ -304,6 +304,9 @@ public final class WakeTrailManager {
 
             Entity entity = (Entity) entry;
             if (!shouldTrack(entity)) {
+                // Riding interrupts the trail. Dismounting must start fresh at the new position,
+                // without joining it to the last swimming position before boarding.
+                trackers.remove(entity);
                 continue;
             }
 
