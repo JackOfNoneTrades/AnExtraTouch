@@ -34,7 +34,7 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.204:dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.206:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.139-GTNH:dev")
     devOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.13:dev")
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
@@ -58,7 +58,7 @@ dependencies {
     implementation (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
     //compileOnly (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
     implementation("com.github.GTNewHorizons:GTNHLib:0.11.48:dev")
-    implementation("org.fentanylsolutions.fentlib:FentLib:0.0.55:dev")
+    implementation("org.fentanylsolutions.fentlib:FentLib:04136bd-snapshot:dev")
 
     //implementation(rfg.deobf("curse.maven:thermal-foundation-222880:2388752"))
     //implementation(rfg.deobf("curse.maven:cofh-core-69162:2388750"))
