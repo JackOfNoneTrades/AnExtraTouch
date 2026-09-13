@@ -20,7 +20,11 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
     name = "An Extra Touch",
     acceptedMinecraftVersions = "[1.7.10]",
     acceptableRemoteVersions = "*",
-    guiFactory = "org.fentanylsolutions.anextratouch.gui.GuiFactory")
+    guiFactory = "org.fentanylsolutions.anextratouch.gui.GuiFactory",
+    customProperties = { @Mod.CustomProperty(k = "license", v = "LGPLv3"),
+        @Mod.CustomProperty(k = "issueTrackerUrl", v = "https://github.com/JackOfNoneTrades/AnExtraTouch/issues"),
+        @Mod.CustomProperty(k = "iconFile", v = "assets/anextratouch/logo.png"),
+        @Mod.CustomProperty(k = "backgroundFile", v = "assets/anextratouch/background.png") })
 public class AnExtraTouch {
 
     public static final String MODID = "anextratouch";
