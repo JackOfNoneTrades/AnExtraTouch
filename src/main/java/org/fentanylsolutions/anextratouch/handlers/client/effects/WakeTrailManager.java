@@ -52,6 +52,7 @@ public final class WakeTrailManager {
     private static final int FLOOD_FILL_TICK_DELAY = 2;
     private static final float SURFACE_OFFSET = 0.014F;
     private static final float SHADER_WAKE_NORMAL_SCALE = 0.08F;
+    private static final float SHADER_WAKE_MAX_SLOPE = 0.12F;
     private static final float SHADER_FOAM_DENSITY = 0.45F;
     private static final int RENDER_GRID = NODE_RES + 1;
     private static final int RENDER_VERTEX_STRIDE = 5; // normal XYZ, foam density, wave activity
@@ -127,15 +128,24 @@ public final class WakeTrailManager {
         return !nodes.isEmpty();
     }
 
-    public void renderInWorldPass(float partialTicks) {
+    public boolean renderShaderWaterInWorldPass(float partialTicks) {
+        if (!Config.waterWakeShaderWater) return false;
+        return renderPasses(partialTicks, true, false);
+    }
+
+    public void renderInWorldPass(float partialTicks, boolean shaderWaterRendered) {
+        renderPasses(partialTicks, false, shaderWaterRendered);
+    }
+
+    private boolean renderPasses(float partialTicks, boolean waterPass, boolean shaderWaterRendered) {
         if (!Config.waterWakesEnabled || nodes.isEmpty()) {
-            return;
+            return false;
         }
 
         Minecraft mc = Minecraft.getMinecraft();
         Entity viewer = mc.renderViewEntity;
         if (viewer == null || mc.theWorld == null) {
-            return;
+            return false;
         }
 
         double camX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * partialTicks;
@@ -154,37 +164,40 @@ public final class WakeTrailManager {
             GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glEnable(GL11.GL_ALPHA_TEST);
             GL11.glAlphaFunc(GL11.GL_GREATER, 0.01F);
-            GL11.glDepthMask(false);
+            // The water material participates in the real translucent surface depth. Only foam
+            // uses the temporary opaque depth snapshot, with depth writes disabled.
+            GL11.glDepthMask(waterPass);
 
             mc.entityRenderer.enableLightmap((double) partialTicks);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.getTextureManager()
                 .bindTexture(TextureMap.locationBlocksTexture);
-            AngelicaShaderHelper.WaterRenderScope waterScope = Config.waterWakeShaderWater
-                ? AngelicaShaderHelper.beginWaterRendering()
-                : null;
-            if (waterScope != null) {
+            if (waterPass) {
+                AngelicaShaderHelper.WaterRenderScope waterScope = AngelicaShaderHelper.beginWaterRendering();
+                if (waterScope == null) return false;
                 try {
                     GL11.glShadeModel(GL11.GL_SMOOTH);
                     renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.WATER, true);
+                    return true;
                 } finally {
                     waterScope.close();
                 }
             }
 
-            AngelicaShaderHelper.WaterRenderScope overlayScope = waterScope == null ? null
+            AngelicaShaderHelper.WaterRenderScope overlayScope = !shaderWaterRendered ? null
                 : AngelicaShaderHelper.beginOverlayRendering();
             try {
-                if (waterScope != null) {
+                if (shaderWaterRendered) {
                     prepareFoamTexture(mc, partialTicks);
                     renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.FOAM, true);
                 }
                 GL11.glDisable(GL11.GL_TEXTURE_2D);
-                renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.REGULAR, waterScope != null);
+                renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.REGULAR, shaderWaterRendered);
             } finally {
                 if (overlayScope != null) overlayScope.close();
             }
             GL11.glEnable(GL11.GL_TEXTURE_2D);
+            return shaderWaterRendered;
         } finally {
             mc.entityRenderer.disableLightmap((double) partialTicks);
             GL11.glDepthMask(true);
@@ -691,8 +704,15 @@ public final class WakeTrailManager {
                     * Config.waterWakeAlpha
                     * fade
                     * coverage;
-                float nx = clamp((a + c - b - d) * strength, -0.45F, 0.45F);
-                float nz = clamp((a + b - c - d) * strength, -0.45F, 0.45F);
+                float nx = (a + c - b - d) * strength;
+                float nz = (a + b - c - d) * strength;
+                // These normals perturb a flat surface, not displaced wave geometry. Steep normals
+                // can send the pack's reflection rays below the water into its opaque terrain buffer,
+                // making the wake look like a hole. Bound the total slope smoothly in every direction.
+                float slopeScale = SHADER_WAKE_MAX_SLOPE
+                    / (float) Math.sqrt(SHADER_WAKE_MAX_SLOPE * SHADER_WAKE_MAX_SLOPE + nx * nx + nz * nz);
+                nx *= slopeScale;
+                nz *= slopeScale;
                 float inverseLength = 1.0F / (float) Math.sqrt(nx * nx + 1.0F + nz * nz);
                 int vertex = (z * RENDER_GRID + x) * RENDER_VERTEX_STRIDE;
                 renderVertices[vertex] = nx * inverseLength;

@@ -477,10 +477,13 @@ public abstract class MixinEntityRenderer {
             shift = Shift.AFTER),
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
     private void anextratouch$renderWakesAfterWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        // Water-material wakes must share the real water depth, including their own depth writes.
+        // Swapping to opaque depth here would let submerged wake surfaces overwrite visible water.
+        boolean shaderWaterRendered = WakeTrailManager.INSTANCE.renderShaderWaterInWorldPass(partialTicks);
         AngelicaShaderHelper.WaterRenderScope depth = AngelicaShaderHelper.beginSurfaceDepth();
         try {
             WaterWaveManager.INSTANCE.renderInWorldPass(partialTicks);
-            WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks);
+            WakeTrailManager.INSTANCE.renderInWorldPass(partialTicks, shaderWaterRendered);
         } finally {
             if (depth != null) depth.close();
         }
