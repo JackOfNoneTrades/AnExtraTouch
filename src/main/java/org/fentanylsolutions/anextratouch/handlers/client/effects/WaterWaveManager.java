@@ -29,6 +29,7 @@ import net.minecraftforge.event.world.ChunkEvent;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.util.CoastalLandmass;
 import org.fentanylsolutions.fentlib.util.sound.SoundUtil;
 import org.lwjgl.opengl.GL11;
 
@@ -322,15 +323,15 @@ public final class WaterWaveManager {
 
     private ShoreInfo selectCloserShore(World world, int waterX, int waterY, int waterZ, int shoreX, int shoreZ,
         ShoreInfo current, double currentDistanceSq) {
-        int shoreY = findShoreY(world, shoreX, waterY, shoreZ);
-        if (shoreY < 0) {
-            return current;
-        }
-
         double dx = ((double) shoreX + 0.5D) - ((double) waterX + 0.5D);
         double dz = ((double) shoreZ + 0.5D) - ((double) waterZ + 0.5D);
         double distanceSq = dx * dx + dz * dz;
         if (distanceSq >= currentDistanceSq) {
+            return current;
+        }
+
+        int shoreY = findShoreY(world, shoreX, waterY, shoreZ);
+        if (shoreY < 0) {
             return current;
         }
 
@@ -347,20 +348,33 @@ public final class WaterWaveManager {
             return -1;
         }
 
-        if (isShoreBlock(world, x, waterY, z) && hasAdjacentWaveWater(world, x, waterY, z, waterY)) {
-            return waterY;
-        }
-        if (isShoreBlock(world, x, waterY + 1, z) && hasAdjacentWaveWater(world, x, waterY + 1, z, waterY)) {
-            return waterY + 1;
-        }
-
-        return -1;
+        int shoreY = isShoreBlock(world, x, waterY, z) ? waterY
+            : isShoreBlock(world, x, waterY + 1, z) ? waterY + 1 : -1;
+        if (shoreY < 0 || !hasAdjacentWaveWater(world, x, waterY, z) || !hasCoastalLandmass(world, x, waterY, z))
+            return -1;
+        return shoreY;
     }
 
-    private boolean hasAdjacentWaveWater(World world, int x, int y, int z, int waterY) {
+    private boolean hasAdjacentWaveWater(World world, int x, int waterY, int z) {
         return isWaveWater(world, x - 1, waterY, z) || isWaveWater(world, x + 1, waterY, z)
             || isWaveWater(world, x, waterY, z - 1)
             || isWaveWater(world, x, waterY, z + 1);
+    }
+
+    private static boolean hasCoastalLandmass(World world, int x, int waterY, int z) {
+        int landMask = 0;
+        for (int dz = -2; dz <= 2; dz++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                if (isLandColumn(world, x + dx, waterY, z + dz)) {
+                    landMask |= 1 << ((dz + 2) * 5 + dx + 2);
+                }
+            }
+        }
+        return CoastalLandmass.isCoast(landMask);
+    }
+
+    private static boolean isLandColumn(World world, int x, int waterY, int z) {
+        return isShoreBlock(world, x, waterY, z) || isShoreBlock(world, x, waterY + 1, z);
     }
 
     private static boolean isShoreBlock(World world, int x, int y, int z) {
@@ -905,7 +919,17 @@ public final class WaterWaveManager {
                 playBreakingSound();
             }
 
-            if (distanceToShore <= 1.2D || !isWaveWater(world, blockX, blockY, blockZ)) {
+            boolean hitCoast = distanceToShore <= 1.2D;
+            if (!hitCoast && !isWaveWater(world, blockX, blockY, blockZ)) {
+                if (!isLandColumn(world, blockX, blockY, blockZ)) {
+                    // Missing water or unloaded terrain ends the effect without making a false shore.
+                    dead = true;
+                    return;
+                }
+                // A post can obscure part of a crest without stopping the whole wave as a coastline.
+                hitCoast = hasCoastalLandmass(world, blockX, blockY, blockZ);
+            }
+            if (hitCoast) {
                 reachedShore = true;
                 shoreAge = 0;
             }
