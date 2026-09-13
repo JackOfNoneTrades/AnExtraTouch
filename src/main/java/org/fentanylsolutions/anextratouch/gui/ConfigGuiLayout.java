@@ -111,7 +111,12 @@ final class ConfigGuiLayout {
                     "rainSplashEnabled",
                     "rainSplashVolume",
                     "rainSplashEntityClassList",
-                    "rainSplashEntityClassListIsBlacklist")),
+                    "rainSplashEntityClassListIsBlacklist"),
+                section(
+                    config,
+                    "sounds.dynamic_surroundings",
+                    "dynamic_surroundings",
+                    "muteDynamicSurroundingsAnimalSounds")),
             menu(
                 "water_effects",
                 section(

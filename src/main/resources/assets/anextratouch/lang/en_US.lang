@@ -12,6 +12,7 @@ anextratouch.configgui.menu.entity_effects.wetness=Wetness
 anextratouch.configgui.menu.sounds=Sounds
 anextratouch.configgui.menu.sounds.armor=Armor
 anextratouch.configgui.menu.sounds.rain_footsteps=Rain footsteps
+anextratouch.configgui.menu.sounds.dynamic_surroundings=Dynamic Surroundings
 anextratouch.configgui.menu.water_effects=Water effects
 anextratouch.configgui.menu.water_effects.entry_splashes=Entry splashes
 anextratouch.configgui.menu.water_effects.waterfalls=Waterfalls

@@ -14,6 +14,7 @@ public class Config {
         public static final String footprints = "footprints";
         public static final String breath = "breath";
         public static final String armor = "armor";
+        public static final String dynamicSurroundings = "dynamic_surroundings";
         public static final String wetness = "wetness";
         public static final String debug = "debug";
         public static final String trampling = "trampling";
@@ -79,6 +80,9 @@ public class Config {
     public static String armorDefaultCategory = "heavy";
     public static String[] armorCategoryOverrides = { "etfuturum:elytra;elytra" };
     public static String[] armorSoundEntityWhitelist = { "Player", "Zombie", "Skeleton", "PigZombie" };
+
+    // Dynamic Surroundings
+    public static boolean muteDynamicSurroundingsAnimalSounds = false;
 
     // wetness
     public static boolean wetParticlesEnabled = true;
@@ -526,6 +530,13 @@ public class Config {
                 Categories.armor,
                 armorSoundEntityWhitelist,
                 "Entity classes that play armor sounds. Only entities in this list will have armor accent sounds.");
+
+            // Dynamic Surroundings
+            muteDynamicSurroundingsAnimalSounds = config.getBoolean(
+                "muteDynamicSurroundingsAnimalSounds",
+                Categories.dynamicSurroundings,
+                false,
+                "Mute Dynamic Surroundings ambient animal and insect sounds, including creature growls. Also mutes entire forest, jungle, and plains background recordings to cover embedded calls. Does not mute actual Minecraft mobs, weather, water, or footsteps. Applies immediately when saved; disable to allow these sounds again.");
 
             // wetness
             wetParticlesEnabled = config.getBoolean(
