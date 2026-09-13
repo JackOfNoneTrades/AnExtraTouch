@@ -5,6 +5,7 @@ import net.minecraftforge.common.MinecraftForge;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.ClientHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.DynamicSurroundingsSoundHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.ItemSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.SmoothGuiHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.ThunderSoundHandler;
@@ -79,6 +80,10 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new SoundShakeHandler());
         MinecraftForge.EVENT_BUS.register(DynamicSurroundingsSoundHandler.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new ThunderSoundHandler());
+        ItemSoundHandler.INSTANCE.onConfigReload();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(ItemSoundHandler.INSTANCE);
         DecoupledCameraHandler.registerKeybinding();
     }
 
@@ -95,6 +100,7 @@ public class ClientProxy extends CommonProxy {
         WaterCascadeManager.INSTANCE.onConfigReload();
         WaterWaveManager.INSTANCE.onConfigReload();
         DynamicSurroundingsSoundHandler.INSTANCE.onConfigReload();
+        ItemSoundHandler.INSTANCE.onConfigReload();
     }
 
 }

@@ -95,6 +95,24 @@ final class ConfigGuiLayout {
             menu(
                 "sounds",
                 section(config, "sounds.thunder", "thunder", "thunderSoundsEnabled", "thunderSoundVolume"),
+                menu(
+                    "sounds.items",
+                    section(config, "sounds.items.swing", "item_sounds", "itemSwingSoundsEnabled", "itemSwingVolume"),
+                    section(
+                        config,
+                        "sounds.items.equip",
+                        "item_sounds",
+                        "itemEquipSoundsEnabled",
+                        "itemEquipVolume",
+                        "itemUtilityEquipSoundsEnabled",
+                        "itemBlockEquipSoundsEnabled"),
+                    section(config, "sounds.items.bow", "item_sounds", "itemBowDrawSoundsEnabled", "itemBowDrawVolume"),
+                    section(
+                        config,
+                        "sounds.items.matching",
+                        "item_sounds",
+                        "itemSoundsForOtherEntities",
+                        "itemSoundOverrides")),
                 section(
                     config,
                     "sounds.armor",

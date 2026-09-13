@@ -16,6 +16,7 @@ public class Config {
         public static final String armor = "armor";
         public static final String dynamicSurroundings = "dynamic_surroundings";
         public static final String thunder = "thunder";
+        public static final String itemSounds = "item_sounds";
         public static final String wetness = "wetness";
         public static final String debug = "debug";
         public static final String trampling = "trampling";
@@ -88,6 +89,18 @@ public class Config {
     // thunder
     public static boolean thunderSoundsEnabled = true;
     public static float thunderSoundVolume = 1.0f;
+
+    // item sounds
+    public static boolean itemSwingSoundsEnabled = true;
+    public static float itemSwingVolume = 1.0f;
+    public static boolean itemEquipSoundsEnabled = true;
+    public static float itemEquipVolume = 1.0f;
+    public static boolean itemBowDrawSoundsEnabled = true;
+    public static float itemBowDrawVolume = 0.5f;
+    public static boolean itemSoundsForOtherEntities = true;
+    public static boolean itemUtilityEquipSoundsEnabled = true;
+    public static boolean itemBlockEquipSoundsEnabled = true;
+    public static String[] itemSoundOverrides = {};
 
     // wetness
     public static boolean wetParticlesEnabled = true;
@@ -556,6 +569,64 @@ public class Config {
                 0.0f,
                 1.0f,
                 "Volume multiplier for enhanced thunder, also scaled by Minecraft's Weather volume. Does not change audible range. Set to 0 to mute thunder while thunderSoundsEnabled is enabled.");
+
+            // item sounds
+            itemSwingSoundsEnabled = config.getBoolean(
+                "itemSwingSoundsEnabled",
+                Categories.itemSounds,
+                true,
+                "Play item swing accents, including missed attacks and starting to block. Swings aimed at blocks are excluded.");
+            itemSwingVolume = config.getFloat(
+                "itemSwingVolume",
+                Categories.itemSounds,
+                1.0f,
+                0.0f,
+                1.0f,
+                "Volume multiplier for item swing accents, also scaled by Minecraft's Players volume.");
+            itemEquipSoundsEnabled = config.getBoolean(
+                "itemEquipSoundsEnabled",
+                Categories.itemSounds,
+                true,
+                "Play item selection accents when players change their held item or the local hotbar slot. Durability, stack count, and NBT changes do not trigger sounds.");
+            itemEquipVolume = config.getFloat(
+                "itemEquipVolume",
+                Categories.itemSounds,
+                1.0f,
+                0.0f,
+                1.0f,
+                "Volume multiplier for held-item selection accents, also scaled by Minecraft's Players volume.");
+            itemBowDrawSoundsEnabled = config.getBoolean(
+                "itemBowDrawSoundsEnabled",
+                Categories.itemSounds,
+                true,
+                "Play a drawstring sound when a player begins using an item classified as bow or crossbow. Does not replace the arrow release sound.");
+            itemBowDrawVolume = config.getFloat(
+                "itemBowDrawVolume",
+                Categories.itemSounds,
+                0.5f,
+                0.0f,
+                1.0f,
+                "Bow drawstring volume, also scaled by Minecraft's Players volume.");
+            itemSoundsForOtherEntities = config.getBoolean(
+                "itemSoundsForOtherEntities",
+                Categories.itemSounds,
+                true,
+                "Also play accents for nearby players and swinging mobs. Remote actions depend on animations synchronized by the server.");
+            itemUtilityEquipSoundsEnabled = config.getBoolean(
+                "itemUtilityEquipSoundsEnabled",
+                Categories.itemSounds,
+                true,
+                "Play a generic selection sound for otherwise unclassified items, including buckets and food. Requires itemEquipSoundsEnabled. Explicit none overrides remain silent.");
+            itemBlockEquipSoundsEnabled = config.getBoolean(
+                "itemBlockEquipSoundsEnabled",
+                Categories.itemSounds,
+                true,
+                "Use a block's step sound when selecting an otherwise unclassified block item. Requires itemEquipSoundsEnabled. Explicit category overrides take precedence.");
+            itemSoundOverrides = config.getStringList(
+                "itemSoundOverrides",
+                Categories.itemSounds,
+                new String[0],
+                "Item category overrides: modid:item=category or modid:item@metadata=category. Categories: sword, axe, tool, bow, crossbow, shield, potion, book, utility, none. Example: modid:hammer=axe. Exact metadata wins over whole-item rules; last duplicate wins. Damageable items use metadata 0 so wear does not change categories. none silences the item. Changes apply when saved.");
 
             // wetness
             wetParticlesEnabled = config.getBoolean(

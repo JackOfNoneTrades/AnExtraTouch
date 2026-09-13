@@ -4,8 +4,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.handlers.client.ItemSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.ScreenShakeManager;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,6 +21,17 @@ public abstract class MixinEntityLivingBase {
     private long anextratouch$shakeHandle;
     @Unique
     private long anextratouch$fallShakeHandle;
+
+    @Inject(
+        method = "swingItem",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/entity/EntityLivingBase;swingProgressInt:I",
+            opcode = Opcodes.PUTFIELD,
+            shift = At.Shift.AFTER))
+    private void anextratouch$onAcceptedItemSwing(CallbackInfo ci) {
+        ItemSoundHandler.onSwing((EntityLivingBase) (Object) this);
+    }
 
     @Inject(method = "swingItem", at = @At("RETURN"))
     private void anextratouch$onSwingItem(CallbackInfo ci) {

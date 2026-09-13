@@ -1,0 +1,14 @@
+Item sound assets bundled from Dynamic Surroundings Fabric.
+
+Source repository: https://github.com/OreCruncher/DynamicSurroundingsFabric
+Pinned source commit: 0d352c7e57bbd39786defdba355156a5bdb850f4
+Original sound paths: common/src/main/resources/assets/dsurround/sounds
+
+The upstream repository provides a general credits statement for its sound
+assets (public domain or Creative Commons restrictions), but does not identify
+individual sources or licenses for the item recordings included here. No
+individual attribution is inferred by this project.
+
+Files were copied unchanged and their event IDs were remapped from dsurround
+to anextratouch. See licenses/dynamic-surroundings.txt for the upstream MIT
+license notice.

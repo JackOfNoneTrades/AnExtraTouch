@@ -148,6 +148,134 @@
       "anextratouch:waves/wave_10"
     ]
   },
+  "item.bow.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/bow_draw"
+    ]
+  },
+  "item.bow.pull": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/bow_pull1",
+      "anextratouch:items/bow_pull2",
+      "anextratouch:items/bow_pull3",
+      "anextratouch:items/bow_pull4",
+      "anextratouch:items/bow_pull5"
+    ]
+  },
+  "item.bow.loose": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/bow_loose1",
+      "anextratouch:items/bow_loose2",
+      "anextratouch:items/bow_loose3",
+      "anextratouch:items/bow_loose4"
+    ]
+  },
+  "item.blunt.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/blunt_draw"
+    ]
+  },
+  "item.blunt.swing": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/blunt_swing1",
+      "anextratouch:items/blunt_swing2",
+      "anextratouch:items/blunt_swing3",
+      "anextratouch:items/blunt_swing4",
+      "anextratouch:items/blunt_swing5"
+    ]
+  },
+  "item.sword.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/sword_draw"
+    ]
+  },
+  "item.sword.swing": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/sword_swing1",
+      "anextratouch:items/sword_swing2",
+      "anextratouch:items/sword_swing3",
+      "anextratouch:items/sword_swing4",
+      "anextratouch:items/sword_swing5",
+      "anextratouch:items/sword_swing6",
+      "anextratouch:items/sword_swing7",
+      "anextratouch:items/sword_swing8",
+      "anextratouch:items/sword_swing9"
+    ]
+  },
+  "item.tool.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/tool_draw"
+    ]
+  },
+  "item.tool.swing": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/swoosh1",
+      "anextratouch:items/swoosh2",
+      "anextratouch:items/swoosh3",
+      "anextratouch:items/swoosh4",
+      "anextratouch:items/swoosh5",
+      "anextratouch:items/swoosh6",
+      "anextratouch:items/swoosh7"
+    ]
+  },
+  "item.utility.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/utility_draw"
+    ]
+  },
+  "item.shield.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/tool_draw"
+    ]
+  },
+  "item.shield.use": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/tool_draw"
+    ]
+  },
+  "item.potion.equip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/potion_slosh1",
+      "anextratouch:items/potion_slosh2",
+      "anextratouch:items/potion_slosh3",
+      "anextratouch:items/potion_slosh4"
+    ]
+  },
+  "item.shield.swing": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:items/tool_draw"
+    ]
+  },
+  "pageflip": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:ambient/book/pageflip1",
+      "anextratouch:ambient/book/pageflip2",
+      "anextratouch:ambient/book/pageflip3"
+    ]
+  },
+  "pageflipheavy": {
+    "category": "player",
+    "sounds": [
+      "anextratouch:ambient/book/pageflipheavy1",
+      "anextratouch:ambient/book/pageflipheavy2",
+      "anextratouch:ambient/book/pageflipheavy3"
+    ]
+  },
   "weather.thunder": {
     "category": "weather",
     "sounds": [
