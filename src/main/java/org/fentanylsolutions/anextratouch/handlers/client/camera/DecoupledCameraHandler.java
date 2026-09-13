@@ -83,6 +83,7 @@ public final class DecoupledCameraHandler {
     private static float aimTransition; // 0.0 = third person, 1.0 = first person
     private static float prevAimTransition;
     private static boolean aimFirstPersonActive; // true when thirdPersonView has been switched to 0
+    private static boolean aimFirstPersonSuppressed;
     private static int savedThirdPersonView = -1;
 
     // Camera world position (extracted from GL modelview matrix after orientCamera)
@@ -111,6 +112,15 @@ public final class DecoupledCameraHandler {
 
     public static void registerKeybinding() {
         ClientRegistry.registerKeyBinding(FREE_LOOK_KEY);
+    }
+
+    /** A manual perspective choice cancels automatic aiming until the current aiming action ends. */
+    public static void onManualPerspectiveChange() {
+        aimFirstPersonSuppressed |= aiming || aimFirstPersonActive || aimTransition > 0f;
+        aimFirstPersonActive = false;
+        savedThirdPersonView = -1;
+        aimTransition = 0f;
+        prevAimTransition = 0f;
     }
 
     /**
@@ -205,6 +215,12 @@ public final class DecoupledCameraHandler {
             shouldBeActive = false;
         }
 
+        // Check even outside shoulder view, since movement handling stops updating aiming there.
+        if (aimFirstPersonSuppressed
+            && (!(entity instanceof EntityPlayerSP) || !computeAiming((EntityPlayerSP) entity))) {
+            aimFirstPersonSuppressed = false;
+        }
+
         // Detect entity change -> reset
         if (entity != null) {
             int entityId = entity.getEntityId();
@@ -284,7 +300,7 @@ public final class DecoupledCameraHandler {
 
         // Aim-to-first-person transition
         prevAimTransition = aimTransition;
-        float target = (aiming && Config.decoupledCameraAimFirstPerson) ? 1.0f : 0.0f;
+        float target = (aiming && Config.decoupledCameraAimFirstPerson && !aimFirstPersonSuppressed) ? 1.0f : 0.0f;
         float speed = 1.0f / Math.max(1, Config.decoupledCameraAimTransitionTicks);
         if (aimTransition < target) {
             aimTransition = Math.min(aimTransition + speed, target);
@@ -1109,6 +1125,7 @@ public final class DecoupledCameraHandler {
             ShoulderSurfingCompat.setShoulderSurfing(true);
         }
         aimFirstPersonActive = false;
+        aimFirstPersonSuppressed = false;
         savedThirdPersonView = -1;
     }
 

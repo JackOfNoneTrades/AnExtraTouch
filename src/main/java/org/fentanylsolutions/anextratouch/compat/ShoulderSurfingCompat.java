@@ -6,6 +6,8 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 
+import org.fentanylsolutions.anextratouch.Config;
+
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -24,6 +26,12 @@ public class ShoulderSurfingCompat {
 
     public static boolean isShoulderSurfingActive() {
         return isAvailable() && ShoulderSurfingBridge.isActive();
+    }
+
+    public static void cyclePerspective() {
+        if (isAvailable()) {
+            ShoulderSurfingBridge.cyclePerspective();
+        }
     }
 
     public static boolean shouldUseStaticShoulderRay() {
@@ -105,6 +113,21 @@ public class ShoulderSurfingCompat {
     // Inner class only loaded by the JVM when first referenced,
     // which only happens after isAvailable() confirms SS is on the classpath.
     private static class ShoulderSurfingBridge {
+
+        static void cyclePerspective() {
+            com.teamderpy.shouldersurfing.config.Perspective current = com.teamderpy.shouldersurfing.config.Perspective
+                .current();
+            com.teamderpy.shouldersurfing.config.Perspective next = Config.simplePerspectiveToggle
+                ? (current == com.teamderpy.shouldersurfing.config.Perspective.FIRST_PERSON
+                    ? com.teamderpy.shouldersurfing.config.Perspective.SHOULDER_SURFING
+                    : com.teamderpy.shouldersurfing.config.Perspective.FIRST_PERSON)
+                : current.next();
+            com.teamderpy.shouldersurfing.client.ShoulderInstance.getInstance()
+                .changePerspective(next);
+            if (com.teamderpy.shouldersurfing.config.Config.CLIENT.doRememberLastPerspective()) {
+                com.teamderpy.shouldersurfing.config.Config.CLIENT.setDefaultPerspective(next);
+            }
+        }
 
         static boolean isActive() {
             return com.teamderpy.shouldersurfing.client.ShoulderInstance.getInstance()
