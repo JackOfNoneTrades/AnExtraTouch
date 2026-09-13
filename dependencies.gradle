@@ -36,7 +36,7 @@
 dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.204:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.139-GTNH:dev")
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.13:dev")
+    devOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.13:dev")
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
     runtimeOnlyNonPublishable(rfg.deobf("com.mikanon:cristalinewater:1.5"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:bugtorch:1.2.14"))
@@ -48,7 +48,7 @@ dependencies {
     runtimeOnlyNonPublishable("dev.dediamondpro.resourcify:VintageResourcify:1.0.5:dev") {
         exclude group: "org.fentanylsolutions.fentlib", module: "FentLib"
     }
-    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:euphoria-patches:1.10.0-r5.9-forge1.7.10"))
+    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:euphoria-patches:1.10.1-r5.9.1-forge1.7.10"))
 
     devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.58-GTNH:dev")
     devOnlyNonPublishable("com.hfstudio:doabarrelroll:1.1.0:dev")

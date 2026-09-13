@@ -99,6 +99,7 @@ public class Config {
 
     // water splash
     public static boolean waterSplashEnabled = true;
+    public static boolean waterSplashShaderWater = true;
     public static int waterSplashFallbackColor = 0x3F76E4;
     public static String[] waterSplashEntityBlacklist = { "EntityXPOrb" };
     public static boolean waterCascadeEnabled = true;
@@ -114,6 +115,7 @@ public class Config {
     public static float waterRippleAlpha = 0.8f;
     public static float rainRippleDensity = 1.0f;
     public static boolean waterWakesEnabled = true;
+    public static boolean waterWakeShaderWater = true;
     public static float waterWakeAlpha = 1.0f;
     public static float waterWakeDensity = 1.0f;
 
@@ -609,6 +611,11 @@ public class Config {
                 Categories.waterSplash,
                 waterSplashEnabled,
                 "Enable enhanced splashes when entities enter water, lava or other liquids. Swimming entities produce wakes instead.");
+            waterSplashShaderWater = config.getBoolean(
+                "waterSplashShaderWater",
+                Categories.waterSplash,
+                waterSplashShaderWater,
+                "Experimental: use the active Angelica shader's water shading for water entry splashes. Disable to keep regular AET rendering. Appearance and opacity depend on the shader pack. Lava and other fluids keep regular rendering.");
             waterSplashEntityBlacklist = config.getStringList(
                 "waterSplashEntityBlacklist",
                 Categories.waterSplash,
@@ -697,13 +704,18 @@ public class Config {
                 Categories.waterSplash,
                 waterWakesEnabled,
                 "Enable surface trails behind moving entities, with additional outgoing ripples on each swimming stroke.");
+            waterWakeShaderWater = config.getBoolean(
+                "waterWakeShaderWater",
+                Categories.waterSplash,
+                waterWakeShaderWater,
+                "Experimental: use the active Angelica shader's water shading for water wakes. Disable to keep regular AET rendering. Appearance and opacity depend on the shader pack. Other fluids keep regular rendering.");
             waterWakeAlpha = config.getFloat(
                 "waterWakeAlpha",
                 Categories.waterSplash,
                 waterWakeAlpha,
                 0.0f,
                 1.0f,
-                "Opacity for Wakes-style surface trails.");
+                "Opacity for Wakes-style surface trails. With shader water rendering, scales ripple shading strength instead; the shader controls final opacity.");
             waterWakeDensity = config.getFloat(
                 "waterWakeDensity",
                 Categories.waterSplash,

@@ -2,6 +2,8 @@ package org.fentanylsolutions.anextratouch.handlers.client.effects;
 
 import java.lang.reflect.Method;
 
+import org.fentanylsolutions.anextratouch.AnExtraTouch;
+
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -13,8 +15,36 @@ final class AngelicaShaderHelper {
     private static boolean irisApiLookupComplete;
     private static Object irisApi;
     private static Method isShaderPackInUseMethod;
+    private static boolean waterRenderingUnavailable;
 
     private AngelicaShaderHelper() {}
+
+    interface WaterRenderScope {
+
+        void close();
+    }
+
+    static WaterRenderScope beginWaterRendering() {
+        return beginRendering(true);
+    }
+
+    static WaterRenderScope beginOverlayRendering() {
+        return beginRendering(false);
+    }
+
+    private static WaterRenderScope beginRendering(boolean waterMaterial) {
+        if (waterRenderingUnavailable || !isShaderPackInUse()) {
+            return null;
+        }
+        try {
+            // Keep optional Angelica types in a separate class so AET also loads without it.
+            return waterMaterial ? AngelicaWaterRenderer.begin() : AngelicaWaterRenderer.beginOverlay();
+        } catch (RuntimeException | LinkageError e) {
+            waterRenderingUnavailable = true;
+            AnExtraTouch.LOG.warn("Angelica water rendering is unavailable; using regular water effects", e);
+            return null;
+        }
+    }
 
     static boolean isShaderPackInUse() {
         if (!isAngelicaLoaded()) {

@@ -14,7 +14,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.Fluid;
@@ -49,6 +51,12 @@ public final class WakeTrailManager {
     private static final int FLOOD_FILL_DISTANCE = 2;
     private static final int FLOOD_FILL_TICK_DELAY = 2;
     private static final float SURFACE_OFFSET = 0.014F;
+    private static final float SHADER_WAKE_NORMAL_SCALE = 0.08F;
+    private static final float SHADER_FOAM_START = 2.0F;
+    private static final float SHADER_FOAM_FULL = 9.0F;
+    private static final float SHADER_FOAM_ALPHA = 0.6F;
+    private static final int RENDER_GRID = NODE_RES + 1;
+    private static final int RENDER_VERTEX_STRIDE = 5; // normal XYZ, foam alpha, wave activity
     private static final float INITIAL_STRENGTH = 20.0F;
     private static final float WAVE_PROPAGATION_FACTOR = 0.95F;
     private static final float WAVE_DECAY_FACTOR = 0.5F;
@@ -69,6 +77,16 @@ public final class WakeTrailManager {
     private final WeakHashMap<Entity, Tracker> trackers = new WeakHashMap<Entity, Tracker>();
     private final List<WakeNode> floodNodes = new ArrayList<WakeNode>();
     private final ArrayDeque<WakeNode> nodePool = new ArrayDeque<WakeNode>(MAX_NODES);
+    // Reused for each node, including samples from neighboring nodes at shared edges.
+    private final float[] renderSamples = new float[NODE_CELLS];
+    private final float[] renderVertices = new float[RENDER_GRID * RENDER_GRID * RENDER_VERTEX_STRIDE];
+
+    private enum WakeRenderPass {
+        REGULAR,
+        WATER,
+        FOAM
+    }
+
     private final EtFuturumBoatCompat.RowingTrailConsumer rowingTrailConsumer = new EtFuturumBoatCompat.RowingTrailConsumer() {
 
         @Override
@@ -136,30 +154,91 @@ public final class WakeTrailManager {
             GL11.glDepthMask(false);
 
             mc.entityRenderer.enableLightmap((double) partialTicks);
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
-
-            WakeRenderBatch batch = new WakeRenderBatch(Tessellator.instance);
-            try {
-                ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
-                    .fastIterator();
-                while (iterator.hasNext()) {
-                    WakeNode node = iterator.next()
-                        .getValue();
-                    if (node.world == mc.theWorld) {
-                        renderNode(batch, node, camX, camY, camZ, partialTicks);
-                    }
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            mc.getTextureManager()
+                .bindTexture(TextureMap.locationBlocksTexture);
+            AngelicaShaderHelper.WaterRenderScope waterScope = Config.waterWakeShaderWater
+                ? AngelicaShaderHelper.beginWaterRendering()
+                : null;
+            if (waterScope != null) {
+                try {
+                    GL11.glShadeModel(GL11.GL_SMOOTH);
+                    renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.WATER, true);
+                } finally {
+                    waterScope.close();
                 }
-            } finally {
-                batch.finish();
             }
 
+            AngelicaShaderHelper.WaterRenderScope overlayScope = waterScope == null ? null
+                : AngelicaShaderHelper.beginOverlayRendering();
+            try {
+                if (waterScope != null) {
+                    prepareFoamTexture(mc, partialTicks);
+                    renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.FOAM, true);
+                }
+                GL11.glDisable(GL11.GL_TEXTURE_2D);
+                renderNodes(mc.theWorld, camX, camY, camZ, partialTicks, WakeRenderPass.REGULAR, waterScope != null);
+            } finally {
+                if (overlayScope != null) overlayScope.close();
+            }
             GL11.glEnable(GL11.GL_TEXTURE_2D);
-            mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
+            mc.entityRenderer.disableLightmap((double) partialTicks);
             GL11.glDepthMask(true);
             GL11.glPopAttrib();
             mc.getTextureManager()
                 .bindTexture(TextureMap.locationBlocksTexture);
+        }
+    }
+
+    private void prepareFoamTexture(Minecraft mc, float partialTicks) {
+        WakeFoamTexture.beginFrame(mc);
+        ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+            .fastIterator();
+        while (iterator.hasNext()) {
+            WakeNode node = iterator.next()
+                .getValue();
+            node.foamTile = -1;
+            if (node.world != mc.theWorld
+                || WetnessFluidHelper.getInteractableFluid(node.world, node.x, node.y, node.z) != FluidRegistry.WATER)
+                continue;
+            prepareRenderVertices(node, partialTicks);
+            node.foamTile = WakeFoamTexture.addTile(node.x, node.z, renderVertices, RENDER_GRID, RENDER_VERTEX_STRIDE);
+        }
+        WakeFoamTexture.uploadAndBind(mc);
+    }
+
+    private void renderNodes(World world, double camX, double camY, double camZ, float partialTicks,
+        WakeRenderPass pass, boolean shaderWaterRendered) {
+        WakeRenderBatch batch = new WakeRenderBatch(Tessellator.instance, pass);
+        try {
+            ObjectIterator<Long2ObjectMap.Entry<WakeNode>> iterator = nodes.long2ObjectEntrySet()
+                .fastIterator();
+            while (iterator.hasNext()) {
+                WakeNode node = iterator.next()
+                    .getValue();
+                if (node.world != world) continue;
+                boolean water = shaderWaterRendered
+                    ? WetnessFluidHelper.getInteractableFluid(world, node.x, node.y, node.z) == FluidRegistry.WATER
+                    : false;
+                if (pass == WakeRenderPass.REGULAR ? shaderWaterRendered && water : !water) continue;
+                if (pass == WakeRenderPass.FOAM && node.foamTile < 0) continue;
+                if (pass != WakeRenderPass.REGULAR) {
+                    batch.setBrightness(world.getLightBrightnessForSkyBlocks(node.x, node.y + 1, node.z, 0));
+                    batch.waterTint = Blocks.water.colorMultiplier(world, node.x, node.y, node.z);
+                }
+                if (pass == WakeRenderPass.FOAM) {
+                    batch.addFoamNode(
+                        node.x - camX,
+                        node.surfaceY + SURFACE_OFFSET + 0.001D - camY,
+                        node.z - camZ,
+                        node.foamTile);
+                } else {
+                    renderNode(batch, node, camX, camY, camZ, partialTicks);
+                }
+            }
+        } finally {
+            batch.finish();
         }
     }
 
@@ -492,12 +571,16 @@ public final class WakeTrailManager {
         return WetnessFluidHelper.getWettableFluidColor(world, x, y, z);
     }
 
-    private static void renderNode(WakeRenderBatch batch, WakeNode node, double camX, double camY, double camZ,
+    private void renderNode(WakeRenderBatch batch, WakeNode node, double camX, double camY, double camZ,
         float partialTicks) {
         float ageDelta = node.prevAge + (node.age - node.prevAge) * partialTicks;
         float progress = clamp(ageDelta / (float) MAX_AGE, 0.0F, 1.0F);
         float ageFade = 1.0F - progress * progress;
         if (ageFade <= 0.003F) {
+            return;
+        }
+        if (batch.pass != WakeRenderPass.REGULAR) {
+            renderSmoothNode(batch, node, camX, camY, camZ, partialTicks);
             return;
         }
 
@@ -508,7 +591,8 @@ public final class WakeTrailManager {
             double z0 = node.z + pixelZ * pixelSize - camZ;
             double z1 = z0 + pixelSize;
             for (int pixelX = 0; pixelX < NODE_RES; pixelX++) {
-                int color = sampleColor(node.getWave(pixelX, pixelZ), node.tintR, node.tintG, node.tintB, ageFade);
+                float wave = node.getWave(pixelX, pixelZ);
+                int color = sampleColor(wave, node.tintR, node.tintG, node.tintB, ageFade);
                 int alpha = color >>> 24;
                 if (alpha <= 2) {
                     continue;
@@ -519,6 +603,80 @@ public final class WakeTrailManager {
                 batch.addQuad(x0, x1, y, z0, z1, color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF, alpha);
             }
         }
+    }
+
+    private void renderSmoothNode(WakeRenderBatch batch, WakeNode node, double camX, double camY, double camZ,
+        float partialTicks) {
+        prepareRenderVertices(node, partialTicks);
+        double y = node.surfaceY + SURFACE_OFFSET - camY;
+        double pixelSize = 1.0D / NODE_RES;
+        for (int z = 0; z < NODE_RES; z++) {
+            for (int x = 0; x < NODE_RES; x++) {
+                int a = (z * RENDER_GRID + x) * RENDER_VERTEX_STRIDE;
+                int b = a + RENDER_GRID * RENDER_VERTEX_STRIDE;
+                int c = b + RENDER_VERTEX_STRIDE;
+                int d = a + RENDER_VERTEX_STRIDE;
+                int channel = 4;
+                float activity = Math.max(
+                    Math.max(renderVertices[a + channel], renderVertices[b + channel]),
+                    Math.max(renderVertices[c + channel], renderVertices[d + channel]));
+                if (activity <= 0.35F) continue;
+                double x0 = node.x + x * pixelSize - camX;
+                double z0 = node.z + z * pixelSize - camZ;
+                batch.addSmoothQuad(x0, x0 + pixelSize, y, z0, z0 + pixelSize, x, z, renderVertices, a, b, c, d);
+            }
+        }
+    }
+
+    private void prepareRenderVertices(WakeNode node, float partialTicks) {
+        for (int z = -1; z <= NODE_RES; z++) {
+            for (int x = -1; x <= NODE_RES; x++) {
+                renderSamples[(z + 1) * NODE_GRID + x + 1] = sampleRenderWave(node, x, z, partialTicks);
+            }
+        }
+        for (int z = 0; z < RENDER_GRID; z++) {
+            for (int x = 0; x < RENDER_GRID; x++) {
+                int sample = z * NODE_GRID + x;
+                float a = renderSamples[sample];
+                float b = renderSamples[sample + 1];
+                float c = renderSamples[sample + NODE_GRID];
+                float d = renderSamples[sample + NODE_GRID + 1];
+                float activity = Math.max(Math.max(Math.abs(a), Math.abs(b)), Math.max(Math.abs(c), Math.abs(d)));
+                float strength = SHADER_WAKE_NORMAL_SCALE * activity / (activity + 2.0F) * Config.waterWakeAlpha;
+                float nx = clamp((a + c - b - d) * strength, -0.45F, 0.45F);
+                float nz = clamp((a + b - c - d) * strength, -0.45F, 0.45F);
+                float inverseLength = 1.0F / (float) Math.sqrt(nx * nx + 1.0F + nz * nz);
+                int vertex = (z * RENDER_GRID + x) * RENDER_VERTEX_STRIDE;
+                renderVertices[vertex] = nx * inverseLength;
+                renderVertices[vertex + 1] = inverseLength;
+                renderVertices[vertex + 2] = nz * inverseLength;
+                float dx = (a + c - b - d) * 0.5F;
+                float dz = (a + b - c - d) * 0.5F;
+                renderVertices[vertex + 3] = sampleFoamAlpha(
+                    (a + b + c + d) * 0.25F,
+                    (float) Math.sqrt(dx * dx + dz * dz));
+                renderVertices[vertex + 4] = activity;
+            }
+        }
+    }
+
+    private float sampleRenderWave(WakeNode origin, int x, int z, float partialTicks) {
+        WakeNode node = origin;
+        if (x < 0 || x >= NODE_RES || z < 0 || z >= NODE_RES) {
+            node = nodes.get(nodeKey(origin.x + (x >> NODE_POWER), origin.y, origin.z + (z >> NODE_POWER)));
+            if (node == null || node.world != origin.world) return 0.0F;
+        }
+        float progress = clamp((node.prevAge + (node.age - node.prevAge) * partialTicks) / MAX_AGE, 0.0F, 1.0F);
+        return node.getRenderWave(x & NODE_MASK, z & NODE_MASK, partialTicks) * (1.0F - progress * progress);
+    }
+
+    private static float sampleFoamAlpha(float wave, float slope) {
+        float crest = clamp((wave - SHADER_FOAM_START) / (SHADER_FOAM_FULL - SHADER_FOAM_START), 0.0F, 1.0F);
+        crest = crest * crest * (3.0F - 2.0F * crest);
+        // A strong but flat part of the trail is still water, not a carpet of white foam.
+        float steepness = clamp((slope - 0.5F) / 3.5F, 0.0F, 1.0F);
+        steepness = steepness * steepness * (3.0F - 2.0F * steepness);
+        return SHADER_FOAM_ALPHA * crest * steepness * Config.waterWakeAlpha;
     }
 
     private static int sampleColor(float wave, float tintR, float tintG, float tintB, float ageFade) {
@@ -705,11 +863,57 @@ public final class WakeTrailManager {
     private static class WakeRenderBatch {
 
         private final Tessellator tessellator;
+        private final WakeRenderPass pass;
+        private final IIcon waterIcon;
+        private int brightness = FULL_BRIGHT;
+        private int waterTint = 0xFFFFFF;
         private int quads;
 
-        WakeRenderBatch(Tessellator tessellator) {
+        WakeRenderBatch(Tessellator tessellator, WakeRenderPass pass) {
             this.tessellator = tessellator;
+            this.pass = pass;
+            waterIcon = pass == WakeRenderPass.WATER ? Blocks.water.getIcon(1, 0) : null;
             begin();
+        }
+
+        void setBrightness(int brightness) {
+            this.brightness = brightness;
+            tessellator.setBrightness(brightness);
+        }
+
+        void addSmoothQuad(double x0, double x1, double y, double z0, double z1, int pixelX, int pixelZ,
+            float[] vertices, int a, int b, int c, int d) {
+            if (quads >= MAX_WAKE_RENDER_BATCH_QUADS) flush();
+            double u0 = waterIcon.getInterpolatedU(pixelX);
+            double u1 = waterIcon.getInterpolatedU(pixelX + 1);
+            double v0 = waterIcon.getInterpolatedV(pixelZ);
+            double v1 = waterIcon.getInterpolatedV(pixelZ + 1);
+            smoothVertex(x0, y, z0, u0, v0, vertices, a);
+            smoothVertex(x0, y, z1, u0, v1, vertices, b);
+            smoothVertex(x1, y, z1, u1, v1, vertices, c);
+            smoothVertex(x1, y, z0, u1, v0, vertices, d);
+            quads++;
+        }
+
+        private void smoothVertex(double x, double y, double z, double u, double v, float[] vertices, int index) {
+            tessellator.setNormal(vertices[index], vertices[index + 1], vertices[index + 2]);
+            tessellator.setColorOpaque_I(waterTint);
+            tessellator.addVertexWithUV(x, y, z, u, v);
+        }
+
+        void addFoamNode(double x, double y, double z, int tile) {
+            if (quads >= MAX_WAKE_RENDER_BATCH_QUADS) flush();
+            double u0 = WakeFoamTexture.u0(tile);
+            double v0 = WakeFoamTexture.v0(tile);
+            double u1 = WakeFoamTexture.u1(tile);
+            double v1 = WakeFoamTexture.v1(tile);
+            tessellator.setNormal(0.0F, 1.0F, 0.0F);
+            tessellator.setColorRGBA(255, 255, 255, 255);
+            tessellator.addVertexWithUV(x, y, z, u0, v0);
+            tessellator.addVertexWithUV(x, y, z + 1.0D, u0, v1);
+            tessellator.addVertexWithUV(x + 1.0D, y, z + 1.0D, u1, v1);
+            tessellator.addVertexWithUV(x + 1.0D, y, z, u1, v0);
+            quads++;
         }
 
         void addQuad(double x0, double x1, double y, double z0, double z1, int red, int green, int blue, int alpha) {
@@ -737,7 +941,7 @@ public final class WakeTrailManager {
 
         private void begin() {
             tessellator.startDrawingQuads();
-            tessellator.setBrightness(FULL_BRIGHT);
+            tessellator.setBrightness(brightness);
         }
     }
 
@@ -745,6 +949,7 @@ public final class WakeTrailManager {
 
         final float[][] u = new float[][] { new float[NODE_CELLS], new float[NODE_CELLS], new float[NODE_CELLS] };
         final float[] initialValues = new float[NODE_CELLS];
+        final float[] previousRenderWave = new float[NODE_CELLS];
         World world;
         int x;
         int y;
@@ -758,6 +963,7 @@ public final class WakeTrailManager {
         int age;
         int prevAge;
         int inputStamp;
+        int foamTile = -1;
 
         void reset(World world, int x, int y, int z, int floodLevel) {
             this.world = world;
@@ -808,6 +1014,7 @@ public final class WakeTrailManager {
         }
 
         void clearAll() {
+            Arrays.fill(previousRenderWave, 0.0F);
             for (int i = 0; i < u.length; i++) {
                 Arrays.fill(u[i], 0.0F);
             }
@@ -819,6 +1026,10 @@ public final class WakeTrailManager {
         }
 
         void tick(WakeNode north, WakeNode south, WakeNode east, WakeNode west) {
+            // Snapshot only the displayed field; the simulation and entity impulses stay unchanged.
+            for (int i = 0; i < NODE_CELLS; i++) {
+                previousRenderWave[i] = (u[0][i] + u[1][i] + u[2][i]) / 3.0F;
+            }
             float alpha = (float) Math.pow(WAVE_PROPAGATION_FACTOR * 16.0F / 20.0F, 2.0D);
             float beta = (float) (Math.log(10.0D * WAVE_DECAY_FACTOR + 10.0D) / Math.log(20.0D));
 
@@ -878,6 +1089,11 @@ public final class WakeTrailManager {
         float getWave(int x, int z) {
             int index = index(x + 1, z + 1);
             return (u[0][index] + u[1][index] + u[2][index]) / 3.0F;
+        }
+
+        float getRenderWave(int x, int z, float partialTicks) {
+            float previous = previousRenderWave[index(x + 1, z + 1)];
+            return previous + (getWave(x, z) - previous) * partialTicks;
         }
 
         private static int index(int x, int z) {

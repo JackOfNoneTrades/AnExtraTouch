@@ -119,6 +119,7 @@ final class ConfigGuiLayout {
                     "water_effects.entry_splashes",
                     "water_splash",
                     "waterSplashEnabled",
+                    "waterSplashShaderWater",
                     "waterSplashEntityBlacklist",
                     "waterSplashFallbackColor"),
                 section(
@@ -150,6 +151,7 @@ final class ConfigGuiLayout {
                     "water_effects.wakes_and_swimming_ripples",
                     "water_splash",
                     "waterWakesEnabled",
+                    "waterWakeShaderWater",
                     "waterWakeAlpha",
                     "waterWakeDensity"),
                 section(

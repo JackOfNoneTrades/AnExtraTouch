@@ -36,6 +36,7 @@ public class WaterSplashManager {
     private static final int EMITTER_MAX_AGE = 24;
     private static final int SECOND_WAVE_AGE = 8;
     private static final float SPEED_CAP = 2.0f;
+    private static final float SHADER_TEXTURE_DETAIL_ALPHA = 0.55F;
 
     private static final ResourceLocation[] SPLASH_TEX = makeFrames("water_splash");
     private static final ResourceLocation[] FOAM_TEX = makeFrames("water_splash_foam");
@@ -62,6 +63,7 @@ public class WaterSplashManager {
         boolean foam;
         float r, g, b;
         boolean lava;
+        boolean water;
     }
 
     private static class Ring {
@@ -73,6 +75,7 @@ public class WaterSplashManager {
         int prevAge;
         float r, g, b;
         boolean lava;
+        boolean water;
     }
 
     private static class Emitter {
@@ -136,6 +139,7 @@ public class WaterSplashManager {
         s.height = height;
         s.foam = foam;
         s.lava = lava;
+        s.water = isWaterSplash(world, x, y, z);
         if (foam && !lava) {
             s.r = s.g = s.b = 1.0f;
         } else {
@@ -157,6 +161,7 @@ public class WaterSplashManager {
         r.z = z;
         r.width = width;
         r.lava = lava;
+        r.water = isWaterSplash(world, x, y, z);
         r.r = lava ? rgb[0] : 1.0f;
         r.g = lava ? rgb[1] : 1.0f;
         r.b = lava ? rgb[2] : 1.0f;
@@ -322,6 +327,14 @@ public class WaterSplashManager {
             || WetnessFluidHelper.getSplashFluid(world, bx, by, bz) == FluidRegistry.LAVA;
     }
 
+    private static boolean isWaterSplash(World world, double x, double y, double z) {
+        int bx = MathHelper.floor_double(x);
+        int by = MathHelper.floor_double(y);
+        int bz = MathHelper.floor_double(z);
+        if (!isSplashFluidAllowed(world, bx, by, bz)) by--;
+        return WetnessFluidHelper.getSplashFluid(world, bx, by, bz) == FluidRegistry.WATER;
+    }
+
     public static boolean isSplashFluidAllowed(World world, int x, int y, int z) {
         return WetnessFluidHelper.getSplashFluid(world, x, y, z) != null;
     }
@@ -373,8 +386,8 @@ public class WaterSplashManager {
                 renderRing(mc, r, camX, camY, camZ, partialTicks);
             }
 
-            mc.entityRenderer.disableLightmap((double) partialTicks);
         } finally {
+            mc.entityRenderer.disableLightmap((double) partialTicks);
             GL11.glDepthMask(true);
             GL11.glPopAttrib();
             mc.getTextureManager()
@@ -413,23 +426,81 @@ public class WaterSplashManager {
         // 4 corners of a square in XZ around (fx, fy, fz), scaled by scale
         float[][] c = new float[][] { { -scale, -scale }, { -scale, scale }, { scale, scale }, { scale, -scale } };
 
-        Tessellator t = Tessellator.instance;
-        t.startDrawingQuads();
-        t.setColorRGBA_F(s.r, s.g, s.b, 1.0f);
-        t.setBrightness(brightness);
+        SplashShaderMesh mesh = Config.waterSplashShaderWater && s.water
+            && !s.foam
+            && AngelicaShaderHelper.isShaderPackInUse() ? SplashShaderMesh.get(mc, tex) : null;
+        AngelicaShaderHelper.WaterRenderScope waterScope = mesh == null ? null
+            : AngelicaShaderHelper.beginWaterRendering();
+        AngelicaShaderHelper.WaterRenderScope renderScope = waterScope != null ? waterScope
+            : Config.waterSplashShaderWater && s.water ? AngelicaShaderHelper.beginOverlayRendering() : null;
+        try {
+            Tessellator t = Tessellator.instance;
+            t.startDrawingQuads();
+            t.setColorRGBA_F(s.r, s.g, s.b, 1.0f);
+            t.setBrightness(brightness);
 
-        float u0 = 0.0f;
-        float u1 = 1.0f;
-        float v0 = 0.0f;
-        float v1 = 1.0f;
+            float u0 = 0.0f;
+            float u1 = 1.0f;
+            float v0 = 0.0f;
+            float v1 = 1.0f;
 
-        // 4 sides, each rendered double-sided
-        renderSide(t, fx, fy, fz, c[0][0], c[0][1], c[1][0], c[1][1], s.height, u0, u1, v0, v1);
-        renderSide(t, fx, fy, fz, c[1][0], c[1][1], c[2][0], c[2][1], s.height, u0, u1, v0, v1);
-        renderSide(t, fx, fy, fz, c[2][0], c[2][1], c[3][0], c[3][1], s.height, u0, u1, v0, v1);
-        renderSide(t, fx, fy, fz, c[3][0], c[3][1], c[0][0], c[0][1], s.height, u0, u1, v0, v1);
+            // 4 sides, each rendered double-sided
+            for (int side = 0; side < 4; side++) {
+                float[] a = c[side];
+                float[] b = c[(side + 1) % 4];
+                if (waterScope != null) {
+                    mesh.render(
+                        t,
+                        fx + a[0],
+                        fy + s.height,
+                        fz + a[1],
+                        b[0] - a[0],
+                        0,
+                        b[1] - a[1],
+                        0,
+                        -s.height,
+                        0,
+                        true);
+                } else {
+                    renderSide(t, fx, fy, fz, a[0], a[1], b[0], b[1], s.height, u0, u1, v0, v1);
+                }
+            }
 
-        t.draw();
+            t.draw();
+        } finally {
+            if (renderScope != null) renderScope.close();
+        }
+
+        if (waterScope != null) {
+            // Retain the sprite's tonal bands over the reflective body. Foam uses its original
+            // full-opacity texture in the separate splash immediately following this one.
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_POLYGON_BIT);
+            AngelicaShaderHelper.WaterRenderScope overlayScope = null;
+            try {
+                GL11.glDepthMask(false);
+                GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+                GL11.glPolygonOffset(-1.0F, -1.0F);
+                mc.getTextureManager()
+                    .bindTexture(tex);
+                overlayScope = AngelicaShaderHelper.beginOverlayRendering();
+                Tessellator t = Tessellator.instance;
+                t.startDrawingQuads();
+                t.setColorRGBA_F(s.r, s.g, s.b, SHADER_TEXTURE_DETAIL_ALPHA);
+                t.setBrightness(brightness);
+                for (int side = 0; side < 4; side++) {
+                    float[] a = c[side];
+                    float[] b = c[(side + 1) % 4];
+                    renderSide(t, fx, fy, fz, a[0], a[1], b[0], b[1], s.height, 0, 1, 0, 1);
+                }
+                t.draw();
+            } finally {
+                try {
+                    if (overlayScope != null) overlayScope.close();
+                } finally {
+                    GL11.glPopAttrib();
+                }
+            }
+        }
     }
 
     private void renderSide(Tessellator t, float fx, float fy, float fz, float ax, float az, float bx, float bz,
@@ -464,14 +535,22 @@ public class WaterSplashManager {
         int bz = MathHelper.floor_double(ring.z);
         int brightness = ring.world.getLightBrightnessForSkyBlocks(bx, by, bz, ring.lava ? 15 : 0);
 
-        Tessellator t = Tessellator.instance;
-        t.startDrawingQuads();
-        t.setColorRGBA_F(ring.r, ring.g, ring.b, 1.0f);
-        t.setBrightness(brightness);
-        t.addVertexWithUV(fx - scale, fy, fz - scale, 1.0f, 1.0f);
-        t.addVertexWithUV(fx - scale, fy, fz + scale, 1.0f, 0.0f);
-        t.addVertexWithUV(fx + scale, fy, fz + scale, 0.0f, 0.0f);
-        t.addVertexWithUV(fx + scale, fy, fz - scale, 0.0f, 1.0f);
-        t.draw();
+        // This is white surface foam, so retain the original texture and alpha.
+        AngelicaShaderHelper.WaterRenderScope overlayScope = Config.waterSplashShaderWater && ring.water
+            ? AngelicaShaderHelper.beginOverlayRendering()
+            : null;
+        try {
+            Tessellator t = Tessellator.instance;
+            t.startDrawingQuads();
+            t.setColorRGBA_F(ring.r, ring.g, ring.b, 1.0f);
+            t.setBrightness(brightness);
+            t.addVertexWithUV(fx - scale, fy, fz - scale, 1.0f, 1.0f);
+            t.addVertexWithUV(fx - scale, fy, fz + scale, 1.0f, 0.0f);
+            t.addVertexWithUV(fx + scale, fy, fz + scale, 0.0f, 0.0f);
+            t.addVertexWithUV(fx + scale, fy, fz - scale, 0.0f, 1.0f);
+            t.draw();
+        } finally {
+            if (overlayScope != null) overlayScope.close();
+        }
     }
 }
