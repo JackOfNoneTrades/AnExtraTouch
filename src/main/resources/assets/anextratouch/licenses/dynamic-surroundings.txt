@@ -1,7 +1,7 @@
 Dynamic Surroundings License
 
 The Dynamic Surroundings source repository is licensed under the MIT License.
-This notice is preserved for the item sound assets copied from:
+This notice is preserved for the item sound assets and adapted steam and flame jet behavior from:
 https://github.com/OreCruncher/DynamicSurroundingsFabric/tree/0d352c7e57bbd39786defdba355156a5bdb850f4
 
 MIT License

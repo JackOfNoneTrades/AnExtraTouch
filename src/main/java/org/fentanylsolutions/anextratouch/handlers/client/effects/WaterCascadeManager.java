@@ -49,6 +49,7 @@ public class WaterCascadeManager {
     static final int CASCADE_FRAME_COUNT = 12;
     private static final int MAX_ACTIVE_WATERFALL_SOUNDS = 6;
     private static final int SHADER_PACK_SOUND_CHECK_INTERVAL = 20;
+    private static final double PARTICLE_RANGE_SQ = 32.0D * 32.0D;
     private static final ResourceLocation[] WATERFALL_SOUND_VARIANTS = new ResourceLocation[11];
 
     private static final IIcon[] CASCADE_ICONS = new IIcon[CASCADE_FRAME_COUNT];
@@ -167,6 +168,17 @@ public class WaterCascadeManager {
         }
         wasCascadeEnabled = true;
 
+        // Client tick events still arrive while the integrated server is paused. Do not
+        // accumulate frozen particles or rescan terrain until play resumes.
+        if (mc.isGamePaused()) {
+            wasGamePaused = true;
+            return;
+        }
+        if (wasGamePaused) {
+            wasGamePaused = false;
+            requestWaterfallSoundRefresh();
+        }
+
         if (needsNearbyRescan) {
             needsNearbyRescan = !rescanNearbyChunks(mc);
         }
@@ -192,15 +204,6 @@ public class WaterCascadeManager {
         }
 
         if (hasAngelicaShaderPackStateChanged()) {
-            requestWaterfallSoundRefresh();
-        }
-
-        if (mc.isGamePaused()) {
-            wasGamePaused = true;
-            return;
-        }
-        if (wasGamePaused) {
-            wasGamePaused = false;
             requestWaterfallSoundRefresh();
         }
 
@@ -454,6 +457,24 @@ public class WaterCascadeManager {
         return isStillFluidSurface(world, x, y, z, fluid);
     }
 
+    /** Direct addEffect calls bypass vanilla's distance and particle-setting checks. */
+    public static boolean shouldSpawnWaterfallParticles(World world, double x, double y, double z) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (world == null || world != mc.theWorld
+            || mc.renderViewEntity == null
+            || mc.effectRenderer == null
+            || mc.isGamePaused()
+            || mc.gameSettings.particleSetting >= 2) return false;
+
+        double dx = mc.renderViewEntity.posX - x;
+        double dy = mc.renderViewEntity.posY - y;
+        double dz = mc.renderViewEntity.posZ - z;
+        if (dx * dx + dy * dy + dz * dz > PARTICLE_RANGE_SQ) return false;
+
+        // Match vanilla's Decreased setting, while allowing large foam sprites out to 32 blocks.
+        return mc.gameSettings.particleSetting != 1 || world.rand.nextInt(3) != 0;
+    }
+
     private void spawnCascade(World world, long posKey, float strength) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.effectRenderer == null || CASCADE_ICONS[0] == null) {
@@ -463,6 +484,7 @@ public class WaterCascadeManager {
         int xPos = posX(posKey);
         int yPos = posY(posKey);
         int zPos = posZ(posKey);
+        if (!shouldSpawnWaterfallParticles(world, xPos + 0.5D, yPos + 0.5D, zPos + 0.5D)) return;
 
         // Particular spawns one foam particle per cascade per tick along a random edge, with Y
         // sampled inside the falling water column.

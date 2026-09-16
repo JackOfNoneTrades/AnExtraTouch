@@ -20,6 +20,7 @@ Various small visual, audio, and gameplay tweaks, aimed to enhance the game expe
 * [Entity effects](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Entity-effects): cold breath, dripping wet entities, and cake crumbs.
 * [Sounds](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Sounds): enhanced thunder, item swing and selection sounds, bow drawstrings, armor walking and equip sounds, wet footsteps in rain, and optional muting of Dynamic Surroundings animal ambience.
 * [Water effects](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Water-effects): water and lava splashes, waterfall foam and ambience, chest bubbles, rain ripples, and Wakes trails with swimming ripples.
+* [Steam and lava](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Steam-and-Lava): cosmetic steam over heated water and occasional lava jets.
 * [Coastal Waves](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Coastal-Waves): shore waves and breaking sounds.
 * [Camera Overhaul](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Camera-Overhaul): movement tilt, idle sway, and configurable camera shakes, including sound triggers.
 * [Shoulder Surfing additions](https://github.com/JackOfNoneTrades/AnExtraTouch/wiki/Shoulder-Surfing): decoupled camera, aiming transitions, player fading, smooth follow, and omnidirectional sprinting.
@@ -46,7 +47,7 @@ This mod can be installed on client, server, or both. Armor walking sounds are m
 
 ## Credits
 
-* [Dynamic Surroundings](https://github.com/OreCruncher/DynamicSurroundingsFabric). Armor sound assets and footprint texture come from this mod.
+* [Dynamic Surroundings](https://github.com/OreCruncher/DynamicSurroundingsFabric). Armor sound assets and footprint texture come from this mod; the steam and lava jet behavior is inspired by its modern implementation.
 * [LegendarySurvivalOverhaul](https://github.com/Alex-Hashtag/LegendarySurvivalOverhaul).
 * [Smooth Gui](https://github.com/Ezzenix/SmoothGui)
 * [Minecraft-CameraOverhaul](https://github.com/Mirsario/Minecraft-CameraOverhaul)

@@ -27,6 +27,7 @@ public abstract class MixinBlockLiquid {
 
         Block block = (Block) (Object) this;
         if (block.getMaterial() != Material.water) return;
+        if (!WaterCascadeManager.shouldSpawnWaterfallParticles(worldIn, x + 0.5D, y + 0.5D, z + 0.5D)) return;
         if (!WaterCascadeManager.INSTANCE.isWaterfallImpact(worldIn, x, y, z)) return;
 
         int meta = worldIn.getBlockMetadata(x, y, z);

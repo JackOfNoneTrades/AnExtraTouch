@@ -210,6 +210,30 @@ final class ConfigGuiLayout {
                     "waveBreakingSoundChance"),
                 section(config, "coastal_waves.biomes", "waves", "waveBiomeWhitelist", "waveBiomeBlacklist")),
             menu(
+                "steam_and_lava",
+                section(
+                    config,
+                    "steam_and_lava.steam",
+                    "thermal_effects",
+                    "steamEnabled",
+                    "steamParticleDensity",
+                    "steamSourceBlocks",
+                    "steamHeatBlocks"),
+                section(
+                    config,
+                    "steam_and_lava.lava_jets",
+                    "thermal_effects",
+                    "lavaJetsEnabled",
+                    "lavaJetChance",
+                    "lavaJetSoundVolume",
+                    "lavaJetSourceBlocks"),
+                section(
+                    config,
+                    "steam_and_lava.range_and_limits",
+                    "thermal_effects",
+                    "thermalEffectRange",
+                    "thermalEffectMaxSources")),
+            menu(
                 "camera_overhaul",
                 section(
                     config,

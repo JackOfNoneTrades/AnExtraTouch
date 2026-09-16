@@ -17,6 +17,7 @@ public class Config {
         public static final String dynamicSurroundings = "dynamic_surroundings";
         public static final String thunder = "thunder";
         public static final String itemSounds = "item_sounds";
+        public static final String thermalEffects = "thermal_effects";
         public static final String wetness = "wetness";
         public static final String debug = "debug";
         public static final String trampling = "trampling";
@@ -101,6 +102,19 @@ public class Config {
     public static boolean itemUtilityEquipSoundsEnabled = true;
     public static boolean itemBlockEquipSoundsEnabled = true;
     public static String[] itemSoundOverrides = {};
+
+    // steam and lava jets
+    public static boolean steamEnabled = true;
+    public static boolean lavaJetsEnabled = true;
+    public static int thermalEffectRange = 16;
+    public static int thermalEffectMaxSources = 128;
+    public static float steamParticleDensity = 1.0f;
+    public static float lavaJetChance = 0.0005f;
+    public static float lavaJetSoundVolume = 0.5f;
+    public static String[] steamSourceBlocks = { "minecraft:water", "minecraft:flowing_water", "minecraft:cauldron@1",
+        "minecraft:cauldron@2", "minecraft:cauldron@3" };
+    public static String[] steamHeatBlocks = { "minecraft:lava", "minecraft:flowing_lava", "minecraft:lit_furnace" };
+    public static String[] lavaJetSourceBlocks = { "minecraft:lava", "minecraft:flowing_lava" };
 
     // wetness
     public static boolean wetParticlesEnabled = true;
@@ -627,6 +641,69 @@ public class Config {
                 Categories.itemSounds,
                 new String[0],
                 "Item category overrides: modid:item=category or modid:item@metadata=category. Categories: sword, axe, tool, bow, crossbow, shield, potion, book, utility, none. Example: modid:hammer=axe. Exact metadata wins over whole-item rules; last duplicate wins. Damageable items use metadata 0 so wear does not change categories. none silences the item. Changes apply when saved.");
+
+            // steam and lava jets
+            steamEnabled = config.getBoolean(
+                "steamEnabled",
+                Categories.thermalEffects,
+                true,
+                "Show rising steam over exposed water and filled cauldrons near heat sources. Cosmetic and client-only.");
+            lavaJetsEnabled = config.getBoolean(
+                "lavaJetsEnabled",
+                Categories.thermalEffects,
+                true,
+                "Show occasional flame and lava jets over exposed lava. Deeper lava produces stronger jets. Cosmetic and client-only.");
+            thermalEffectRange = config.getInt(
+                "thermalEffectRange",
+                Categories.thermalEffects,
+                16,
+                4,
+                32,
+                "Detection and emission radius in blocks around the camera. Nearby loaded blocks are scanned gradually.");
+            thermalEffectMaxSources = config.getInt(
+                "thermalEffectMaxSources",
+                Categories.thermalEffects,
+                128,
+                16,
+                512,
+                "Maximum number of nearby steam and lava-jet sources tracked at once. Active jets and particle emission also have fixed caps.");
+            steamParticleDensity = config.getFloat(
+                "steamParticleDensity",
+                Categories.thermalEffects,
+                1.0f,
+                0.0f,
+                4.0f,
+                "Steam emission multiplier. 1 uses the normal cadence; 0 hides steam. Also respects Minecraft's particle setting.");
+            lavaJetChance = config.getFloat(
+                "lavaJetChance",
+                Categories.thermalEffects,
+                0.0005f,
+                0.0f,
+                0.05f,
+                "Chance per tick for each tracked exposed source to start a jet. 0.0005 averages one attempt per 100 seconds per source at 20 TPS. Nearby lava blocks each count as sources; active jets are capped. 0 disables new jets.");
+            lavaJetSoundVolume = config.getFloat(
+                "lavaJetSoundVolume",
+                Categories.thermalEffects,
+                0.5f,
+                0.0f,
+                1.0f,
+                "Volume of the fire sound when a stronger jet starts. 0 silences it. Steam is silent.");
+            steamSourceBlocks = config.getStringList(
+                "steamSourceBlocks",
+                Categories.thermalEffects,
+                new String[] { "minecraft:water", "minecraft:flowing_water", "minecraft:cauldron@1",
+                    "minecraft:cauldron@2", "minecraft:cauldron@3" },
+                "Blocks that emit steam when exposed to air and near heat. Use modid:block or modid:block@metadata (0-15). Empty allows none. Missing mods are ignored. Changes apply when saved.");
+            steamHeatBlocks = config.getStringList(
+                "steamHeatBlocks",
+                Categories.thermalEffects,
+                new String[] { "minecraft:lava", "minecraft:flowing_lava", "minecraft:lit_furnace" },
+                "Heat sources for steam within one block, including diagonals and below. Use modid:block or modid:block@metadata (0-15). Empty allows none; missing mods are ignored.");
+            lavaJetSourceBlocks = config.getStringList(
+                "lavaJetSourceBlocks",
+                Categories.thermalEffects,
+                new String[] { "minecraft:lava", "minecraft:flowing_lava" },
+                "Exposed blocks that produce jets. Use modid:block or modid:block@metadata (0-15), for example a modded magma block. Empty allows none; missing mods are ignored.");
 
             // wetness
             wetParticlesEnabled = config.getBoolean(

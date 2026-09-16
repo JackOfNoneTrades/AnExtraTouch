@@ -13,6 +13,7 @@ import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCamera
 import org.fentanylsolutions.anextratouch.handlers.client.camera.SoundShakeHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
+import org.fentanylsolutions.anextratouch.handlers.client.effects.ThermalEffectsManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterRippleManager;
@@ -71,6 +72,10 @@ public class ClientProxy extends CommonProxy {
             .bus()
             .register(WaterCascadeManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WaterCascadeManager.INSTANCE);
+        ThermalEffectsManager.INSTANCE.onConfigReload();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(ThermalEffectsManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(FootprintManager.INSTANCE);
         ClientHandler clientHandler = new ClientHandler();
         FMLCommonHandler.instance()
@@ -101,6 +106,7 @@ public class ClientProxy extends CommonProxy {
         WaterWaveManager.INSTANCE.onConfigReload();
         DynamicSurroundingsSoundHandler.INSTANCE.onConfigReload();
         ItemSoundHandler.INSTANCE.onConfigReload();
+        ThermalEffectsManager.INSTANCE.onConfigReload();
     }
 
 }
