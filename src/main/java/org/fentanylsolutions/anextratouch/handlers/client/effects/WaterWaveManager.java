@@ -416,6 +416,9 @@ public final class WaterWaveManager {
         wave.x = wave.prevX = sample.x + 0.5D;
         wave.y = wave.prevY = sample.surfaceY + SURFACE_OFFSET;
         wave.z = wave.prevZ = sample.z + 0.5D;
+        wave.lightX = sample.x;
+        wave.lightY = sample.y;
+        wave.lightZ = sample.z;
         wave.dirX = shore.dirX;
         wave.dirZ = shore.dirZ;
         wave.shoreX = shore.x + 0.5D;
@@ -565,12 +568,7 @@ public final class WaterWaveManager {
     private void renderProceduralWave(Wave wave, double camX, double camY, double camZ, float partialTicks) {
         Tessellator t = Tessellator.instance;
         t.startDrawingQuads();
-        t.setBrightness(
-            wave.world.getLightBrightnessForSkyBlocks(
-                MathHelper.floor_double(wave.x),
-                MathHelper.floor_double(wave.y),
-                MathHelper.floor_double(wave.z),
-                0));
+        t.setBrightness(wave.getSurfaceBrightness());
         t.setColorOpaque_I(0xFFFFFF);
         wave.shaderMesh.render(
             t,
@@ -862,6 +860,9 @@ public final class WaterWaveManager {
         double prevX;
         double prevY;
         double prevZ;
+        int lightX;
+        int lightY;
+        int lightZ;
         double dirX;
         double dirZ;
         double shoreX;
@@ -897,6 +898,7 @@ public final class WaterWaveManager {
                 x += dirX * speed;
                 z += dirZ * speed;
                 y += 0.001D;
+                updateLightPosition();
                 if (shoreAge > 28) {
                     dead = true;
                 }
@@ -905,6 +907,7 @@ public final class WaterWaveManager {
 
             x += dirX * speed;
             z += dirZ * speed;
+            updateLightPosition();
 
             int blockX = MathHelper.floor_double(x);
             int blockY = MathHelper.floor_double(y - SURFACE_OFFSET);
@@ -993,16 +996,28 @@ public final class WaterWaveManager {
             return Math.min(1.0F, ageDelta / 10.0F);
         }
 
+        void updateLightPosition() {
+            int blockX = MathHelper.floor_double(x);
+            int blockZ = MathHelper.floor_double(z);
+            // Breaking waves drift into the bank while their visible crest is still over water.
+            // Keep the last surface-water sample instead of lighting the whole crest from solid ground.
+            if (isSurfaceWaveWater(world, blockX, lightY, blockZ)) {
+                lightX = blockX;
+                lightZ = blockZ;
+            }
+        }
+
+        int getSurfaceBrightness() {
+            // Read live lighting so retaining the position does not freeze time-of-day or block light.
+            return world.getLightBrightnessForSkyBlocks(lightX, lightY, lightZ, 0);
+        }
+
         int getBrightness() {
             if (!world.isDaytime() && world.getMoonPhase() == 0) {
                 return FULL_BRIGHT;
             }
 
-            return world.getLightBrightnessForSkyBlocks(
-                MathHelper.floor_double(x),
-                MathHelper.floor_double(y),
-                MathHelper.floor_double(z),
-                0);
+            return getSurfaceBrightness();
         }
     }
 }
