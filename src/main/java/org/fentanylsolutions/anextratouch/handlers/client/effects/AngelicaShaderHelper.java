@@ -27,8 +27,13 @@ public final class AngelicaShaderHelper {
         void close();
     }
 
-    public static void captureSurfaceDepth() {
+    public static void resetSurfaceDepth() {
         surfaceDepthCaptured = false;
+    }
+
+    /** Called at Angelica's pre-translucent boundary, after solid first-person hands. */
+    public static void captureSurfaceDepth() {
+        resetSurfaceDepth();
         if (surfaceDepthUnavailable || !isShaderPackInUse()) return;
         boolean waves = Config.wavesEnabled && Config.waveShaderWater && WaterWaveManager.INSTANCE.hasActiveWaves();
         boolean wakes = Config.waterWakesEnabled && Config.waterWakeShaderWater

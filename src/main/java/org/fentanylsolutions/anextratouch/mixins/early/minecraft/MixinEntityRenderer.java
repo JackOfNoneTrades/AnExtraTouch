@@ -466,7 +466,9 @@ public abstract class MixinEntityRenderer {
         FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterRippleManager.INSTANCE.renderInWorldPass(partialTicks);
-        AngelicaShaderHelper.captureSurfaceDepth();
+        // The Angelica pipeline captures depth after its solid hands, inside sortAndRender.
+        // Discard any previous snapshot if that optional hook does not run for this pass.
+        AngelicaShaderHelper.resetSurfaceDepth();
     }
 
     @Inject(

@@ -54,6 +54,9 @@ public class EarlyMixinLoader extends FentEarlyMixinLoader {
         if (!MixinBuilder.isServer() && loadedCoreMods.contains("com.teamderpy.shouldersurfing.asm.ShoulderPlugin")) {
             mixins.add("shouldersurfing.MixinKeyHandler");
         }
+        if (!MixinBuilder.isServer() && loadedCoreMods.contains("com.gtnewhorizons.angelica.loading.AngelicaTweaker")) {
+            mixins.add("angelica.MixinDeferredWorldRenderingPipeline");
+        }
 
         return mixins;
     }
