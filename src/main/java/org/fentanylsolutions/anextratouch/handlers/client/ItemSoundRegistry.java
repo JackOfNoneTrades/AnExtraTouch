@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.init.Items;
+import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemBook;
@@ -93,6 +94,9 @@ public final class ItemSoundRegistry {
         Item item = stack.getItem();
         if (item instanceof ItemSword) {
             return Category.SWORD;
+        }
+        if (stack.getItemUseAction() == EnumAction.block) {
+            return Category.SHIELD;
         }
         if (item instanceof ItemAxe) {
             return Category.AXE;

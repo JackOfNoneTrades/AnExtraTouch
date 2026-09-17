@@ -12,4 +12,7 @@ repositories {
         name = "Ventooth Maven"
         url = "https://mvn.ventooth.com/releases/"
     }
+    maven {
+        url = uri("https://maven.fentanylsolutions.org/github/")
+    }
 }

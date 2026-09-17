@@ -575,7 +575,7 @@ public class Config {
                 "itemSwingSoundsEnabled",
                 Categories.itemSounds,
                 true,
-                "Play item swing accents, including missed attacks and starting to block. Swings aimed at blocks are excluded.");
+                "Play item swing accents, including missed attacks and starting to block. Swings aimed at blocks are excluded. Replaces Dynamic Surroundings' attack accents while enabled.");
             itemSwingVolume = config.getFloat(
                 "itemSwingVolume",
                 Categories.itemSounds,
@@ -599,7 +599,7 @@ public class Config {
                 "itemBowDrawSoundsEnabled",
                 Categories.itemSounds,
                 true,
-                "Play a drawstring sound when a player begins using an item classified as bow or crossbow. Does not replace the arrow release sound.");
+                "Play a drawstring sound when a player begins using an item classified as bow or crossbow. Replaces Dynamic Surroundings' bow draw accents while enabled. Does not replace the arrow release sound.");
             itemBowDrawVolume = config.getFloat(
                 "itemBowDrawVolume",
                 Categories.itemSounds,

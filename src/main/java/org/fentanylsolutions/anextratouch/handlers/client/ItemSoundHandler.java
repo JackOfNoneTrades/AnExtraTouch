@@ -18,6 +18,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.compat.JustAShieldCompat;
 import org.fentanylsolutions.anextratouch.handlers.client.ItemSoundRegistry.Category;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -96,32 +97,39 @@ public final class ItemSoundHandler {
         ItemStack used = entity instanceof EntityPlayer ? ((EntityPlayer) entity).getItemInUse() : null;
         int useTicks = used == null ? 0 : ((EntityPlayer) entity).getItemInUseDuration();
         Category category = ItemSoundRegistry.resolve(held);
-        boolean blocking = used != null && used.getItemUseAction() == EnumAction.block;
-        boolean drawingBow = used != null && (ItemSoundRegistry.resolve(used) == Category.BOW
-            || ItemSoundRegistry.resolve(used) == Category.CROSSBOW);
+        ItemStack blocking = entity instanceof EntityPlayer ? JustAShieldCompat.getBlockingShield((EntityPlayer) entity)
+            : null;
+        if (blocking == null && used != null && used.getItemUseAction() == EnumAction.block) blocking = used;
+        Item usedItem = used == null ? null : used.getItem();
+        Category usedCategory = ItemSoundRegistry.resolve(used);
+        boolean drawingBow = usedCategory == Category.BOW || usedCategory == Category.CROSSBOW;
         Tracker tracker = trackers.get(entity);
-        if (tracker != null) {
+        boolean initialized = tracker != null;
+        if (tracker == null) {
+            tracker = new Tracker();
+            trackers.put(entity, tracker);
+        }
+        boolean raised = tracker.blocking
+            .update(blocking, entity == mc.thePlayer && mc.gameSettings.keyBindUseItem.getIsKeyPressed());
+        if (initialized) {
             if (entity instanceof EntityPlayer && Config.itemEquipSoundsEnabled
                 && (tracker.item != item || tracker.metadata != metadata || tracker.slot != slot)) {
                 playEquip(entity, held, category);
             }
-            if (Config.itemSwingSoundsEnabled && blocking && !tracker.blocking && freeSwing(entity, mc)) {
-                playSwing(entity, category);
+            if (Config.itemSwingSoundsEnabled && raised && freeSwing(entity, mc)) {
+                playSwing(entity, ItemSoundRegistry.resolve(blocking));
             }
             if (!drawingBow || !Config.itemBowDrawSoundsEnabled) stopBow(tracker);
             if (drawingBow && Config.itemBowDrawSoundsEnabled
-                && (!tracker.drawingBow || useTicks < tracker.useTicks || tracker.item != item)) {
+                && (!tracker.drawingBow || useTicks < tracker.useTicks || tracker.usedItem != usedItem)) {
                 stopBow(tracker);
                 tracker.bowSound = play(entity, "item.bow.pull", Config.itemBowDrawVolume, 0.9F, 1.1F);
             }
-        } else {
-            tracker = new Tracker();
-            trackers.put(entity, tracker);
         }
         tracker.item = item;
         tracker.metadata = metadata;
         tracker.slot = slot;
-        tracker.blocking = blocking;
+        tracker.usedItem = usedItem;
         tracker.drawingBow = drawingBow;
         tracker.useTicks = useTicks;
         tracker.lastTick = tick;
@@ -261,7 +269,8 @@ public final class ItemSoundHandler {
         Item item;
         int metadata;
         int slot;
-        boolean blocking;
+        final BlockingSoundTracker blocking = new BlockingSoundTracker();
+        Item usedItem;
         boolean drawingBow;
         int useTicks;
         ISound bowSound;

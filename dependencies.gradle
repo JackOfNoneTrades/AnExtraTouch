@@ -74,6 +74,9 @@ dependencies {
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:ivtoolkit-224535:2294442"))
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:psychedelicraft-legacy-1256222:6547962"))
 
+    devOnlyNonPublishable("Myask-s:justashield:v1.7.10-1.P73145.10:targaseule-1.7.10-1.P73145.10-dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Backhand:1.8.14:dev")
+
     // Test
     testImplementation("junit:junit:4.13.2")
 }

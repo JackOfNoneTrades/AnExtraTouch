@@ -21,6 +21,7 @@ public class LateMixinLoader implements ILateMixinLoader {
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
         return new MixinBuilder().addMixin("MixinDSFootsteps", MixinBuilder.Side.CLIENT, "dsurround")
+            .addMixin("MixinDSEnvironStateHandler", MixinBuilder.Side.CLIENT, "dsurround")
             .addMixin("MixinBlizzSnowTrail", MixinBuilder.Side.BOTH, "ThermalFoundation")
             .addMixin("MixinThaumicHorizonsBoat", MixinBuilder.Side.BOTH, "ThaumicHorizons")
             .addMixin("MixinExplosionNT", MixinBuilder.Side.BOTH, "hbm")

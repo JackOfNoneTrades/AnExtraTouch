@@ -11,6 +11,7 @@ import net.minecraft.world.World;
 
 import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
+import org.fentanylsolutions.anextratouch.compat.DynamicSurroundingsCompat;
 import org.fentanylsolutions.anextratouch.footsteps.FootprintUtil;
 import org.fentanylsolutions.anextratouch.handlers.client.StepSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterSplashManager;
@@ -49,6 +50,7 @@ public class MixinEntityClient {
     private void onPlayStepSound(double dx, double dy, double dz, CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (!self.worldObj.isRemote) return;
+        if (DynamicSurroundingsCompat.hasFootstepHandler()) return;
         StepSoundHandler.onEntityStep(self);
     }
 
@@ -57,6 +59,7 @@ public class MixinEntityClient {
     private void onFall(double distanceFallenThisTick, boolean isOnGround, CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (!self.worldObj.isRemote) return;
+        if (DynamicSurroundingsCompat.hasFootstepHandler()) return;
         StepSoundHandler.onEntityLand(self, self.fallDistance);
     }
 
