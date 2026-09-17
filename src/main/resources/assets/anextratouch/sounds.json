@@ -26,29 +26,6 @@
       "anextratouch:armor/heavy_walk6"
     ]
   },
-  "armor.heavy_run": {
-    "category": "player",
-    "sounds": [
-      "anextratouch:armor/heavy_run1",
-      "anextratouch:armor/heavy_run2",
-      "anextratouch:armor/heavy_run3",
-      "anextratouch:armor/heavy_run4",
-      "anextratouch:armor/heavy_run5",
-      "anextratouch:armor/heavy_run6",
-      "anextratouch:armor/heavy_run7",
-      "anextratouch:armor/heavy_run8",
-      "anextratouch:armor/heavy_run9"
-    ]
-  },
-  "armor.heavy_foot": {
-    "category": "player",
-    "sounds": [
-      "anextratouch:armor/heavy_foot1",
-      "anextratouch:armor/heavy_foot2",
-      "anextratouch:armor/heavy_foot3",
-      "anextratouch:armor/heavy_foot4"
-    ]
-  },
   "armor.crystal_walk": {
     "category": "player",
     "sounds": [
@@ -58,42 +35,6 @@
       "anextratouch:armor/crystal_walk4",
       "anextratouch:armor/crystal_walk5",
       "anextratouch:armor/crystal_walk6"
-    ]
-  },
-  "armor.crystal_run": {
-    "category": "player",
-    "sounds": [
-      "anextratouch:armor/crystal_run1",
-      "anextratouch:armor/crystal_run2",
-      "anextratouch:armor/crystal_run3",
-      "anextratouch:armor/crystal_run4",
-      "anextratouch:armor/crystal_run5",
-      "anextratouch:armor/crystal_run6"
-    ]
-  },
-  "armor.crystal_foot": {
-    "category": "player",
-    "sounds": [
-      "anextratouch:armor/crystal_foot1",
-      "anextratouch:armor/crystal_foot2",
-      "anextratouch:armor/crystal_foot3",
-      "anextratouch:armor/crystal_foot4"
-    ]
-  },
-  "rain.splash": {
-    "category": "player",
-    "sounds": [
-      "anextratouch:rain_splash/water_through1",
-      "anextratouch:rain_splash/water_through2",
-      "anextratouch:rain_splash/water_through3",
-      "anextratouch:rain_splash/water_through4",
-      "anextratouch:rain_splash/water_through5",
-      "anextratouch:rain_splash/water_through6",
-      "anextratouch:rain_splash/water_through7",
-      "anextratouch:rain_splash/water_through8",
-      "anextratouch:rain_splash/water_through9",
-      "anextratouch:rain_splash/water_through10",
-      "anextratouch:rain_splash/water_through11"
     ]
   },
   "waterfall.0": {

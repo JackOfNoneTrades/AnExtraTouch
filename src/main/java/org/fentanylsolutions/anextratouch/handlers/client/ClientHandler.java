@@ -9,7 +9,6 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 
-import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.compat.ShoulderSurfingCompat;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
@@ -18,7 +17,6 @@ import org.lwjgl.opengl.GL11;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-import cpw.mods.fml.common.network.FMLNetworkEvent;
 
 public class ClientHandler {
 
@@ -35,11 +33,6 @@ public class ClientHandler {
         GL11.glColor4f(1f, 1f, 1f, 1f);
         mc.getTextureManager()
             .bindTexture(Gui.icons);
-    }
-
-    @SubscribeEvent
-    public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
-        AnExtraTouch.vic.serverHasAET = false;
     }
 
     @SubscribeEvent

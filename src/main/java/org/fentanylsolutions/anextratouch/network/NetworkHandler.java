@@ -14,12 +14,15 @@ import cpw.mods.fml.relauncher.Side;
 
 public class NetworkHandler {
 
-    private static int discriminator = 0;
+    private static final int LEGACY_HELLO = 0;
+    private static final int LEGACY_ARMOR_STEP = 1;
+    private static final int EXPLOSION_SHAKE = 2;
     public static final SimpleNetworkWrapper channel = NetworkRegistry.INSTANCE.newSimpleChannel(AnExtraTouch.MODID);
 
     public static void init() {
-        channel.registerMessage(HandlerHello.class, MessageHello.class, discriminator++, Side.CLIENT);
-        channel.registerMessage(HandlerArmorStep.class, MessageArmorStep.class, discriminator++, Side.CLIENT);
-        channel.registerMessage(HandlerExplosionShake.class, MessageExplosionShake.class, discriminator++, Side.CLIENT);
+        // IDs 0 and 1 remain decode-only so clients can safely ignore packets from older AET servers.
+        channel.registerMessage(HandlerHello.class, MessageHello.class, LEGACY_HELLO, Side.CLIENT);
+        channel.registerMessage(HandlerArmorStep.class, MessageArmorStep.class, LEGACY_ARMOR_STEP, Side.CLIENT);
+        channel.registerMessage(HandlerExplosionShake.class, MessageExplosionShake.class, EXPLOSION_SHAKE, Side.CLIENT);
     }
 }

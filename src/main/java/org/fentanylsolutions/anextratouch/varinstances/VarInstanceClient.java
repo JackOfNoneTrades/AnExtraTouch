@@ -13,21 +13,16 @@ import net.minecraft.entity.EntityLivingBase;
 import org.fentanylsolutions.anextratouch.Config;
 import org.fentanylsolutions.anextratouch.varinstances.configcaches.ArmorCache;
 import org.fentanylsolutions.anextratouch.varinstances.configcaches.BreathCache;
-import org.fentanylsolutions.anextratouch.varinstances.configcaches.FootprintCache;
 import org.fentanylsolutions.anextratouch.varinstances.configcaches.SoundShakeCache;
 
 public class VarInstanceClient {
 
-    public final FootprintCache footprints = new FootprintCache();
     public final BreathCache breath = new BreathCache();
     public final ArmorCache armor = new ArmorCache();
     public final SoundShakeCache soundShakes = new SoundShakeCache();
 
     // Wetness
     public HashSet<Class<? extends Entity>> wetnessEntities;
-
-    // Rain splash
-    public HashSet<Class<? extends Entity>> rainSplashEntities;
 
     // Water splash entity blacklist (simple class names)
     public Set<String> waterSplashEntityBlacklist = new HashSet<>();
@@ -38,12 +33,9 @@ public class VarInstanceClient {
     // Loading Progress Bar
     public int chunkLoadingProgress = -1;
 
-    public boolean serverHasAET = false;
-
     public VarInstanceClient() {}
 
     public void populateListsFromConfig() {
-        footprints.populateFromConfig();
         breath.populateFromConfig();
         armor.populateFromConfig();
         soundShakes.populateFromConfig();
@@ -76,39 +68,6 @@ public class VarInstanceClient {
         if (Config.wetnessEntityClassListIsBlacklist != playerInWetnessList) {
             wetnessEntities.add(EntityClientPlayerMP.class);
             wetnessEntities.add(EntityOtherPlayerMP.class);
-        }
-
-        // Rain splash
-        rainSplashEntities = new HashSet<>();
-        for (Class<? extends Entity> c : EntityList.stringToClassMapping.values()) {
-            if (!EntityLivingBase.class.isAssignableFrom(c)) {
-                continue;
-            }
-
-            String name = EntityList.classToStringMapping.get(c);
-            boolean inRainSplashList = false;
-            for (String s : Config.rainSplashEntityClassList) {
-                if (name.equals(s)) {
-                    inRainSplashList = true;
-                    break;
-                }
-            }
-            if (Config.rainSplashEntityClassListIsBlacklist == inRainSplashList) {
-                continue;
-            }
-
-            rainSplashEntities.add(c);
-        }
-        boolean playerInRainSplashList = false;
-        for (String s : Config.rainSplashEntityClassList) {
-            if (playerName.equals(s)) {
-                playerInRainSplashList = true;
-                break;
-            }
-        }
-        if (Config.rainSplashEntityClassListIsBlacklist != playerInRainSplashList) {
-            rainSplashEntities.add(EntityClientPlayerMP.class);
-            rainSplashEntities.add(EntityOtherPlayerMP.class);
         }
 
         // Smooth GUI excluded screens

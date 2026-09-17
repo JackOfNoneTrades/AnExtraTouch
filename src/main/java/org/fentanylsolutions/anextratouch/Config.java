@@ -11,7 +11,6 @@ public class Config {
     public static class Categories {
 
         public static final String general = "general";
-        public static final String footprints = "footprints";
         public static final String breath = "breath";
         public static final String armor = "armor";
         public static final String dynamicSurroundings = "dynamic_surroundings";
@@ -21,7 +20,6 @@ public class Config {
         public static final String wetness = "wetness";
         public static final String debug = "debug";
         public static final String trampling = "trampling";
-        public static final String rainSplash = "rain_splash";
         public static final String waterSplash = "water_splash";
         public static final String waves = "waves";
         public static final String fluidInteractions = "fluid_interactions";
@@ -32,30 +30,6 @@ public class Config {
 
     // general
     public static boolean boatControlsEnabled = true;
-
-    // footprints
-    public static String[] entityClassList = { "Blaze" };
-    public static boolean entityClassListIsBlacklist = true;
-    public static String[] entityOverrides = {};
-    public static boolean footprintsEnabled = true;
-    public static float defaultStride = 1.0f;
-    public static float defaultFootSize = 1.0f;
-    public static float defaultStanceWidth = 0.1f;
-    public static float babyStrideMultiplier = 0.5f;
-    public static float babyFootSizeMultiplier = 0.5f;
-    public static float babyStanceWidthMultiplier = 0.5f;
-    public static String[] babyEntityOverrides = {};
-    public static String[] footprintSoundTypes = { "sand", "snow", "grass", "gravel" };
-    public static String[] blockBlacklist = {};
-    public static String[] blockWhitelist = {};
-    public static int defaultFootprintLifespan = 200;
-    public static float rainLifespanMultiplier = 0.4f;
-    public static float snowLifespanMultiplier = 0.6f;
-    public static String[] soundTypeLifespans = { "snow;100", "sand;300", "grass;200", "gravel;250" };
-    public static float defaultFootprintOpacity = 0.4f;
-    public static String[] soundTypeOpacities = { "snow;0.6", "sand;0.5", "grass;0.4", "gravel;0.35" };
-    public static String[] blockOpacityOverrides = {};
-    public static int footprintParticleCap = 2000;
 
     // breath
     public static boolean breathEnabled = true;
@@ -78,7 +52,6 @@ public class Config {
 
     // armor
     public static boolean armorSoundsEnabled = true;
-    public static String armorSoundMode = "priority";
     public static float armorSoundVolume = 0.3f;
     public static String armorDefaultCategory = "heavy";
     public static String[] armorCategoryOverrides = { "etfuturum:elytra;elytra" };
@@ -176,12 +149,6 @@ public class Config {
     public static String[] fluidInteractionBlacklist = {};
     public static String[] splashFluidBlacklist = { "honey" };
     public static String[] cascadeFluidBlacklist = { "honey", "oil" };
-
-    // rain splash
-    public static boolean rainSplashEnabled = true;
-    public static float rainSplashVolume = 0.15f;
-    public static String[] rainSplashEntityClassList = {};
-    public static boolean rainSplashEntityClassListIsBlacklist = true;
 
     // smooth gui
     public static boolean smoothGuiEnabled = true;
@@ -303,140 +270,6 @@ public class Config {
                 boatControlsEnabled,
                 "Enable modern directional controls for vanilla boats. Disable to restore vanilla boat movement.");
 
-            // footprints
-            entityClassList = config.getStringList(
-                "entityClassList",
-                Categories.footprints,
-                entityClassList,
-                "List of mobs which are either leaving footprints, or not, depending on entityClassListIsBlacklist.");
-            entityClassListIsBlacklist = config.getBoolean(
-                "entityClassListIsBlacklist",
-                Categories.footprints,
-                entityClassListIsBlacklist,
-                "Whether entityClassList is a blacklist (or a whitelist).");
-            entityOverrides = config.getStringList(
-                "entityOverrides",
-                Categories.footprints,
-                entityOverrides,
-                "Per-entity overrides. Format: \"mob_class_name;stride;foot_size;stance_width\". Leave a value empty to use defaults, e.g. \"Creeper;;0.5;\"");
-            footprintsEnabled = config.getBoolean(
-                "footprintsEnabled",
-                Categories.footprints,
-                footprintsEnabled,
-                "Whether footprint particles are enabled.");
-            defaultStride = config.getFloat(
-                "defaultStride",
-                Categories.footprints,
-                defaultStride,
-                0.1f,
-                100.0f,
-                "Default distance between footprints in blocks.");
-            defaultFootSize = config.getFloat(
-                "defaultFootSize",
-                Categories.footprints,
-                defaultFootSize,
-                0.1f,
-                100.0f,
-                "Default foot size scale multiplier for the footprint particle.");
-            defaultStanceWidth = config.getFloat(
-                "defaultStanceWidth",
-                Categories.footprints,
-                defaultStanceWidth,
-                0.0f,
-                100.0f,
-                "Default perpendicular offset between left and right foot in blocks.");
-            babyStrideMultiplier = config.getFloat(
-                "babyStrideMultiplier",
-                Categories.footprints,
-                babyStrideMultiplier,
-                0.1f,
-                100.0f,
-                "Multiplier applied to stride for baby mobs.");
-            babyFootSizeMultiplier = config.getFloat(
-                "babyFootSizeMultiplier",
-                Categories.footprints,
-                babyFootSizeMultiplier,
-                0.1f,
-                100.0f,
-                "Multiplier applied to foot size for baby mobs.");
-            babyStanceWidthMultiplier = config.getFloat(
-                "babyStanceWidthMultiplier",
-                Categories.footprints,
-                babyStanceWidthMultiplier,
-                0.1f,
-                100.0f,
-                "Multiplier applied to stance width for baby mobs.");
-            babyEntityOverrides = config.getStringList(
-                "babyEntityOverrides",
-                Categories.footprints,
-                babyEntityOverrides,
-                "Per-entity baby overrides (absolute values, not multiplied). Format: \"mob_class_name;stride;foot_size;stance_width\". Leave a value empty to use adult value * baby multiplier.");
-            footprintSoundTypes = config.getStringList(
-                "footprintSoundTypes",
-                Categories.footprints,
-                footprintSoundTypes,
-                "Sound types that allow footprints. Valid values: stone, wood, gravel, grass, cloth, sand, snow, ladder, anvil.");
-            blockBlacklist = config.getStringList(
-                "blockBlacklist",
-                Categories.footprints,
-                blockBlacklist,
-                "Blocks that should never have footprints, regardless of sound type. Use registry names, e.g. \"minecraft:tallgrass\".");
-            blockWhitelist = config.getStringList(
-                "blockWhitelist",
-                Categories.footprints,
-                blockWhitelist,
-                "Blocks that should always have footprints, even if their sound type is not in the list. Use registry names, e.g. \"minecraft:stone\".");
-            defaultFootprintLifespan = config.getInt(
-                "defaultFootprintLifespan",
-                Categories.footprints,
-                defaultFootprintLifespan,
-                1,
-                6000,
-                "Default footprint lifespan in ticks (20 ticks = 1 second).");
-            rainLifespanMultiplier = config.getFloat(
-                "rainLifespanMultiplier",
-                Categories.footprints,
-                rainLifespanMultiplier,
-                0.0f,
-                100.0f,
-                "Multiplier applied to footprint lifespan when raining at the footprint's position.");
-            snowLifespanMultiplier = config.getFloat(
-                "snowLifespanMultiplier",
-                Categories.footprints,
-                snowLifespanMultiplier,
-                0.0f,
-                100.0f,
-                "Multiplier applied to footprint lifespan when snowing at the footprint's position.");
-            soundTypeLifespans = config.getStringList(
-                "soundTypeLifespans",
-                Categories.footprints,
-                soundTypeLifespans,
-                "Per-sound-type lifespan overrides. Format: \"sound_type;lifespan_in_ticks\". e.g. \"snow;100\", \"sand;300\".");
-            defaultFootprintOpacity = config.getFloat(
-                "defaultFootprintOpacity",
-                Categories.footprints,
-                defaultFootprintOpacity,
-                0.0f,
-                100.0f,
-                "Default footprint opacity (0.0 = invisible, 1.0 = fully opaque).");
-            soundTypeOpacities = config.getStringList(
-                "soundTypeOpacities",
-                Categories.footprints,
-                soundTypeOpacities,
-                "Per-sound-type opacity overrides. Format: \"sound_type;opacity\". e.g. \"snow;0.6\", \"sand;0.3\".");
-            blockOpacityOverrides = config.getStringList(
-                "blockOpacityOverrides",
-                Categories.footprints,
-                blockOpacityOverrides,
-                "Per-block opacity overrides (takes priority over sound type). Format: \"registry_name;opacity\". e.g. \"minecraft:snow_layer;0.7\".");
-            footprintParticleCap = config.getInt(
-                "footprintParticleCap",
-                Categories.footprints,
-                footprintParticleCap,
-                0,
-                100000,
-                "Maximum number of footprint particles tracked at once. 0 = unlimited.");
-
             // breath
             breathEnabled = config.getBoolean(
                 "breathEnabled",
@@ -534,34 +367,29 @@ public class Config {
                 "armorSoundsEnabled",
                 Categories.armor,
                 armorSoundsEnabled,
-                "Enable armor accent sounds on footsteps.");
-            armorSoundMode = config.getString(
-                "armorSoundMode",
-                Categories.armor,
-                armorSoundMode,
-                "How to handle mixed armor. \"priority\" picks the highest-priority category between chest and legs. \"mixed\" plays both chest and legs sounds if different.");
+                "Enable armor equip and unequip sounds.");
             armorSoundVolume = config.getFloat(
                 "armorSoundVolume",
                 Categories.armor,
                 armorSoundVolume,
                 0.0f,
                 1.0f,
-                "Base volume for armor accent sounds.");
+                "Volume for armor equip and unequip sounds.");
             armorDefaultCategory = config.getString(
                 "armorDefaultCategory",
                 Categories.armor,
                 armorDefaultCategory,
-                "Default armor sound category for unknown/modded armor items. Valid: light, medium, heavy, crystal, elytra.");
+                "Default equip sound category for unknown or modded armor items. Valid: light, medium, heavy, crystal, elytra.");
             armorCategoryOverrides = config.getStringList(
                 "armorCategoryOverrides",
                 Categories.armor,
                 armorCategoryOverrides,
-                "Per-item armor category overrides. Format: \"registry_name;category\". e.g. \"minecraft:iron_chestplate;crystal\". Valid categories: light, medium, heavy, crystal, elytra. The \"elytra\" category routes to the vanilla MC 1.20+ equip_elytra sound provided by Et Futurum Requiem's Asset Director.");
+                "Per-item armor equip category overrides. Format: \"registry_name;category\". e.g. \"minecraft:iron_chestplate;crystal\". Valid categories: light, medium, heavy, crystal, elytra. The \"elytra\" category routes to the vanilla MC 1.20+ equip_elytra sound provided by Et Futurum Requiem's Asset Director.");
             armorSoundEntityWhitelist = config.getStringList(
                 "armorSoundEntityWhitelist",
                 Categories.armor,
                 armorSoundEntityWhitelist,
-                "Entity classes that play armor sounds. Only entities in this list will have armor accent sounds.");
+                "Entity classes that play armor equip and unequip sounds.");
 
             // Dynamic Surroundings
             muteDynamicSurroundingsAnimalSounds = config.getBoolean(
@@ -1020,30 +848,6 @@ public class Config {
                 Categories.fluidInteractions,
                 cascadeFluidBlacklist,
                 "Forge fluids this mod should ignore only for cascade foam, waterfall spray, and waterfall sounds. This is additive with fluidInteractionBlacklist. Defaults exclude Biomes O' Plenty honey and BuildCraft oil.");
-
-            // rain splash
-            rainSplashEnabled = config.getBoolean(
-                "rainSplashEnabled",
-                Categories.rainSplash,
-                rainSplashEnabled,
-                "Enable rain splash accent sounds on footsteps when walking in rain.");
-            rainSplashVolume = config.getFloat(
-                "rainSplashVolume",
-                Categories.rainSplash,
-                rainSplashVolume,
-                0.0f,
-                1.0f,
-                "Base volume for rain splash sounds. Actual volume is scaled by rain intensity.");
-            rainSplashEntityClassList = config.getStringList(
-                "rainSplashEntityClassList",
-                Categories.rainSplash,
-                rainSplashEntityClassList,
-                "List of mobs which either play rain splash sounds, or don't, depending on rainSplashEntityClassListIsBlacklist.");
-            rainSplashEntityClassListIsBlacklist = config.getBoolean(
-                "rainSplashEntityClassListIsBlacklist",
-                Categories.rainSplash,
-                rainSplashEntityClassListIsBlacklist,
-                "Whether rainSplashEntityClassList is a blacklist (or a whitelist).");
 
             // smooth gui
             smoothGuiEnabled = config.getBoolean(

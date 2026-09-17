@@ -21,42 +21,6 @@ final class ConfigGuiLayout {
         // Build fresh wrappers on each opening so a reload cannot leave stale Property references.
         return Arrays.asList(
             menu(
-                "footprints",
-                section(
-                    config,
-                    "footprints.entities_and_shape",
-                    "footprints",
-                    "footprintsEnabled",
-                    "entityClassList",
-                    "entityClassListIsBlacklist",
-                    "entityOverrides",
-                    "defaultStride",
-                    "defaultFootSize",
-                    "defaultStanceWidth",
-                    "babyStrideMultiplier",
-                    "babyFootSizeMultiplier",
-                    "babyStanceWidthMultiplier",
-                    "babyEntityOverrides"),
-                section(
-                    config,
-                    "footprints.surfaces",
-                    "footprints",
-                    "footprintSoundTypes",
-                    "blockBlacklist",
-                    "blockWhitelist"),
-                section(
-                    config,
-                    "footprints.lifetime_and_opacity",
-                    "footprints",
-                    "defaultFootprintLifespan",
-                    "rainLifespanMultiplier",
-                    "snowLifespanMultiplier",
-                    "soundTypeLifespans",
-                    "defaultFootprintOpacity",
-                    "soundTypeOpacities",
-                    "blockOpacityOverrides",
-                    "footprintParticleCap")),
-            menu(
                 "entity_effects",
                 section(
                     config,
@@ -118,19 +82,10 @@ final class ConfigGuiLayout {
                     "sounds.armor",
                     "armor",
                     "armorSoundsEnabled",
-                    "armorSoundMode",
                     "armorSoundVolume",
                     "armorDefaultCategory",
                     "armorCategoryOverrides",
                     "armorSoundEntityWhitelist"),
-                section(
-                    config,
-                    "sounds.rain_footsteps",
-                    "rain_splash",
-                    "rainSplashEnabled",
-                    "rainSplashVolume",
-                    "rainSplashEntityClassList",
-                    "rainSplashEntityClassListIsBlacklist"),
                 section(
                     config,
                     "sounds.dynamic_surroundings",

@@ -1,10 +1,6 @@
 anextratouch.configgui.title=An Extra Touch Config
 
 # Config menus
-anextratouch.configgui.menu.footprints=Footprints
-anextratouch.configgui.menu.footprints.entities_and_shape=Entities and shape
-anextratouch.configgui.menu.footprints.surfaces=Surfaces
-anextratouch.configgui.menu.footprints.lifetime_and_opacity=Lifetime and opacity
 anextratouch.configgui.menu.entity_effects=Entity effects
 anextratouch.configgui.menu.entity_effects.cold_breath_entities_and_position=Cold breath: entities and position
 anextratouch.configgui.menu.entity_effects.cold_breath_climate=Cold breath: climate
@@ -16,8 +12,7 @@ anextratouch.configgui.menu.sounds.items.swing=Swing sounds
 anextratouch.configgui.menu.sounds.items.equip=Item selection
 anextratouch.configgui.menu.sounds.items.bow=Bow drawstrings
 anextratouch.configgui.menu.sounds.items.matching=Item categories and nearby entities
-anextratouch.configgui.menu.sounds.armor=Armor
-anextratouch.configgui.menu.sounds.rain_footsteps=Rain footsteps
+anextratouch.configgui.menu.sounds.armor=Armor equip sounds
 anextratouch.configgui.menu.sounds.dynamic_surroundings=Dynamic Surroundings
 anextratouch.configgui.menu.water_effects=Water effects
 anextratouch.configgui.menu.water_effects.entry_splashes=Entry splashes

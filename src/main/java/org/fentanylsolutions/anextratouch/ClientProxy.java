@@ -2,7 +2,6 @@ package org.fentanylsolutions.anextratouch;
 
 import net.minecraftforge.common.MinecraftForge;
 
-import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.ClientHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.DynamicSurroundingsSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.ItemSoundHandler;
@@ -12,7 +11,6 @@ import org.fentanylsolutions.anextratouch.handlers.client.ThunderSoundHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.SoundShakeHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.BreathHandler;
-import org.fentanylsolutions.anextratouch.handlers.client.effects.PlayerEffectHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.ThermalEffectsManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WakeTrailManager;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.WaterCascadeManager;
@@ -41,13 +39,7 @@ public class ClientProxy extends CommonProxy {
         super.init(event);
         FMLCommonHandler.instance()
             .bus()
-            .register(new PlayerEffectHandler());
-        FMLCommonHandler.instance()
-            .bus()
             .register(new StepSoundHandler());
-        FMLCommonHandler.instance()
-            .bus()
-            .register(FootprintManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new SmoothGuiHandler());
         BreathHandler breathHandler = new BreathHandler();
         FMLCommonHandler.instance()
@@ -76,7 +68,6 @@ public class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(ThermalEffectsManager.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(FootprintManager.INSTANCE);
         ClientHandler clientHandler = new ClientHandler();
         FMLCommonHandler.instance()
             .bus()

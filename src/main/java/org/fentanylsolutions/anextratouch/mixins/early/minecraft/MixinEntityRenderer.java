@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.EntityLivingBase;
 
 import org.fentanylsolutions.anextratouch.Config;
-import org.fentanylsolutions.anextratouch.footsteps.FootprintManager;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.CameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.camera.DecoupledCameraHandler;
 import org.fentanylsolutions.anextratouch.handlers.client.effects.AngelicaShaderHelper;
@@ -446,7 +445,7 @@ public abstract class MixinEntityRenderer {
 
     /**
      * Render surface overlays in the main world translucent phase (before water),
-     * so water properly overlays submerged footprints and distant ripples.
+     * so water properly overlays distant ripples.
      *
      * Targets the sortAndRender call for the translucent pass (pass 1), sliced
      * between the "water" and "entities" profiler sections. This is compatible
@@ -462,8 +461,8 @@ public abstract class MixinEntityRenderer {
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/RenderGlobal;sortAndRender(Lnet/minecraft/entity/EntityLivingBase;ID)I"),
         slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=water")))
-    private void anextratouch$renderFootprintsBeforeWater(float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        FootprintManager.INSTANCE.renderInWorldPass(partialTicks);
+    private void anextratouch$renderSurfaceEffectsBeforeWater(float partialTicks, long finishTimeNano,
+        CallbackInfo ci) {
         WaterSplashManager.INSTANCE.renderInWorldPass(partialTicks);
         WaterRippleManager.INSTANCE.renderInWorldPass(partialTicks);
         // The Angelica pipeline captures depth after its solid hands, inside sortAndRender.

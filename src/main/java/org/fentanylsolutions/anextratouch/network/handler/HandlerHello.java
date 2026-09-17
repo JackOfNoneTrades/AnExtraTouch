@@ -1,6 +1,5 @@
 package org.fentanylsolutions.anextratouch.network.handler;
 
-import org.fentanylsolutions.anextratouch.AnExtraTouch;
 import org.fentanylsolutions.anextratouch.network.message.MessageHello;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -11,8 +10,7 @@ public class HandlerHello implements IMessageHandler<MessageHello, IMessage> {
 
     @Override
     public IMessage onMessage(MessageHello message, MessageContext ctx) {
-        AnExtraTouch.debug("Received MessageHello");
-        AnExtraTouch.vic.serverHasAET = true;
+        // Decode-only compatibility with older servers. New servers do not send this packet.
         return null;
     }
 }
