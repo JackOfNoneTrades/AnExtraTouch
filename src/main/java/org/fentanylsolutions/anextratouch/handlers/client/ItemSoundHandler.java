@@ -15,6 +15,7 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import org.fentanylsolutions.anextratouch.Config;
@@ -139,7 +140,15 @@ public final class ItemSoundHandler {
         if (entity == mc.thePlayer && mc.objectMouseOver != null) {
             return mc.objectMouseOver.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK;
         }
-        MovingObjectPosition hit = entity.rayTrace(3.0D, 1.0F);
+        return freeRemoteSwing(entity);
+    }
+
+    static boolean freeRemoteSwing(EntityLivingBase entity) {
+        // Vanilla rayTrace assumes the local player's eye-level posY. Remote players and mobs use feet-level posY.
+        Vec3 start = Vec3.createVectorHelper(entity.posX, entity.boundingBox.minY + entity.getEyeHeight(), entity.posZ);
+        Vec3 look = entity.getLook(1.0F);
+        Vec3 end = start.addVector(look.xCoord * 3.0D, look.yCoord * 3.0D, look.zCoord * 3.0D);
+        MovingObjectPosition hit = entity.worldObj.func_147447_a(start, end, false, false, true);
         return hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK;
     }
 
