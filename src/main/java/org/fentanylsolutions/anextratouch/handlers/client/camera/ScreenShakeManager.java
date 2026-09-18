@@ -1,5 +1,7 @@
 package org.fentanylsolutions.anextratouch.handlers.client.camera;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.fentanylsolutions.anextratouch.Config;
 import org.joml.SimplexNoise;
 import org.joml.Vector3d;
@@ -15,6 +17,9 @@ public final class ScreenShakeManager {
         public final Vector3d position = new Vector3d(Double.POSITIVE_INFINITY);
         double startTime;
         short version = 1;
+        private float noiseOffsetX;
+        private float noiseOffsetY;
+        private float noiseOffsetZ;
 
         public boolean hasPosition() {
             return position.isFinite();
@@ -27,6 +32,11 @@ public final class ScreenShakeManager {
             lengthInSeconds = 2.0f;
             position.set(Double.POSITIVE_INFINITY);
             startTime = time;
+            // Pick independent noise paths once per event, keeping motion smooth between frames.
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            noiseOffsetX = random.nextFloat() * 256f;
+            noiseOffsetY = random.nextFloat() * 256f;
+            noiseOffsetZ = random.nextFloat() * 256f;
         }
     }
 
@@ -91,7 +101,6 @@ public final class ScreenShakeManager {
 
         float maxIntensity = Config.cameraShakeMaxIntensity;
         float maxFrequency = Config.cameraShakeMaxFrequency;
-        float sampleBase = (float) (time * maxFrequency);
 
         long mask = instanceMask;
         float total = 0f;
@@ -126,10 +135,10 @@ public final class ScreenShakeManager {
                 continue;
             }
 
-            float sampleStep = sampleBase * ss.frequency;
-            noiseX += SimplexNoise.noise(sampleStep, -69) * intensity;
-            noiseY += SimplexNoise.noise(sampleStep, -420) * intensity;
-            noiseZ += SimplexNoise.noise(sampleStep, -1337) * intensity;
+            float sampleStep = (float) ((time - ss.startTime) * maxFrequency * ss.frequency);
+            noiseX += SimplexNoise.noise(sampleStep, ss.noiseOffsetX) * intensity;
+            noiseY += SimplexNoise.noise(sampleStep, ss.noiseOffsetY) * intensity;
+            noiseZ += SimplexNoise.noise(sampleStep, ss.noiseOffsetZ) * intensity;
             total += intensity;
         }
 
