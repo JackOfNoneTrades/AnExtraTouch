@@ -40,7 +40,7 @@ dependencies {
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:catalogue-vintage-1465746:8384975")) // 1.0.8-1.7.10
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
     runtimeOnlyNonPublishable(rfg.deobf("kanmikan:cristalinewatermod:v1.5:cristalinewater-1.5"))
-    runtimeOnlyNonPublishable("jss2a98aj:BugTorch:1.3.1:bugtorch-1.2.15-dev")
+    runtimeOnlyNonPublishable("jss2a98aj:BugTorch:1.3.1:dev")
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:biomes-o-plenty:2.1.0.2308"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:natures-compass:1.17.10-1.3.1-forge"))
     runtimeOnlyNonPublishable("org.fentanylsolutions.wawelauth:WawelAuth:1.0.5:dev")
