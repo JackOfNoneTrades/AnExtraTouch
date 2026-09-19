@@ -142,7 +142,9 @@ public final class ItemSoundHandler {
                 playEquip(entity, held, category);
             }
             if (Config.itemSwingSoundsEnabled && raised && freeSwing(entity, mc)) {
-                playSwing(entity, ItemSoundRegistry.resolve(blocking));
+                Category blockingCategory = ItemSoundRegistry.resolve(blocking);
+                // Raising a sword to block is not a swing; actual swings use onSwing.
+                if (blockingCategory != Category.SWORD) playSwing(entity, blockingCategory);
             }
             if (!drawingBow || !Config.itemBowDrawSoundsEnabled) stopBow(tracker);
             if (drawingBow && Config.itemBowDrawSoundsEnabled
