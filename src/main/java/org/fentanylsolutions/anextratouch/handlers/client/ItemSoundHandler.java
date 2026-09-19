@@ -30,6 +30,7 @@ public final class ItemSoundHandler {
 
     public static final ItemSoundHandler INSTANCE = new ItemSoundHandler();
     private final WeakHashMap<EntityLivingBase, Tracker> trackers = new WeakHashMap<>();
+    private final InitialInventorySync initialInventory = new InitialInventorySync();
     private World world;
     private long tick;
 
@@ -50,6 +51,24 @@ public final class ItemSoundHandler {
         reset();
     }
 
+    public void onPlayerRecreated() {
+        initialInventory.begin(Minecraft.getMinecraft().thePlayer);
+    }
+
+    /** Packet callbacks run after vanilla applies the snapshot, so user changes after it remain audible. */
+    public void onInitialInventoryPacket(boolean inventoryPacket) {
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        if (player == null || inventoryPacket && !initialInventory.received(player)) return;
+        // A server-selected slot is an authoritative correction, not a local hotbar selection.
+        // Handle it independently: ordinary respawns need not send this packet at all.
+        Tracker tracker = trackers.get(player);
+        if (tracker == null) return; // The first observed tick already establishes a silent baseline.
+        ItemStack held = player.getHeldItem();
+        tracker.item = held == null ? null : held.getItem();
+        tracker.metadata = held == null || held.isItemStackDamageable() ? 0 : held.getItemDamage();
+        tracker.slot = player.inventory.currentItem;
+    }
+
     private void reset() {
         for (Tracker tracker : trackers.values()) stopBow(tracker);
         trackers.clear();
@@ -63,7 +82,11 @@ public final class ItemSoundHandler {
             reset();
             world = mc.theWorld;
         }
-        if (world == null || mc.thePlayer == null || mc.isGamePaused()) return;
+        if (world == null || mc.thePlayer == null) {
+            initialInventory.begin(null);
+            return;
+        }
+        if (mc.isGamePaused()) return;
         if (!Config.itemSwingSoundsEnabled && !Config.itemEquipSoundsEnabled && !Config.itemBowDrawSoundsEnabled)
             return;
         tick++;
@@ -114,6 +137,7 @@ public final class ItemSoundHandler {
             .update(blocking, entity == mc.thePlayer && mc.gameSettings.keyBindUseItem.getIsKeyPressed());
         if (initialized) {
             if (entity instanceof EntityPlayer && Config.itemEquipSoundsEnabled
+                && !initialInventory.pending(entity)
                 && (tracker.item != item || tracker.metadata != metadata || tracker.slot != slot)) {
                 playEquip(entity, held, category);
             }
