@@ -34,48 +34,47 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.207:dev")
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.143-GTNH:dev")
+    // Pure runtime
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.209:dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.144-GTNH:dev")
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:catalogue-vintage-1465746:8384975")) // 1.0.8-1.7.10
-    devOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.15:dev")
     runtimeOnlyNonPublishable("curse.maven:archaicfix-677782:6785842")
-    runtimeOnlyNonPublishable(rfg.deobf("com.mikanon:cristalinewater:1.5"))
-    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:bugtorch:1.2.14"))
+    runtimeOnlyNonPublishable(rfg.deobf("kanmikan:cristalinewatermod:v1.5:cristalinewater-1.5"))
+    runtimeOnlyNonPublishable("jss2a98aj:BugTorch:1.3.1:bugtorch-1.2.15-dev")
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:biomes-o-plenty:2.1.0.2308"))
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:natures-compass:1.17.10-1.3.1-forge"))
     runtimeOnlyNonPublishable("org.fentanylsolutions.wawelauth:WawelAuth:1.0.5:dev")
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:ModularUI2:2.3.90-1.7.10:dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:ModularUI2:2.3.91-1.7.10:dev")
     runtimeOnlyNonPublishable("com.falsepattern:forgelin-mc1.7.10:2.4.3-2.4.10")
     runtimeOnlyNonPublishable("dev.dediamondpro.resourcify:VintageResourcify:1.0.5:dev") {
         exclude group: "org.fentanylsolutions.fentlib", module: "FentLib"
     }
-    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:euphoria-patches:1.10.1-r5.9.1-forge1.7.10"))
-
-    devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.59-GTNH:dev")
-    devOnlyNonPublishable("com.hfstudio:doabarrelroll:1.1.0:dev")
-
-    //compileOnly(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
-    implementation(rfg.deobf("curse.maven:dynamic-surroundings-238891:2642381"))
-    implementation (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
-    //compileOnly (rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
-    implementation("com.github.GTNewHorizons:GTNHLib:0.11.48:dev")
-    implementation("org.fentanylsolutions.fentlib:FentLib:04136bd-snapshot:dev")
-
-    //implementation(rfg.deobf("curse.maven:thermal-foundation-222880:2388752"))
-    //implementation(rfg.deobf("curse.maven:cofh-core-69162:2388750"))
-
-    compileOnly(rfg.deobf("curse.maven:jingames-jrmcore-497507:4523117"))
-    compileOnly(rfg.deobf("curse.maven:jingames-jbra-client-497511:4505635"))
-    compileOnly(rfg.deobf("curse.maven:jingames-dragon-block-c-497518:4523119"))
-    compileOnly("com.github.GTNewHorizons:ThaumicHorizons:1.8.24:dev")
-    //compileOnly("com.ventooth:swansong-mc1.7.10:1.3.4")
-    //compileOnly("com.falsepattern:falsetweaks-mc1.7.10:4.4.2")
-
+    runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:euphoria-patches:1.10.5-r5.9.3-forge1.7.10"))
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Backhand:1.8.14:dev")
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:ivtoolkit-224535:2294442"))
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:psychedelicraft-legacy-1256222:6547962"))
 
+    // Compile + runtime
+    devOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.16:dev")
+    devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.59-GTNH:dev")
+    devOnlyNonPublishable("com.hfstudio:doabarrelroll:1.1.0:dev")
+    devOnlyNonPublishable(rfg.deobf("maven.modrinth:dynamic-surroundings-unofficial-1.7.10:1.0.8.0"))
+    devOnlyNonPublishable(rfg.deobf("curse.maven:shoulder-surfing-reloaded-243190:4635415"))
     devOnlyNonPublishable("Myask-s:justashield:v1.7.10-1.P73145.10:targaseule-1.7.10-1.P73145.10-dev")
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Backhand:1.8.14:dev")
+    //devOnlyNonPublishable(rfg.deobf("curse.maven:thermal-foundation-222880:2388752"))
+    //devOnlyNonPublishable(rfg.deobf("curse.maven:cofh-core-69162:2388750"))
+
+    // Hard deps
+    implementation("com.github.GTNewHorizons:GTNHLib:0.11.49:dev")
+    implementation("org.fentanylsolutions.fentlib:FentLib:04136bd-snapshot:dev")
+
+    // Pure compile
+    compileOnly(rfg.deobf("curse.maven:jingames-jrmcore-497507:4523117"))
+    compileOnly(rfg.deobf("curse.maven:jingames-jbra-client-497511:4505635"))
+    compileOnly(rfg.deobf("curse.maven:jingames-dragon-block-c-497518:4523119"))
+    compileOnly("com.github.GTNewHorizons:ThaumicHorizons:1.8.25:dev")
+    //compileOnly("com.ventooth:swansong-mc1.7.10:1.3.4")
+    //compileOnly("com.falsepattern:falsetweaks-mc1.7.10:4.4.2")
 
     // Test
     testImplementation("junit:junit:4.13.2")
