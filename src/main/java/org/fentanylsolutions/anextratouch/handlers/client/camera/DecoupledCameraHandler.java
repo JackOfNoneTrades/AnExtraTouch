@@ -11,6 +11,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.entity.item.EntityItemFrame;
+import net.minecraft.entity.passive.EntityHorse;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
@@ -522,7 +523,8 @@ public final class DecoupledCameraHandler {
             float newYaw = yRot + degreesDifference(yRot, targetYaw) * Config.decoupledCameraPlayerTurnSpeed;
 
             // Let vanilla keep prevRotationYaw from tick start for smooth interpolation.
-            if (player.ridingEntity == null) {
+            // Horses copy their rider's yaw, so turn the rider toward movement just as when walking.
+            if (player.ridingEntity == null || player.ridingEntity instanceof EntityHorse) {
                 player.rotationYaw = newYaw;
             }
         }
