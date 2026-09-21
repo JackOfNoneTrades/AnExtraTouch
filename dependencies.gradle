@@ -51,6 +51,7 @@ dependencies {
     }
     runtimeOnlyNonPublishable(rfg.deobf("maven.modrinth:euphoria-patches:1.10.5-r5.9.3-forge1.7.10"))
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Backhand:1.8.14:dev")
+    runtimeOnlyNonPublishable("net.gobbob.mobends:EvenMoBends:b3de05f-snapshot:dev")
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:ivtoolkit-224535:2294442"))
     //runtimeOnlyNonPublishable(rfg.deobf("curse.maven:psychedelicraft-legacy-1256222:6547962"))
 
