@@ -49,3 +49,7 @@ anextratouch.configgui.menu.smooth_gui_loading_screen.menu_animations=Menu anima
 anextratouch.configgui.menu.gameplay=Gameplay
 anextratouch.configgui.menu.gameplay.grass_and_plant_trampling=Grass and plant trampling
 anextratouch.configgui.menu.debug=Debug
+
+# Keybindings
+key.anextratouch.free_look=Free Look
+key.categories.anextratouch=An Extra Touch
